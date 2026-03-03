@@ -16,7 +16,7 @@ The project’s architecture mandates repository interfaces and EF Core implemen
 
 ## Decisions
 
-- **Repository interface per aggregate in App.DAL.Contracts** → Provides explicit contracts and prevents direct DbContext usage across the solution, improving testability and enforcing architecture rules.
+- **Repository interface per aggregate in App.DAL.Contracts** → Provides explicit contracts and prevents direct DbContext usage across the solution, improving testability and enforcing architecture rules. Each interface and interface implementation should be in a different file, but they should be grouped in directories
 - **EF Core repositories in App.DAL.EF inheriting Base.DAL.EF.BaseRepository** → Reuses shared CRUD behavior and ensures consistent handling of no-tracking update semantics.
 - **Tenant-aware querying at repository level** → Centralizes CompanyId filtering to reduce cross-tenant leakage risk; aligns with multi-tenancy requirements.
 - **Registration via DAL/BLL composition root (existing setup extension points)** → Keeps construction in one place and avoids scattering DbContext usage.
