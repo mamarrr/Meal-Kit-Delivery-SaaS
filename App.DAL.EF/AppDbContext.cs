@@ -1,4 +1,9 @@
-﻿using App.Domain.Identity;
+﻿using App.Domain;
+using App.Domain.Core;
+using App.Domain.Delivery;
+using App.Domain.Identity;
+using App.Domain.Menu;
+using App.Domain.Subscription;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +16,47 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 
     public DbSet<AppRefreshToken> RefreshTokens { get; set; }
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
+    
+    // Core tenant entities
+    public DbSet<Company> Companies { get; set; }
+    public DbSet<CompanySettings> CompanySettings { get; set; }
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<CompanyAppUser> CompanyAppUsers { get; set; }
+    public DbSet<CustomerAppUser> CustomerAppUsers { get; set; }
+    public DbSet<CompanyRole> CompanyRoles { get; set; }
+    
+    // Recipe/menu entities
+    public DbSet<Recipe> Recipes { get; set; }
+    public DbSet<Ingredient> Ingredients { get; set; }
+    public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
+    public DbSet<NutritionalInfo> NutritionalInfos { get; set; }
+    public DbSet<DietaryCategory> DietaryCategories { get; set; }
+    public DbSet<RecipeDietaryCategory> RecipeDietaryCategories { get; set; }
+    public DbSet<WeeklyMenu> WeeklyMenus { get; set; }
+    public DbSet<WeeklyMenuRecipe> WeeklyMenuRecipes { get; set; }
+    public DbSet<MealSelection> MealSelections { get; set; }
+    public DbSet<CustomerPreference> CustomerPreferences { get; set; }
+    public DbSet<CustomerExclusion> CustomerExclusions { get; set; }
+    
+    // Subscription/box entities
+    public DbSet<Box> Boxes { get; set; }
+    public DbSet<BoxPrice> BoxPrices { get; set; }
+    public DbSet<MealSubscription> MealSubscriptions { get; set; }
+    public DbSet<PlatformSubscription> PlatformSubscriptions { get; set; }
+    public DbSet<PlatformSubscriptionTier> PlatformSubscriptionTiers { get; set; }
+    public DbSet<PlatformSubscriptionStatus> PlatformSubscriptionStatuses { get; set; }
+    
+    // Delivery/quality entities
+    public DbSet<DeliveryZone> DeliveryZones { get; set; }
+    public DbSet<DeliveryWindow> DeliveryWindows { get; set; }
+    public DbSet<Delivery> Deliveries { get; set; }
+    public DbSet<DeliveryAttempt> DeliveryAttempts { get; set; }
+    public DbSet<DeliveryStatus> DeliveryStatuses { get; set; }
+    public DbSet<DeliveryAttemptResult> DeliveryAttemptResults { get; set; }
+    public DbSet<QualityComplaint> QualityComplaints { get; set; }
+    public DbSet<QualityComplaintType> QualityComplaintTypes { get; set; }
+    public DbSet<QualityComplaintStatus> QualityComplaintStatuses { get; set; }
+    public DbSet<Rating> Ratings { get; set; }
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -25,6 +71,54 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         {
             relationship.DeleteBehavior = DeleteBehavior.Restrict;
         }
+        
+        // Configure unique constraints
+        builder.Entity<CompanySettings>(entity =>
+        {
+            entity.HasIndex(e => e.CompanyId).IsUnique();
+        });
+        
+        // Configure relationships with multiple FKs to same table
+        // CompanyAppUser relationships
+        builder.Entity<CompanyAppUser>(entity =>
+        {
+            entity.HasOne(e => e.AppUser)
+                .WithMany(u => u.CompanyAppUsers)
+                .HasForeignKey(e => e.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(e => e.CreatedByAppUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        // CustomerAppUser relationships
+        builder.Entity<CustomerAppUser>(entity =>
+        {
+            entity.HasOne(e => e.AppUser)
+                .WithMany(u => u.CustomerAppUsers)
+                .HasForeignKey(e => e.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        // Company relationships
+        builder.Entity<Company>(entity =>
+        {
+            entity.HasOne(e => e.CreatedByAppUser)
+                .WithMany(u => u.CompaniesCreated)
+                .HasForeignKey(e => e.CreatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        // CompanySettings relationships
+        builder.Entity<CompanySettings>(entity =>
+        {
+            entity.HasOne(e => e.UpdatedByAppUser)
+                .WithMany(u => u.CompanySettingsUpdated)
+                .HasForeignKey(e => e.UpdatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
     
     /// <summary>

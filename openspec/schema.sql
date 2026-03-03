@@ -259,8 +259,6 @@ CREATE TABLE AppUser(
 	CreatedAt	TIMESTAMP(0) NOT NULL,
 	UpdatedAt	TIMESTAMP(0),
 	DeletedAt	TIMESTAMP(0),
-	IdentityUser_ID_FK	UUID NOT NULL,
-	UNIQUE(IdentityUser_ID_FK),
 	CONSTRAINT	pk_AppUser PRIMARY KEY (AppUser_ID)
 );
 
@@ -373,11 +371,6 @@ CREATE TABLE PlatformSubscriptionStatus(
 	Code	VARCHAR(100) NOT NULL UNIQUE,
 	Label	VARCHAR(255) NOT NULL,
 	CONSTRAINT	pk_PlatformSubscriptionStatus PRIMARY KEY (PlatformSubscriptionStatus_ID)
-);
-
-CREATE TABLE IdentityUser(
-	IdentityUser_ID	UUID NOT NULL,
-	CONSTRAINT	pk_IdentityUser PRIMARY KEY (IdentityUser_ID)
 );
 
 CREATE TABLE BoxPrice(
@@ -790,13 +783,6 @@ ALTER TABLE CustomerAppUser
 ALTER TABLE CustomerAppUser
 	ADD CONSTRAINT fk_CustomerAppUser_AppUser_ID_FK FOREIGN KEY (AppUser_ID_FK)
 		REFERENCES AppUser(AppUser_ID)
-		ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-
--- Additional FK constraints (PostgreSQL)
-ALTER TABLE AppUser
-	ADD CONSTRAINT fk_AppUser_IdentityUser_ID_FK FOREIGN KEY (IdentityUser_ID_FK)
-		REFERENCES IdentityUser(IdentityUser_ID)
 		ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 

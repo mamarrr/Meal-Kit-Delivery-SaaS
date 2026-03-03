@@ -13,5 +13,12 @@
     <ItemGroup>
       <ProjectReference Include="..\Base.Contracts.Domain\Base.Contracts.Domain.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Using Include="App.Domain.Core" />
+      <Using Include="App.Domain.Menu" />
+      <Using Include="App.Domain.Subscription" />
+      <Using Include="App.Domain.Delivery" />
+    </ItemGroup>
 
 </Project>
