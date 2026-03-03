@@ -1,20 +1,106 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Objective:
+  - Build a Meal kit delivery platform (Multi tenant Saas) in C# using MVC architecture.
+  
+  Deliverable vague specifications/workflows: 
+  
+  "We power meal kit delivery companies globally. Each company manages their own recipes, menus, delivery zones, and subscribers through our platform.
+  
+  A company configures box sizes (3/4/5 meals × 2/4 people), dietary categories (omnivore, vegetarian, pescatarian, vegan), and pricing. Customers set preferences and ingredient exclusions — no shellfish, no pork, no cilantro.
+  
+  Recipes rotate weekly from the company's recipe pool. Weekly menus feature a configurable number of recipes across categories. Customers choose by a configurable deadline or get auto-selected based on ratings history — never repeating a meal from the past N weeks (configurable, default 8).
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Nutritional information per recipe per serving: calories, protein, carbs, fat, fiber, sodium. Customers can filter by nutritional criteria for macro-tracking.
+
+  Delivery logistics: companies define zones with delivery days and time windows. Track delivery success, failed attempts, and quality complaints. Escalation rules for repeated complaints (e.g., prioritize freshest stock, earliest slot).
+  
+  CompanyEmployees handle customer service and delivery tracking. CompanyManagers manage recipes, menus, and logistics. CompanyAdmins configure zones, pricing, and company settings. Free tier limited to 1 zone and 50 subscribers."
+
+  Database:
+  - Database will be postgresql.
+  - Database sql schema is in openspec folder in file schema.sql
+
+  Deliverables:
+  - Working multi tenant SaaS web application.
+  - Evidence of AI-assisted development (specs, prompts used) all user written prompts sent to agent must be saved to prompts.md
+  
+  User levels in application: 
+  - System-Level:
+    - SystemAdmin: 	Full access. Manage companies, subscriptions, billing, system config, feature flags. View cross-tenant analytics. Impersonate company users for support.
+    - SystemSupport: View-only access to company data for troubleshooting. Create support tickets. Cannot modify billing or system config.
+    - SystemBilling: Manage subscription plans, pricing tiers, invoices, payment status. Cannot access company operational data.
+  - Company-Level
+    - CompanyOwner: Full control within tenant. Manage company settings, users, roles, subscription tier. Transfer ownership. Cannot access other tenants.
+    - CompanyAdmin: Manage users, roles, and all operational data within tenant. Cannot change subscription or billing.
+    - CompanyManager: Full CRUD on operational entities (business-specific data). Can view reports. Cannot manage users or company settings.
+    - CompanyEmployee: Limited CRUD — create and view own work, edit assigned records. Read-only on shared reference data.
+  
+  Multi-Tenancy Requirements:
+  - Data isolation: Tenant data is strictly isolated. Queries always filter by CompanyId. No cross-tenant data leaks.
+  - Path-based routing: mealdelivery.io/company1
+  - Company registration & onboarding: Self-service signup creates a new tenant with a CompanyOwner user.
+  - Subscription tiers: Free (limited), Standard, Premium — affecting feature access, entity limits, or user counts.
+  - Audit trail: Log who changed what and when, per tenant.
+  - Soft delete: No hard deletes on business entities. Deactivated companies retain data but lose access.
+  
+  Identity & Authentication:
+  - ASP.NET Core Identity with per-tenant user management
+  - Users can belong to multiple companies (e.g., a person working for multiple rental shops)
+  - Role-based authorization via [Authorize(Roles = "...")]
+  - Login, registration, password reset
+
+  Multi-Tenancy specification:
+    A person has one account to login to the system with. An account can be a customer and a tenant (company), the web app has 2
+    different views: Customer view and Company view. Customers can sign up to a company for a subscription and manage
+    their subscriptions in customer view. Companies can manage their subscriptions, recipes etc in company view.
+  
+  Architecture Patterns:
+  - Domain Entites: 
+    - All domain entities in code must inherit from Base.Contracts.Domain.BaseEntity which implements Base.Contracts.Domain.IBaseEntity.
+  - Repositories:
+    - All Repositories must have their own interfaces which they implement.
+    - Interfaces:
+      - All Repository Interfaces must extend Base.Contracts.Domain.IBaseEntity
+    - Implementations:
+      - All Repository Implementations must implement their respective repository interface.
+      - All Repository Implementations must inherit from Base.DAL.EF.BaseRepository
+  - Layered architecture: WebApp → App.BLL → App.DAL.EF → App.Domain
+  - Cascade delete disabled globally; manage relationships explicitly
+  - All DateTime values auto-converted to UTC in EF Core
+  - Areas support for admin/user separation (Admin area planned)
+  
+  Tech stack
+  - ASP.NET Core 10 (MVC + Razor Pages)
+  - Entity Framework Core 10 with PostgreSQL
+  - ASP.NET Core Identity (authentication/authorization)
+  
+  Code Style
+  - Nullable reference types enabled, warnings treated as errors
+  - Primary constructors for classes
+  - File-scoped namespaces
+  - `default!` for required string properties in entities
+  - Use ViewModels when the view needs more data than a direct domain entity or `IEnumerable<Entity>` (e.g., Create/Edit views needing `SelectList` for foreign-key dropdowns, or Index views with pagination/filter state). Simple views that only need the entity itself can use the domain entity directly. `ViewBag` and `ViewData` must not be used.
+  
+  Entity Framework Core - No Tracking Mode (CRITICAL)
+  **DbContext uses `QueryTrackingBehavior.NoTrackingWithIdentityResolution`**
+  
+  This means entities retrieved from database queries are NOT automatically tracked by the change tracker. When updating existing entities:
+  
+  ```csharp
+  // WRONG - changes will NOT be saved
+  var entity = await _context.Entities.FirstOrDefaultAsync(e => e.Id == id);
+  entity.Property = newValue;
+  await _context.SaveChangesAsync(); // Nothing happens!
+  
+  // CORRECT - explicitly attach and mark as modified
+  var entity = await _context.Entities.FirstOrDefaultAsync(e => e.Id == id);
+  entity.Property = newValue;
+  _context.Entities.Update(entity); // Required!
+  await _context.SaveChangesAsync(); // Changes saved
+  ```
+
+  - `Add()` for new entities works as expected
+  - `Update()` is REQUIRED for modifying existing entities
+  - `Remove()` works for deletes (entity gets attached if needed)

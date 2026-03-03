@@ -1,3 +1,5 @@
+using Base.Contracts.Domain;
+
 namespace App.Domain.Identity;
 
 public class AppRefreshToken: BaseEntity

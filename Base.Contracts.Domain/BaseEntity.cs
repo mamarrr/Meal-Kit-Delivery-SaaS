@@ -1,6 +1,4 @@
-using Base.Contracts.Domain;
-
-namespace App.Domain;
+namespace Base.Contracts.Domain;
 
 public abstract class BaseEntity: IBaseEntity
 {
