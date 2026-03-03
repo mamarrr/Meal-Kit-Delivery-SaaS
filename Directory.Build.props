@@ -4,4 +4,9 @@
         <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
+    <PropertyGroup>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <WarningsAsErrors>CS8600,CS8602,CS8603,CS8613,CS8618,CS8625</WarningsAsErrors>
+    </PropertyGroup>
 </Project>

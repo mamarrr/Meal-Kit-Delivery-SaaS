@@ -1,4 +1,4 @@
-namespace App.Domain;
+﻿namespace Base.Contracts.Domain;
 
 public interface IBaseEntity
 {

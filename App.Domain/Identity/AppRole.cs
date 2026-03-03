@@ -1,3 +1,4 @@
+using Base.Contracts.Domain;
 using Microsoft.AspNetCore.Identity;
 
 namespace App.Domain.Identity;
