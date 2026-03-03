@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Delivery;
 
-public class DeliveryZone : BaseEntity
+public class DeliveryZone : BaseEntity, ITenantProvider
 {
     public string Name { get; set; } = default!;
     public string? Description { get; set; }

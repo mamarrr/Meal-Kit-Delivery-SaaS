@@ -2,7 +2,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Core;
 
-public class Customer : BaseEntity
+public class Customer : BaseEntity, ITenantProvider
 {
     public string Email { get; set; } = default!;
     public string FirstName { get; set; } = default!;

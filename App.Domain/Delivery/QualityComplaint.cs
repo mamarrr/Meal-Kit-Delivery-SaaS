@@ -2,7 +2,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Delivery;
 
-public class QualityComplaint : BaseEntity
+public class QualityComplaint : BaseEntity, ITenantProvider
 {
     public int Severity { get; set; }
     public string Description { get; set; } = default!;

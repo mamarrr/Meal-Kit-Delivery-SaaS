@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Subscription;
 
-public class BoxPrice : BaseEntity
+public class BoxPrice : BaseEntity, ITenantProvider
 {
     public decimal PriceAmount { get; set; }
     public DateTime? ValidFrom { get; set; }

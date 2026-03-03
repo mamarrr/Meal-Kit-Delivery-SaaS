@@ -1,8 +1,8 @@
 ## 1. Domain Contract and Entity Coverage
 
-- [ ] 1.1 Create `ITenantProvider` in the domain layer with required `CompanyId` contract.
-- [ ] 1.2 Identify all company-owned domain entities and implement `ITenantProvider` on each applicable type.
-- [ ] 1.3 Confirm platform/global entities are not incorrectly marked with `ITenantProvider`.
+- [x] 1.1 Create `ITenantProvider` in the domain layer with required `CompanyId` contract.
+- [x] 1.2 Identify all company-owned domain entities and implement `ITenantProvider` on each applicable type.
+- [x] 1.3 Confirm platform/global entities are not incorrectly marked with `ITenantProvider`.
 
 ## 2. Data Access Tenant Enforcement
 

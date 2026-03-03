@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Menu;
 
-public class Ingredient : BaseEntity
+public class Ingredient : BaseEntity, ITenantProvider
 {
     public string Name { get; set; } = default!;
     

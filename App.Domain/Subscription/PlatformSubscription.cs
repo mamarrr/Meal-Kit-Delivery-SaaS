@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Subscription;
 
-public class PlatformSubscription : BaseEntity
+public class PlatformSubscription : BaseEntity, ITenantProvider
 {
     public DateTime ValidFrom { get; set; }
     public DateTime? ValidTo { get; set; }

@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Delivery;
 
-public class Delivery : BaseEntity
+public class Delivery : BaseEntity, ITenantProvider
 {
     public DateTime ScheduledTime { get; set; }
     public DateTime? DeliveredAt { get; set; }

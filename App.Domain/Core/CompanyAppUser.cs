@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Core;
 
-public class CompanyAppUser : BaseEntity
+public class CompanyAppUser : BaseEntity, ITenantProvider
 {
     public bool IsOwner { get; set; }
     public bool IsActive { get; set; }

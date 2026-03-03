@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Subscription;
 
-public class Box : BaseEntity
+public class Box : BaseEntity, ITenantProvider
 {
     public int MealsCount { get; set; }
     public int PeopleCount { get; set; }

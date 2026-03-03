@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Core;
 
-public class CompanySettings : BaseEntity
+public class CompanySettings : BaseEntity, ITenantProvider
 {
     public int DefaultNoRepeatWeeks { get; set; }
     public int SelectionDeadlineDaysBeforeDelivery { get; set; }

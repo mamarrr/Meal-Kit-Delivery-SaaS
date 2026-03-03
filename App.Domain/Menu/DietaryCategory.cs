@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Menu;
 
-public class DietaryCategory : BaseEntity
+public class DietaryCategory : BaseEntity, ITenantProvider
 {
     public string Code { get; set; } = default!;
     public string Name { get; set; } = default!;

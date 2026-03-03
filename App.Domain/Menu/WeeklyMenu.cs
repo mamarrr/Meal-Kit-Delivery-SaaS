@@ -3,7 +3,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Menu;
 
-public class WeeklyMenu : BaseEntity
+public class WeeklyMenu : BaseEntity, ITenantProvider
 {
     public DateTime WeekStartDate { get; set; }
     public DateTime SelectionDeadlineAt { get; set; }
