@@ -2,18 +2,16 @@ using App.Contracts.BLL.Core;
 using App.Contracts.BLL.Delivery;
 using App.Contracts.BLL.Menu;
 using App.Contracts.BLL.Subscription;
-using App.DAL.EF;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using App.Domain.Delivery;
 using System.Security.Claims;
 using WebApp.ViewModels.Deliveries;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "user")]
     public class DeliveriesController : Controller
     {
         private readonly IDeliveryService _deliveryService;
@@ -23,7 +21,7 @@ namespace WebApp.Controllers
         private readonly IBoxService _boxService;
         private readonly IMealSelectionService _mealSelectionService;
         private readonly IMealSubscriptionService _mealSubscriptionService;
-        private readonly AppDbContext _context;
+        private readonly IOperationalLookupService _operationalLookupService;
 
         public DeliveriesController(
             IDeliveryService deliveryService,
@@ -33,7 +31,7 @@ namespace WebApp.Controllers
             IBoxService boxService,
             IMealSelectionService mealSelectionService,
             IMealSubscriptionService mealSubscriptionService,
-            AppDbContext context)
+            IOperationalLookupService operationalLookupService)
         {
             _deliveryService = deliveryService;
             _customerService = customerService;
@@ -42,7 +40,7 @@ namespace WebApp.Controllers
             _boxService = boxService;
             _mealSelectionService = mealSelectionService;
             _mealSubscriptionService = mealSubscriptionService;
-            _context = context;
+            _operationalLookupService = operationalLookupService;
         }
 
         // GET: Deliveries
@@ -106,6 +104,11 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            if (viewModel.Delivery == null)
+            {
+                return BadRequest();
+            }
+
             var delivery = viewModel.Delivery;
             if (!await IsDeliveryWindowInCompanyAsync(delivery.DeliveryWindowId, companyId.Value))
             {
@@ -160,6 +163,11 @@ namespace WebApp.Controllers
             if (companyId == null)
             {
                 return Forbid();
+            }
+
+            if (viewModel.Delivery == null)
+            {
+                return BadRequest();
             }
 
             var delivery = viewModel.Delivery;
@@ -240,11 +248,8 @@ namespace WebApp.Controllers
             var boxes = await _boxService.GetAllByCompanyIdAsync(companyId);
             var mealSelections = await _mealSelectionService.GetAllByCompanyIdAsync(companyId);
             var mealSubscriptions = await _mealSubscriptionService.GetAllByCompanyIdAsync(companyId);
-            var deliveryStatuses = await _context.DeliveryStatuses.ToListAsync();
-            var deliveryZoneIds = deliveryZones.Select(z => z.Id).ToHashSet();
-            var deliveryWindows = await _context.DeliveryWindows
-                .Where(w => deliveryZoneIds.Contains(w.DeliveryZoneId))
-                .ToListAsync();
+            var deliveryStatuses = await _operationalLookupService.GetDeliveryStatusesAsync();
+            var deliveryWindows = await _operationalLookupService.GetDeliveryWindowsByCompanyIdAsync(companyId);
 
             return new DeliveryEditViewModel
             {
@@ -278,11 +283,7 @@ namespace WebApp.Controllers
 
         private async Task<bool> IsDeliveryWindowInCompanyAsync(Guid deliveryWindowId, Guid companyId)
         {
-            var deliveryZoneIds = await _deliveryZoneService.GetAllByCompanyIdAsync(companyId);
-            var deliveryZoneIdSet = deliveryZoneIds.Select(z => z.Id).ToHashSet();
-
-            return await _context.DeliveryWindows
-                .AnyAsync(w => w.Id == deliveryWindowId && deliveryZoneIdSet.Contains(w.DeliveryZoneId));
+            return await _operationalLookupService.DeliveryWindowBelongsToCompanyAsync(deliveryWindowId, companyId);
         }
 
         private Guid? GetCurrentCompanyId()

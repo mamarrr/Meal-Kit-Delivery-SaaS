@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "user")]
     public class WeeklyMenusController : Controller
     {
         private readonly IWeeklyMenuService _weeklyMenuService;
@@ -71,6 +71,11 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            if (weeklyMenu == null)
+            {
+                return BadRequest();
+            }
+
             if (ModelState.IsValid)
             {
                 weeklyMenu.CreatedAt = DateTime.UtcNow;
@@ -115,6 +120,11 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, [Bind("Id,WeekStartDate,SelectionDeadlineAt,TotalRecipes,IsPublished,PublishedAt")] WeeklyMenu weeklyMenu)
         {
+            if (weeklyMenu == null)
+            {
+                return BadRequest();
+            }
+
             if (id != weeklyMenu.Id)
             {
                 return NotFound();

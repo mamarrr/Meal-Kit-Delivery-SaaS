@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeliveryService, DeliveryService>();
         services.AddScoped<IDeliveryZoneService, DeliveryZoneService>();
         services.AddScoped<IQualityComplaintService, QualityComplaintService>();
+        services.AddScoped<IOperationalLookupService, OperationalLookupService>();
 
         services.AddScoped<IBoxService, BoxService>();
         services.AddScoped<IMealSubscriptionService, MealSubscriptionService>();

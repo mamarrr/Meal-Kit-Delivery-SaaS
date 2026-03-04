@@ -1,33 +1,31 @@
 using App.Contracts.BLL.Core;
 using App.Contracts.BLL.Delivery;
-using App.DAL.EF;
 using App.Domain.Delivery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using WebApp.ViewModels.QualityComplaints;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "user")]
     public class QualityComplaintsController : Controller
     {
         private readonly IQualityComplaintService _qualityComplaintService;
         private readonly ICustomerService _customerService;
         private readonly IDeliveryService _deliveryService;
-        private readonly AppDbContext _context;
+        private readonly IOperationalLookupService _operationalLookupService;
 
         public QualityComplaintsController(
             IQualityComplaintService qualityComplaintService,
             ICustomerService customerService,
             IDeliveryService deliveryService,
-            AppDbContext context)
+            IOperationalLookupService operationalLookupService)
         {
             _qualityComplaintService = qualityComplaintService;
             _customerService = customerService;
             _deliveryService = deliveryService;
-            _context = context;
+            _operationalLookupService = operationalLookupService;
         }
 
         // GET: QualityComplaints
@@ -90,12 +88,18 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            if (viewModel.QualityComplaint == null)
+            {
+                return BadRequest();
+            }
+
             var qualityComplaint = viewModel.QualityComplaint;
             if (ModelState.IsValid)
             {
                 qualityComplaint.CreatedAt = DateTime.UtcNow;
                 qualityComplaint.UpdatedAt = null;
                 qualityComplaint.DeletedAt = null;
+                qualityComplaint.CompanyId = companyId.Value;
 
                 await _qualityComplaintService.AddAsync(qualityComplaint, companyId.Value);
                 return RedirectToAction(nameof(Index));
@@ -138,6 +142,11 @@ namespace WebApp.Controllers
             if (companyId == null)
             {
                 return Forbid();
+            }
+
+            if (viewModel.QualityComplaint == null)
+            {
+                return BadRequest();
             }
 
             var qualityComplaint = viewModel.QualityComplaint;
@@ -208,8 +217,8 @@ namespace WebApp.Controllers
         {
             var customers = await _customerService.GetAllByCompanyIdAsync(companyId);
             var deliveries = await _deliveryService.GetAllByCompanyIdAsync(companyId);
-            var qualityComplaintTypes = await _context.QualityComplaintTypes.ToListAsync();
-            var qualityComplaintStatuses = await _context.QualityComplaintStatuses.ToListAsync();
+            var qualityComplaintTypes = await _operationalLookupService.GetQualityComplaintTypesAsync();
+            var qualityComplaintStatuses = await _operationalLookupService.GetQualityComplaintStatusesAsync();
 
             return new QualityComplaintEditViewModel
             {
