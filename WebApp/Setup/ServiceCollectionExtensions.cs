@@ -27,6 +27,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<IIngredientService, IngredientService>();
         services.AddScoped<IDietaryCategoryService, DietaryCategoryService>();
+        services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
+        services.AddScoped<ICustomerExclusionService, CustomerExclusionService>();
         services.AddScoped<IWeeklyMenuService, WeeklyMenuService>();
         services.AddScoped<IMealSelectionService, MealSelectionService>();
 

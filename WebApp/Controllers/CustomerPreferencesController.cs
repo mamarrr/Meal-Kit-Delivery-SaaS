@@ -1,29 +1,40 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Core;
+using App.Contracts.BLL.Menu;
+using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
-using App.Domain.Menu;
+using WebApp.ViewModels.CustomerPreferences;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class CustomerPreferencesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICustomerPreferenceService _customerPreferenceService;
+        private readonly ICustomerService _customerService;
+        private readonly IDietaryCategoryService _dietaryCategoryService;
 
-        public CustomerPreferencesController(AppDbContext context)
+        public CustomerPreferencesController(
+            ICustomerPreferenceService customerPreferenceService,
+            ICustomerService customerService,
+            IDietaryCategoryService dietaryCategoryService)
         {
-            _context = context;
+            _customerPreferenceService = customerPreferenceService;
+            _customerService = customerService;
+            _dietaryCategoryService = dietaryCategoryService;
         }
 
         // GET: CustomerPreferences
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.CustomerPreferences.Include(c => c.Customer).Include(c => c.DietaryCategory);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _customerPreferenceService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: CustomerPreferences/Details/5
@@ -34,10 +45,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerPreference = await _context.CustomerPreferences
-                .Include(c => c.Customer)
-                .Include(c => c.DietaryCategory)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerPreference = await _customerPreferenceService.GetByIdAsync(id.Value, companyId.Value);
             if (customerPreference == null)
             {
                 return NotFound();
@@ -47,11 +61,15 @@ namespace WebApp.Controllers
         }
 
         // GET: CustomerPreferences/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine");
-            ViewData["DietaryCategoryId"] = new SelectList(_context.DietaryCategories, "Id", "Code");
-            return View();
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await BuildEditViewModelAsync(new CustomerPreference(), companyId.Value));
         }
 
         // POST: CustomerPreferences/Create
@@ -59,18 +77,24 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CreatedAt,DeletedAt,DietaryCategoryId,CustomerId,Id")] CustomerPreference customerPreference)
+        public async Task<IActionResult> Create(CustomerPreferenceEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerPreference = viewModel.CustomerPreference;
             if (ModelState.IsValid)
             {
-                customerPreference.Id = Guid.NewGuid();
-                _context.Add(customerPreference);
-                await _context.SaveChangesAsync();
+                customerPreference.CreatedAt = DateTime.UtcNow;
+                customerPreference.DeletedAt = null;
+                await _customerPreferenceService.AddAsync(customerPreference, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerPreference.CustomerId);
-            ViewData["DietaryCategoryId"] = new SelectList(_context.DietaryCategories, "Id", "Code", customerPreference.DietaryCategoryId);
-            return View(customerPreference);
+
+            return View(await BuildEditViewModelAsync(customerPreference, companyId.Value));
         }
 
         // GET: CustomerPreferences/Edit/5
@@ -81,14 +105,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerPreference = await _context.CustomerPreferences.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerPreference = await _customerPreferenceService.GetByIdAsync(id.Value, companyId.Value);
             if (customerPreference == null)
             {
                 return NotFound();
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerPreference.CustomerId);
-            ViewData["DietaryCategoryId"] = new SelectList(_context.DietaryCategories, "Id", "Code", customerPreference.DietaryCategoryId);
-            return View(customerPreference);
+
+            return View(await BuildEditViewModelAsync(customerPreference, companyId.Value));
         }
 
         // POST: CustomerPreferences/Edit/5
@@ -96,8 +125,15 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CreatedAt,DeletedAt,DietaryCategoryId,CustomerId,Id")] CustomerPreference customerPreference)
+        public async Task<IActionResult> Edit(Guid id, CustomerPreferenceEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerPreference = viewModel.CustomerPreference;
             if (id != customerPreference.Id)
             {
                 return NotFound();
@@ -105,27 +141,19 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _customerPreferenceService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(customerPreference);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CustomerPreferenceExists(customerPreference.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                customerPreference.CreatedAt = existing.CreatedAt;
+                customerPreference.DeletedAt = existing.DeletedAt;
+                await _customerPreferenceService.UpdateAsync(customerPreference, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerPreference.CustomerId);
-            ViewData["DietaryCategoryId"] = new SelectList(_context.DietaryCategories, "Id", "Code", customerPreference.DietaryCategoryId);
-            return View(customerPreference);
+
+            return View(await BuildEditViewModelAsync(customerPreference, companyId.Value));
         }
 
         // GET: CustomerPreferences/Delete/5
@@ -136,10 +164,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerPreference = await _context.CustomerPreferences
-                .Include(c => c.Customer)
-                .Include(c => c.DietaryCategory)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerPreference = await _customerPreferenceService.GetByIdAsync(id.Value, companyId.Value);
             if (customerPreference == null)
             {
                 return NotFound();
@@ -153,19 +184,42 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var customerPreference = await _context.CustomerPreferences.FindAsync(id);
-            if (customerPreference != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.CustomerPreferences.Remove(customerPreference);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _customerPreferenceService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CustomerPreferenceExists(Guid id)
+        private async Task<CustomerPreferenceEditViewModel> BuildEditViewModelAsync(CustomerPreference customerPreference, Guid companyId)
         {
-            return _context.CustomerPreferences.Any(e => e.Id == id);
+            var customers = await _customerService.GetAllByCompanyIdAsync(companyId);
+            var dietaryCategories = await _dietaryCategoryService.GetAllByCompanyIdAsync(companyId);
+
+            return new CustomerPreferenceEditViewModel
+            {
+                CustomerPreference = customerPreference,
+                CustomerOptions = customers
+                    .Select(c => new SelectListItem($"{c.FirstName} {c.LastName} ({c.Email})", c.Id.ToString(), c.Id == customerPreference.CustomerId))
+                    .ToList(),
+                DietaryCategoryOptions = dietaryCategories
+                    .Select(dc => new SelectListItem(dc.Code, dc.Id.ToString(), dc.Id == customerPreference.DietaryCategoryId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
         }
     }
 }

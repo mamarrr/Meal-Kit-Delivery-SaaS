@@ -1,29 +1,43 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Menu;
+using App.Contracts.BLL.Subscription;
+using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
-using App.Domain.Menu;
+using WebApp.ViewModels.MealSelections;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class MealSelectionsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IMealSelectionService _mealSelectionService;
+        private readonly IMealSubscriptionService _mealSubscriptionService;
+        private readonly IWeeklyMenuService _weeklyMenuService;
+        private readonly IRecipeService _recipeService;
 
-        public MealSelectionsController(AppDbContext context)
+        public MealSelectionsController(
+            IMealSelectionService mealSelectionService,
+            IMealSubscriptionService mealSubscriptionService,
+            IWeeklyMenuService weeklyMenuService,
+            IRecipeService recipeService)
         {
-            _context = context;
+            _mealSelectionService = mealSelectionService;
+            _mealSubscriptionService = mealSubscriptionService;
+            _weeklyMenuService = weeklyMenuService;
+            _recipeService = recipeService;
         }
 
         // GET: MealSelections
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.MealSelections.Include(m => m.MealSubscription).Include(m => m.Recipe).Include(m => m.WeeklyMenu);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _mealSelectionService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: MealSelections/Details/5
@@ -34,11 +48,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var mealSelection = await _context.MealSelections
-                .Include(m => m.MealSubscription)
-                .Include(m => m.Recipe)
-                .Include(m => m.WeeklyMenu)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSelection = await _mealSelectionService.GetByIdAsync(id.Value, companyId.Value);
             if (mealSelection == null)
             {
                 return NotFound();
@@ -48,12 +64,15 @@ namespace WebApp.Controllers
         }
 
         // GET: MealSelections/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["MealSubscriptionId"] = new SelectList(_context.MealSubscriptions, "Id", "Id");
-            ViewData["RecipeId"] = new SelectList(_context.Recipes, "Id", "Name");
-            ViewData["WeeklyMenuId"] = new SelectList(_context.WeeklyMenus, "Id", "Id");
-            return View();
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await BuildEditViewModelAsync(new MealSelection(), companyId.Value));
         }
 
         // POST: MealSelections/Create
@@ -61,19 +80,25 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("SelectedAutomatically,SelectedAt,LockedAt,CreatedAt,UpdatedAt,DeletedAt,MealSubscriptionId,WeeklyMenuId,RecipeId,Id")] MealSelection mealSelection)
+        public async Task<IActionResult> Create(MealSelectionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSelection = viewModel.MealSelection;
             if (ModelState.IsValid)
             {
-                mealSelection.Id = Guid.NewGuid();
-                _context.Add(mealSelection);
-                await _context.SaveChangesAsync();
+                mealSelection.CreatedAt = DateTime.UtcNow;
+                mealSelection.UpdatedAt = null;
+                mealSelection.DeletedAt = null;
+                await _mealSelectionService.AddAsync(mealSelection, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["MealSubscriptionId"] = new SelectList(_context.MealSubscriptions, "Id", "Id", mealSelection.MealSubscriptionId);
-            ViewData["RecipeId"] = new SelectList(_context.Recipes, "Id", "Name", mealSelection.RecipeId);
-            ViewData["WeeklyMenuId"] = new SelectList(_context.WeeklyMenus, "Id", "Id", mealSelection.WeeklyMenuId);
-            return View(mealSelection);
+
+            return View(await BuildEditViewModelAsync(mealSelection, companyId.Value));
         }
 
         // GET: MealSelections/Edit/5
@@ -84,15 +109,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var mealSelection = await _context.MealSelections.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSelection = await _mealSelectionService.GetByIdAsync(id.Value, companyId.Value);
             if (mealSelection == null)
             {
                 return NotFound();
             }
-            ViewData["MealSubscriptionId"] = new SelectList(_context.MealSubscriptions, "Id", "Id", mealSelection.MealSubscriptionId);
-            ViewData["RecipeId"] = new SelectList(_context.Recipes, "Id", "Name", mealSelection.RecipeId);
-            ViewData["WeeklyMenuId"] = new SelectList(_context.WeeklyMenus, "Id", "Id", mealSelection.WeeklyMenuId);
-            return View(mealSelection);
+
+            return View(await BuildEditViewModelAsync(mealSelection, companyId.Value));
         }
 
         // POST: MealSelections/Edit/5
@@ -100,8 +129,15 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("SelectedAutomatically,SelectedAt,LockedAt,CreatedAt,UpdatedAt,DeletedAt,MealSubscriptionId,WeeklyMenuId,RecipeId,Id")] MealSelection mealSelection)
+        public async Task<IActionResult> Edit(Guid id, MealSelectionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSelection = viewModel.MealSelection;
             if (id != mealSelection.Id)
             {
                 return NotFound();
@@ -109,28 +145,20 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _mealSelectionService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(mealSelection);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!MealSelectionExists(mealSelection.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                mealSelection.CreatedAt = existing.CreatedAt;
+                mealSelection.UpdatedAt = DateTime.UtcNow;
+                mealSelection.DeletedAt = existing.DeletedAt;
+                await _mealSelectionService.UpdateAsync(mealSelection, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["MealSubscriptionId"] = new SelectList(_context.MealSubscriptions, "Id", "Id", mealSelection.MealSubscriptionId);
-            ViewData["RecipeId"] = new SelectList(_context.Recipes, "Id", "Name", mealSelection.RecipeId);
-            ViewData["WeeklyMenuId"] = new SelectList(_context.WeeklyMenus, "Id", "Id", mealSelection.WeeklyMenuId);
-            return View(mealSelection);
+
+            return View(await BuildEditViewModelAsync(mealSelection, companyId.Value));
         }
 
         // GET: MealSelections/Delete/5
@@ -141,11 +169,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var mealSelection = await _context.MealSelections
-                .Include(m => m.MealSubscription)
-                .Include(m => m.Recipe)
-                .Include(m => m.WeeklyMenu)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSelection = await _mealSelectionService.GetByIdAsync(id.Value, companyId.Value);
             if (mealSelection == null)
             {
                 return NotFound();
@@ -159,19 +189,46 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var mealSelection = await _context.MealSelections.FindAsync(id);
-            if (mealSelection != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.MealSelections.Remove(mealSelection);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _mealSelectionService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool MealSelectionExists(Guid id)
+        private async Task<MealSelectionEditViewModel> BuildEditViewModelAsync(MealSelection mealSelection, Guid companyId)
         {
-            return _context.MealSelections.Any(e => e.Id == id);
+            var mealSubscriptions = await _mealSubscriptionService.GetAllByCompanyIdAsync(companyId);
+            var weeklyMenus = await _weeklyMenuService.GetAllByCompanyIdAsync(companyId);
+            var recipes = await _recipeService.GetAllByCompanyIdAsync(companyId);
+
+            return new MealSelectionEditViewModel
+            {
+                MealSelection = mealSelection,
+                MealSubscriptionOptions = mealSubscriptions
+                    .Select(ms => new SelectListItem(ms.Id.ToString(), ms.Id.ToString(), ms.Id == mealSelection.MealSubscriptionId))
+                    .ToList(),
+                WeeklyMenuOptions = weeklyMenus
+                    .Select(wm => new SelectListItem(wm.WeekStartDate.ToString("yyyy-MM-dd"), wm.Id.ToString(), wm.Id == mealSelection.WeeklyMenuId))
+                    .ToList(),
+                RecipeOptions = recipes
+                    .Select(r => new SelectListItem(r.Name, r.Id.ToString(), r.Id == mealSelection.RecipeId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
         }
     }
 }

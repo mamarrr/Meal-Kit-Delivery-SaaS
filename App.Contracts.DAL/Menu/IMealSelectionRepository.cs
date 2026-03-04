@@ -8,6 +8,12 @@ namespace App.Contracts.DAL.Menu;
 /// </summary>
 public interface IMealSelectionRepository : IRepository<MealSelection>
 {
+    Task<ICollection<MealSelection>> GetAllByCompanyIdAsync(Guid companyId);
+    Task<MealSelection?> GetByIdAsync(Guid id, Guid companyId);
+    Task<bool> IsMealSubscriptionInCompanyAsync(Guid mealSubscriptionId, Guid companyId);
+    Task<bool> IsWeeklyMenuInCompanyAsync(Guid weeklyMenuId, Guid companyId);
+    Task<bool> IsRecipeInCompanyAsync(Guid recipeId, Guid companyId);
+
     /// <summary>
     /// Gets all meal selections for a specific meal subscription.
     /// </summary>

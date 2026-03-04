@@ -37,6 +37,8 @@ public static class DalServiceExtensions
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddScoped<IIngredientRepository, IngredientRepository>();
         services.AddScoped<IDietaryCategoryRepository, DietaryCategoryRepository>();
+        services.AddScoped<ICustomerPreferenceRepository, CustomerPreferenceRepository>();
+        services.AddScoped<ICustomerExclusionRepository, CustomerExclusionRepository>();
         services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
         services.AddScoped<IMealSelectionRepository, MealSelectionRepository>();
         

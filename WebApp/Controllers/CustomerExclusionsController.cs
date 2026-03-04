@@ -1,29 +1,40 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Core;
+using App.Contracts.BLL.Menu;
+using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
-using App.Domain.Menu;
+using WebApp.ViewModels.CustomerExclusions;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class CustomerExclusionsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICustomerExclusionService _customerExclusionService;
+        private readonly ICustomerService _customerService;
+        private readonly IIngredientService _ingredientService;
 
-        public CustomerExclusionsController(AppDbContext context)
+        public CustomerExclusionsController(
+            ICustomerExclusionService customerExclusionService,
+            ICustomerService customerService,
+            IIngredientService ingredientService)
         {
-            _context = context;
+            _customerExclusionService = customerExclusionService;
+            _customerService = customerService;
+            _ingredientService = ingredientService;
         }
 
         // GET: CustomerExclusions
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.CustomerExclusions.Include(c => c.Customer).Include(c => c.Ingredient);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _customerExclusionService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: CustomerExclusions/Details/5
@@ -34,10 +45,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerExclusion = await _context.CustomerExclusions
-                .Include(c => c.Customer)
-                .Include(c => c.Ingredient)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerExclusion = await _customerExclusionService.GetByIdAsync(id.Value, companyId.Value);
             if (customerExclusion == null)
             {
                 return NotFound();
@@ -47,11 +61,15 @@ namespace WebApp.Controllers
         }
 
         // GET: CustomerExclusions/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine");
-            ViewData["IngredientId"] = new SelectList(_context.Ingredients, "Id", "Name");
-            return View();
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await BuildEditViewModelAsync(new CustomerExclusion(), companyId.Value));
         }
 
         // POST: CustomerExclusions/Create
@@ -59,18 +77,24 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CreatedAt,DeletedAt,IngredientId,CustomerId,Id")] CustomerExclusion customerExclusion)
+        public async Task<IActionResult> Create(CustomerExclusionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerExclusion = viewModel.CustomerExclusion;
             if (ModelState.IsValid)
             {
-                customerExclusion.Id = Guid.NewGuid();
-                _context.Add(customerExclusion);
-                await _context.SaveChangesAsync();
+                customerExclusion.CreatedAt = DateTime.UtcNow;
+                customerExclusion.DeletedAt = null;
+                await _customerExclusionService.AddAsync(customerExclusion, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerExclusion.CustomerId);
-            ViewData["IngredientId"] = new SelectList(_context.Ingredients, "Id", "Name", customerExclusion.IngredientId);
-            return View(customerExclusion);
+
+            return View(await BuildEditViewModelAsync(customerExclusion, companyId.Value));
         }
 
         // GET: CustomerExclusions/Edit/5
@@ -81,14 +105,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerExclusion = await _context.CustomerExclusions.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerExclusion = await _customerExclusionService.GetByIdAsync(id.Value, companyId.Value);
             if (customerExclusion == null)
             {
                 return NotFound();
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerExclusion.CustomerId);
-            ViewData["IngredientId"] = new SelectList(_context.Ingredients, "Id", "Name", customerExclusion.IngredientId);
-            return View(customerExclusion);
+
+            return View(await BuildEditViewModelAsync(customerExclusion, companyId.Value));
         }
 
         // POST: CustomerExclusions/Edit/5
@@ -96,8 +125,15 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CreatedAt,DeletedAt,IngredientId,CustomerId,Id")] CustomerExclusion customerExclusion)
+        public async Task<IActionResult> Edit(Guid id, CustomerExclusionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerExclusion = viewModel.CustomerExclusion;
             if (id != customerExclusion.Id)
             {
                 return NotFound();
@@ -105,27 +141,19 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _customerExclusionService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(customerExclusion);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CustomerExclusionExists(customerExclusion.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                customerExclusion.CreatedAt = existing.CreatedAt;
+                customerExclusion.DeletedAt = existing.DeletedAt;
+                await _customerExclusionService.UpdateAsync(customerExclusion, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", customerExclusion.CustomerId);
-            ViewData["IngredientId"] = new SelectList(_context.Ingredients, "Id", "Name", customerExclusion.IngredientId);
-            return View(customerExclusion);
+
+            return View(await BuildEditViewModelAsync(customerExclusion, companyId.Value));
         }
 
         // GET: CustomerExclusions/Delete/5
@@ -136,10 +164,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var customerExclusion = await _context.CustomerExclusions
-                .Include(c => c.Customer)
-                .Include(c => c.Ingredient)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var customerExclusion = await _customerExclusionService.GetByIdAsync(id.Value, companyId.Value);
             if (customerExclusion == null)
             {
                 return NotFound();
@@ -153,19 +184,42 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var customerExclusion = await _context.CustomerExclusions.FindAsync(id);
-            if (customerExclusion != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.CustomerExclusions.Remove(customerExclusion);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _customerExclusionService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CustomerExclusionExists(Guid id)
+        private async Task<CustomerExclusionEditViewModel> BuildEditViewModelAsync(CustomerExclusion customerExclusion, Guid companyId)
         {
-            return _context.CustomerExclusions.Any(e => e.Id == id);
+            var customers = await _customerService.GetAllByCompanyIdAsync(companyId);
+            var ingredients = await _ingredientService.GetAllByCompanyIdAsync(companyId);
+
+            return new CustomerExclusionEditViewModel
+            {
+                CustomerExclusion = customerExclusion,
+                CustomerOptions = customers
+                    .Select(c => new SelectListItem($"{c.FirstName} {c.LastName} ({c.Email})", c.Id.ToString(), c.Id == customerExclusion.CustomerId))
+                    .ToList(),
+                IngredientOptions = ingredients
+                    .Select(i => new SelectListItem(i.Name, i.Id.ToString(), i.Id == customerExclusion.IngredientId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
         }
     }
 }

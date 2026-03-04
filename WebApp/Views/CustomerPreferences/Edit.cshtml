@@ -1,4 +1,4 @@
-@model App.Domain.Menu.CustomerPreference
+@model WebApp.ViewModels.CustomerPreferences.CustomerPreferenceEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -6,33 +6,33 @@
 
 <h1>Edit</h1>
 
-<h4>CustomerPreference</h4>
+<h4>Customer preference</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label asp-for="CustomerPreference.CreatedAt" class="control-label"></label>
+                <input asp-for="CustomerPreference.CreatedAt" class="form-control" />
+                <span asp-validation-for="CustomerPreference.CreatedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
+                <label asp-for="CustomerPreference.DeletedAt" class="control-label"></label>
+                <input asp-for="CustomerPreference.DeletedAt" class="form-control" />
+                <span asp-validation-for="CustomerPreference.DeletedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="DietaryCategoryId" class="control-label"></label>
-                <select asp-for="DietaryCategoryId" class="form-control" asp-items="ViewBag.DietaryCategoryId"></select>
-                <span asp-validation-for="DietaryCategoryId" class="text-danger"></span>
+                <label asp-for="CustomerPreference.DietaryCategoryId" class="control-label"></label>
+                <select asp-for="CustomerPreference.DietaryCategoryId" class="form-control" asp-items="Model.DietaryCategoryOptions"></select>
+                <span asp-validation-for="CustomerPreference.DietaryCategoryId" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="CustomerId" class="control-label"></label>
-                <select asp-for="CustomerId" class="form-control" asp-items="ViewBag.CustomerId"></select>
-                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                <label asp-for="CustomerPreference.CustomerId" class="control-label"></label>
+                <select asp-for="CustomerPreference.CustomerId" class="form-control" asp-items="Model.CustomerOptions"></select>
+                <span asp-validation-for="CustomerPreference.CustomerId" class="text-danger"></span>
             </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CustomerPreference.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
