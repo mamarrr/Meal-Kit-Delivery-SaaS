@@ -4,6 +4,14 @@ namespace App.DTO.v1.Identity;
 
 public class Register
 {
+    [MaxLength(128)]
+    [Required]
+    public string FirstName { get; set; } = default!;
+
+    [MaxLength(128)]
+    [Required]
+    public string LastName { get; set; } = default!;
+
     [MaxLength(256)]
     [EmailAddress]
     [Required]

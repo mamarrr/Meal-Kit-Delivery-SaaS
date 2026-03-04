@@ -33,6 +33,8 @@ public class IntegrationTestIdentity : IClassFixture<CustomWebApplicationFactory
         // Arrange
         var data = new Register()
         {
+            FirstName = "First",
+            LastName = "Last",
             Password = dataPassword,
             Email = dataEmail,
         };
@@ -60,6 +62,8 @@ public class IntegrationTestIdentity : IClassFixture<CustomWebApplicationFactory
         // Arrange
         var data = new Register()
         {
+            FirstName = "First",
+            LastName = "Last",
             Password = dataPassword,
             Email = dataEmail,
         };
@@ -97,5 +101,45 @@ public class IntegrationTestIdentity : IClassFixture<CustomWebApplicationFactory
         var jwtResponse =
             JsonSerializer.Deserialize<JWTResponse>(responseString, JsonHelpers.JsonSerializerOptionsCamelCase);
         Assert.NotNull(jwtResponse);
+    }
+
+    [Fact]
+    public async Task Registration_MissingFirstName_ReturnsBadRequest()
+    {
+        var data = new Register()
+        {
+            FirstName = string.Empty,
+            LastName = "Last",
+            Password = "First.Last.1",
+            Email = "missing-first@last.com",
+        };
+
+        var response = await _client.PostAsync(
+            "/api/v1/account/register",
+            new StringContent(JsonSerializer.Serialize(data, JsonHelpers.JsonSerializerOptionsCamelCase), Encoding.UTF8,
+                "application/json")
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Registration_MissingLastName_ReturnsBadRequest()
+    {
+        var data = new Register()
+        {
+            FirstName = "First",
+            LastName = string.Empty,
+            Password = "First.Last.1",
+            Email = "missing-last@last.com",
+        };
+
+        var response = await _client.PostAsync(
+            "/api/v1/account/register",
+            new StringContent(JsonSerializer.Serialize(data, JsonHelpers.JsonSerializerOptionsCamelCase), Encoding.UTF8,
+                "application/json")
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

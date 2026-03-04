@@ -162,6 +162,17 @@ public class AccountController : ControllerBase
         int? refreshTokenExpiresInSeconds
     )
     {
+        if (!ModelState.IsValid)
+        {
+            var validationErrors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .ToList();
+
+            return BadRequest(new App.Dto.v1.Message() { Messages = validationErrors });
+        }
+
         var appUser = await _userManager.FindByEmailAsync(registerModel.Email);
         if (appUser != null)
         {
@@ -176,6 +187,8 @@ public class AccountController : ControllerBase
 
         appUser = new AppUser()
         {
+            FirstName = registerModel.FirstName.Trim(),
+            LastName = registerModel.LastName.Trim(),
             Email = registerModel.Email,
             UserName = registerModel.Email,
 
