@@ -25,8 +25,8 @@
 
 ## 5. Workflow implementation slices
 
-- [ ] 5.1 Implement customer workflow slice pages/actions (subscription lifecycle, preferences, exclusions, selection windows, status tracking).
-- [ ] 5.2 Implement company operations slice pages/actions (recipes, menus, categories, box config, pricing, zones, delivery windows).
+- [x] 5.1 Implement customer workflow slice pages/actions (subscription lifecycle, preferences, exclusions, selection windows, status tracking).
+- [x] 5.2 Implement company operations slice pages/actions (recipes, menus, categories, box config, pricing, zones, delivery windows).
 - [ ] 5.3 Implement service/delivery quality slice pages/actions (delivery tracking, failed attempts, complaint handling, escalation-facing screens).
 - [x] 5.4 Implement system-level/admin-support slice pages/actions required for tenant/billing/support workflows.
 

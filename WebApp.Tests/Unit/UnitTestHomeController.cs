@@ -36,8 +36,8 @@ public class UnitTestHomeController
         var logger = logFactory.CreateLogger<HomeController>();
 
 
-        //set up controller - ILogger<HomeController> logger, AppDbContext ctx
-        _homeController = new HomeController(_ctx, logger);
+        //set up controller - ILogger<HomeController> logger
+        _homeController = new HomeController(logger);
     }
     
     [Fact]

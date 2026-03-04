@@ -1,0 +1,69 @@
+@model WebApp.ViewModels.DeliveryWindows.DeliveryWindowEditViewModel
+
+@{
+    ViewData["Title"] = "Edit Delivery Window";
+}
+
+<h1>Edit Delivery Window</h1>
+
+<h4>Delivery Window</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="DeliveryWindow.Id" />
+            <div class="form-group">
+                <label asp-for="DeliveryWindow.DeliveryZoneId" class="control-label"></label>
+                <select asp-for="DeliveryWindow.DeliveryZoneId" class="form-control" asp-items="Model.DeliveryZoneOptions">
+                    <option value="">-- Select Delivery Zone --</option>
+                </select>
+                <span asp-validation-for="DeliveryWindow.DeliveryZoneId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeliveryWindow.DayOfWeek" class="control-label"></label>
+                <select asp-for="DeliveryWindow.DayOfWeek" class="form-control">
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                </select>
+                <span asp-validation-for="DeliveryWindow.DayOfWeek" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeliveryWindow.StartTime" class="control-label"></label>
+                <input asp-for="DeliveryWindow.StartTime" class="form-control" type="time" />
+                <span asp-validation-for="DeliveryWindow.StartTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeliveryWindow.EndTime" class="control-label"></label>
+                <input asp-for="DeliveryWindow.EndTime" class="form-control" type="time" />
+                <span asp-validation-for="DeliveryWindow.EndTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeliveryWindow.Capacity" class="control-label"></label>
+                <input asp-for="DeliveryWindow.Capacity" class="form-control" type="number" />
+                <span asp-validation-for="DeliveryWindow.Capacity" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="DeliveryWindow.IsActive" /> @Html.DisplayNameFor(model => model.DeliveryWindow.IsActive)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

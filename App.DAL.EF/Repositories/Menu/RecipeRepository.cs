@@ -18,6 +18,9 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
     public async Task<ICollection<Recipe>> GetAllByCompanyIdAsync(Guid companyId)
     {
         return await RepositoryDbSet
+            .Include(r => r.NutritionalInfo)
+            .Include(r => r.RecipeIngredients)
+            .Include(r => r.RecipeDietaryCategories)
             .Where(r => r.CompanyId == companyId)
             .ToListAsync();
     }

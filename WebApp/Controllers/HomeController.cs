@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using App.DAL.EF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,11 +17,6 @@ public class HomeController : Controller
     public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-    }
-
-    public HomeController(AppDbContext context, ILogger<HomeController> logger)
-        : this(logger)
-    {
     }
 
     public async Task<IActionResult> Index()

@@ -35,10 +35,12 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IDeliveryService, DeliveryService>();
         services.AddScoped<IDeliveryZoneService, DeliveryZoneService>();
+        services.AddScoped<IDeliveryWindowService, DeliveryWindowService>();
         services.AddScoped<IQualityComplaintService, QualityComplaintService>();
         services.AddScoped<IOperationalLookupService, OperationalLookupService>();
 
         services.AddScoped<IBoxService, BoxService>();
+        services.AddScoped<IBoxPriceService, BoxPriceService>();
         services.AddScoped<IMealSubscriptionService, MealSubscriptionService>();
         services.AddScoped<IPlatformSubscriptionService, PlatformSubscriptionService>();
         services.AddScoped<IPlatformSubscriptionStatusService, PlatformSubscriptionStatusService>();
