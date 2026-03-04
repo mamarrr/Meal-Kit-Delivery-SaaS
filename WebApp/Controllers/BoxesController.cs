@@ -11,10 +11,12 @@ namespace WebApp.Controllers
     public class BoxesController : Controller
     {
         private readonly IBoxService _boxService;
+        private readonly IPlatformSubscriptionService _platformSubscriptionService;
 
-        public BoxesController(IBoxService boxService)
+        public BoxesController(IBoxService boxService, IPlatformSubscriptionService platformSubscriptionService)
         {
             _boxService = boxService;
+            _platformSubscriptionService = platformSubscriptionService;
         }
 
         // GET: Boxes
@@ -78,6 +80,19 @@ namespace WebApp.Controllers
             }
 
             var box = viewModel.Box;
+
+            // COMP-15: Plan-cap check for box limits (using MaxZones as proxy for box limits)
+            var maxZones = await GetMaxZonesForCompanyAsync(companyId.Value);
+            if (maxZones.HasValue)
+            {
+                var boxCount = await _boxService.CountActiveByCompanyIdAsync(companyId.Value);
+
+                if (boxCount >= maxZones.Value)
+                {
+                    ModelState.AddModelError(string.Empty, $"Your current plan allows up to {maxZones.Value} box sizes.");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 box.CreatedAt = DateTime.UtcNow;
@@ -219,6 +234,13 @@ namespace WebApp.Controllers
             return Guid.TryParse(userIdRaw, out var userId)
                 ? userId
                 : null;
+        }
+
+        private async Task<int?> GetMaxZonesForCompanyAsync(Guid companyId)
+        {
+            var activeSubscription = await _platformSubscriptionService.GetCurrentActiveByCompanyIdAsync(companyId);
+
+            return activeSubscription?.PlatformSubscriptionTier?.MaxZones;
         }
     }
 }

@@ -14,4 +14,32 @@ public interface IRecipeRepository : IRepository<Recipe>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of recipes belonging to the company.</returns>
     Task<ICollection<Recipe>> GetAllByCompanyIdAsync(Guid companyId);
+
+    /// <summary>
+    /// Counts active (non-deleted) recipes for a company.
+    /// </summary>
+    /// <param name="companyId">The company ID.</param>
+    /// <returns>Number of active recipes in the company scope.</returns>
+    Task<int> CountActiveByCompanyIdAsync(Guid companyId);
+
+    /// <summary>
+    /// Gets nutritional info by recipe id.
+    /// </summary>
+    /// <param name="recipeId">The recipe ID.</param>
+    /// <returns>Nutritional info if found; otherwise null.</returns>
+    Task<NutritionalInfo?> GetNutritionalInfoByRecipeIdAsync(Guid recipeId);
+
+    /// <summary>
+    /// Adds a nutritional info row.
+    /// </summary>
+    /// <param name="nutritionalInfo">Entity to add.</param>
+    /// <returns>Added nutritional info entity.</returns>
+    NutritionalInfo AddNutritionalInfo(NutritionalInfo nutritionalInfo);
+
+    /// <summary>
+    /// Updates a nutritional info row.
+    /// </summary>
+    /// <param name="nutritionalInfo">Entity to update.</param>
+    /// <returns>Updated nutritional info entity.</returns>
+    NutritionalInfo UpdateNutritionalInfo(NutritionalInfo nutritionalInfo);
 }

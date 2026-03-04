@@ -24,4 +24,31 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
             .Where(r => r.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<int> CountActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(r => r.CompanyId == companyId && r.DeletedAt == null)
+            .CountAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<NutritionalInfo?> GetNutritionalInfoByRecipeIdAsync(Guid recipeId)
+    {
+        return await RepositoryDbContext.NutritionalInfos
+            .FirstOrDefaultAsync(n => n.RecipeId == recipeId);
+    }
+
+    /// <inheritdoc />
+    public NutritionalInfo AddNutritionalInfo(NutritionalInfo nutritionalInfo)
+    {
+        return RepositoryDbContext.NutritionalInfos.Add(nutritionalInfo).Entity;
+    }
+
+    /// <inheritdoc />
+    public NutritionalInfo UpdateNutritionalInfo(NutritionalInfo nutritionalInfo)
+    {
+        return RepositoryDbContext.NutritionalInfos.Update(nutritionalInfo).Entity;
+    }
 }

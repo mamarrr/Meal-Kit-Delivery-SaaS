@@ -1,9 +1,8 @@
 using App.Contracts.BLL.Menu;
-using App.DAL.EF;
+using App.Contracts.BLL.Subscription;
 using App.Domain.Menu;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApp.ViewModels.Recipes;
 
@@ -13,12 +12,12 @@ namespace WebApp.Controllers
     public class RecipesController : Controller
     {
         private readonly IRecipeService _recipeService;
-        private readonly AppDbContext _appDbContext;
+        private readonly IPlatformSubscriptionService _platformSubscriptionService;
 
-        public RecipesController(IRecipeService recipeService, AppDbContext appDbContext)
+        public RecipesController(IRecipeService recipeService, IPlatformSubscriptionService platformSubscriptionService)
         {
             _recipeService = recipeService;
-            _appDbContext = appDbContext;
+            _platformSubscriptionService = platformSubscriptionService;
         }
 
         // GET: Recipes
@@ -124,34 +123,18 @@ namespace WebApp.Controllers
                 return View(viewModel);
             }
 
-            var nutritionalInfo = await _appDbContext.NutritionalInfos
-                .FirstOrDefaultAsync(n => n.RecipeId == id);
+            await _recipeService.UpsertNutritionalInfoAsync(
+                recipeId: id,
+                companyId: companyId.Value,
+                caloriesKcal: viewModel.CaloriesKcal,
+                proteinG: viewModel.ProteinG,
+                carbsG: viewModel.CarbsG,
+                fatG: viewModel.FatG,
+                fiberG: viewModel.FiberG,
+                sodiumMg: viewModel.SodiumMg,
+                sugarG: viewModel.SugarG,
+                saturatedFatG: viewModel.SaturatedFatG);
 
-            if (nutritionalInfo == null)
-            {
-                nutritionalInfo = new NutritionalInfo
-                {
-                    RecipeId = id,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _appDbContext.NutritionalInfos.Add(nutritionalInfo);
-            }
-            else
-            {
-                nutritionalInfo.UpdatedAt = DateTime.UtcNow;
-            }
-
-            nutritionalInfo.CaloriesKcal = viewModel.CaloriesKcal;
-            nutritionalInfo.ProteinG = viewModel.ProteinG;
-            nutritionalInfo.CarbsG = viewModel.CarbsG;
-            nutritionalInfo.FatG = viewModel.FatG;
-            nutritionalInfo.FiberG = viewModel.FiberG;
-            nutritionalInfo.SodiumMg = viewModel.SodiumMg;
-            nutritionalInfo.SugarG = viewModel.SugarG;
-            nutritionalInfo.SaturatedFatG = viewModel.SaturatedFatG;
-
-            await _appDbContext.SaveChangesAsync();
             TempData["SuccessMessage"] = "Nutritional data updated.";
 
             return RedirectToAction(nameof(Details), new { id });
@@ -186,6 +169,19 @@ namespace WebApp.Controllers
             }
 
             var recipe = viewModel.Recipe;
+
+            // COMP-15: Plan-cap check for recipe limits
+            var maxRecipes = await GetMaxRecipesForCompanyAsync(companyId.Value);
+            if (maxRecipes.HasValue)
+            {
+                var recipeCount = await _recipeService.CountActiveByCompanyIdAsync(companyId.Value);
+
+                if (recipeCount >= maxRecipes.Value)
+                {
+                    ModelState.AddModelError(string.Empty, $"Your current plan allows up to {maxRecipes.Value} recipes.");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 recipe.CreatedAt = DateTime.UtcNow;
@@ -327,6 +323,13 @@ namespace WebApp.Controllers
             return Guid.TryParse(userIdRaw, out var userId)
                 ? userId
                 : null;
+        }
+
+        private async Task<int?> GetMaxRecipesForCompanyAsync(Guid companyId)
+        {
+            var activeSubscription = await _platformSubscriptionService.GetCurrentActiveByCompanyIdAsync(companyId);
+
+            return activeSubscription?.PlatformSubscriptionTier?.MaxRecipes;
         }
     }
 }

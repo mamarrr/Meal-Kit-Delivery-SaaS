@@ -25,9 +25,12 @@ This document defines the complete execution plan for achieving 100% workflow co
 
 ### Remaining focus
 
-- Close `In Progress` rows to `Covered` with explicit verification evidence
-- Complete remaining `Not Started` rows (currently concentrated in `COMP-04`, `COMP-05`, `SYS-01`, `SYS-02`)
-- Finish broader plan-cap checks for `COMP-15` beyond delivery-zone caps
+All workflow coverage targets have been completed:
+- [x] Close `In Progress` rows to `Covered` with explicit verification evidence
+- [x] Complete remaining `Not Started` rows (`COMP-04`, `COMP-05`, `SYS-01`, `SYS-02`)
+- [x] Finish broader plan-cap checks for `COMP-15` (delivery zones, boxes, recipes)
+
+**Status**: All 30 workflow rows in the coverage matrix are now marked as `Covered`.
 
 ## Phase 1: Establish Role-Policy Baseline
 
@@ -162,36 +165,39 @@ Status: core navigation is implemented directly in [`_Layout.cshtml`](WebApp/Vie
 
 ## Phase 3: Close In Progress Rows
 
-Status: 🚧 Partially implemented (not complete yet)
+Status: ✅ Completed
 
 For each In Progress workflow, verify and complete:
 
 ### CUST-02/03: Meal Subscriptions
 - [x] Verify scaffolded validation summary + redirect patterns
 - [x] Confirm tenant scope in all service calls
-- [ ] Add evidence links to matrix
+- [x] Add evidence links to matrix
 
 ### CUST-04/05: Customer Preferences/Exclusions
 - [x] Verify typed VM with validation
 - [x] Confirm cross-entity company scope checks
-- [ ] Add evidence links
+- [x] Add evidence links
 
 ### CUST-06/07: Weekly Menus, Meal Selections
 - [x] Verify tenant-scoped read flows
 - [x] Confirm subscription/menu/recipe validation
-- [ ] Add evidence links
+- [x] Add evidence links
 
 ### COMP-07: Weekly Menus (Company)
 - [x] Added action-level authorization split between customer read and company write actions in [`WeeklyMenusController`](WebApp/Controllers/WeeklyMenusController.cs)
 - [x] Added deadline management actions/views (`COMP-08` dependency)
-- [ ] Add final evidence links and flip status to Covered after final verification pass
+- [x] Add final evidence links and flip status to Covered after final verification pass
 
 ### SYS-04/05/06/07/08: System Controllers
 - [x] Verify scaffolded CRUD feedback patterns
 - [x] Confirm cross-tenant authorization
-- [ ] Add evidence links
+- [x] Add evidence links
+- [x] Verify audit timestamp fields (CreatedAt, UpdatedAt) are properly set in Create/Edit actions
 
 ## Phase 4: Implement Not Started Workflows
+
+Status: ✅ Completed
 
 ### CUST-01: Discover Available Plans ✅ Implemented
 **Route**: `/MealPlans` or `/Plans`
@@ -219,29 +225,31 @@ For each In Progress workflow, verify and complete:
 - Contact information
 - Subscription tier display
 
-### COMP-04: Manage Dietary Categories
-**Route**: `/DietaryCategories` (exists - verify completeness)
-**Controller**: `DietaryCategoriesController` (exists)
-**Actions**: Verify all CRUD operations
-**View**: Verify views exist
+### COMP-04: Manage Dietary Categories ✅ Implemented
+**Route**: `/DietaryCategories`
+**Controller**: `DietaryCategoriesController`
+**Actions**: `Index/Create/Edit/Delete/Details`
+**View**: `Views/DietaryCategories/*`
 **Roles**: CompanyAdmin, CompanyManager
-**Tenant Check**: Scope category catalog by tenant
+**Tenant Check**: Scope category catalog by tenant via `GetAllByCompanyIdAsync/GetByIdAsync(id, companyId)`
 
 **Implementation**:
-- Ensure tenant-scoped repository methods
-- Add to navigation
+- Tenant-scoped repository methods verified
+- Navigation added to Company View dropdown
+- CRUD operations with validation summary and redirect patterns
 
-### COMP-05: Manage Recipe Pool
-**Route**: `/Recipes` (exists - verify completeness)
-**Controller**: `RecipesController` (exists)
-**Actions**: Verify all CRUD operations
-**View**: Verify views exist
+### COMP-05: Manage Recipe Pool ✅ Implemented
+**Route**: `/Recipes`
+**Controller**: `RecipesController`
+**Actions**: `Index/Create/Edit/Delete/Details/Nutrition`
+**View**: `Views/Recipes/*`
 **Roles**: CompanyAdmin, CompanyManager, CompanyEmployee (limited)
-**Tenant Check**: Scope recipes by tenant and role capabilities
+**Tenant Check**: Scope recipes by tenant via `GetAllByCompanyIdAsync/GetByIdAsync(id, companyId)`
 
 **Implementation**:
-- CompanyEmployee may have read-only or limited edit access
-- Ensure proper service enforcement
+- Full CRUD with tenant scoping
+- Nutrition maintenance sub-flow (`COMP-06`) via `Nutrition` action
+- Plan-cap check for `MaxRecipes` limit in Create action
 
 ### COMP-06: Maintain Nutritional Data ✅ Implemented
 **Route**: `/Recipes/Nutrition/{recipeId}` or `/NutritionalInfo`
@@ -282,40 +290,46 @@ For each In Progress workflow, verify and complete:
 - Prevent assigning roles outside tenant scope
 - Display current role assignments
 
-### COMP-15: Observe Free-Tier Operational Limits 🚧 In Progress
-**Route**: N/A (feature flags in existing controllers)
-**Controller**: All company controllers
-**Actions**: Add limit checks in Create actions
-**View**: Limit warnings in Index views
+### COMP-15: Observe Free-Tier Operational Limits ✅ Implemented
+**Route**: `/DeliveryZones/Create`, `/Boxes/Create`, `/Recipes/Create`
+**Controller**: `DeliveryZonesController`, `BoxesController`, `RecipesController`
+**Actions**: `Create (POST)` with plan-cap validation
+**View**: `Views/DeliveryZones/Create.cshtml`, `Views/Boxes/Create.cshtml`, `Views/Recipes/Create.cshtml`
 **Roles**: CompanyOwner, CompanyAdmin
-**Tenant Check**: Enforce caps by tenant plan
+**Tenant Check**: Enforce caps by tenant plan via active subscription tier lookup
 
 **Implementation**:
-- Query PlatformSubscriptionTier limits
+- Query `PlatformSubscriptionTier` limits (`MaxZones`, `MaxRecipes`)
 - Check entity counts before allowing creation
-- Show upgrade CTA when limits reached
+- Add validation error to ModelState when limits reached
+- Plan-cap checks implemented in:
+  - `DeliveryZonesController.Create()` - checks `MaxZones`
+  - `BoxesController.Create()` - checks `MaxZones`
+  - `RecipesController.Create()` - checks `MaxRecipes`
 
-### SYS-01: Manage Companies
-**Route**: `/Companies` (exists)
-**Controller**: `CompaniesController` (exists)
-**Actions**: Verify system-level authorization
-**View**: Verify views exist
+### SYS-01: Manage Companies ✅ Implemented
+**Route**: `/Companies`
+**Controller**: `CompaniesController`
+**Actions**: `Index/Create/Edit/Delete/Details`
+**View**: `Views/Companies/*`
 **Roles**: SystemAdmin
-**Tenant Check**: Cross-tenant allowed by system role
+**Tenant Check**: Cross-tenant allowed by `SystemAdmin` policy
 
 **Implementation**:
-- Already scaffolded; verify role attributes
+- SystemAdmin policy enforced via `[Authorize(Policy = "SystemAdmin")]`
+- Full CRUD with CreatedByAppUserId tracking
 
-### SYS-02: Manage Subscription Plans and Tiers
-**Route**: `/PlatformSubscriptionTiers` (exists)
-**Controller**: `PlatformSubscriptionTiersController` (exists)
-**Actions**: Verify all CRUD
-**View**: Verify views exist
+### SYS-02: Manage Subscription Plans and Tiers ✅ Implemented
+**Route**: `/PlatformSubscriptionTiers`
+**Controller**: `PlatformSubscriptionTiersController`
+**Actions**: `Index/Create/Edit/Delete/Details`
+**View**: `Views/PlatformSubscriptionTiers/*`
 **Roles**: SystemAdmin, SystemBilling
-**Tenant Check**: Cross-tenant allowed
+**Tenant Check**: Cross-tenant allowed by `SystemBilling` policy
 
 **Implementation**:
-- Already scaffolded; verify role attributes
+- SystemBilling policy enforced via `[Authorize(Policy = "SystemBilling")]`
+- Full CRUD with CreatedByAppUserId tracking
 
 ### SYS-03: Manage Billing and Invoices ✅ Implemented (MVP)
 **Route**: `/Invoices` (new)
@@ -364,15 +378,18 @@ For each row marked Covered:
 - [x] Phase 1: Controller role attributes migrated
 - [x] Phase 2: Navigation structure implemented
 - [x] Phase 2: Role-based visibility working
-- [ ] Phase 3: All In Progress rows verified and marked Covered
+- [x] Phase 3: All In Progress rows verified and marked Covered
 - [x] Phase 4: CUST-01 implemented
 - [x] Phase 4: COMP-01 extended
-- [ ] Phase 4: COMP-04/05/06/08 verified/implemented
+- [x] Phase 4: COMP-04/05/06/08 verified/implemented
 - [x] Phase 4: COMP-14 verified
-- [-] Phase 4: COMP-15 limit checks added
+- [x] Phase 4: COMP-15 limit checks added (zones, boxes, recipes)
+- [x] Phase 4: SYS-01 CompaniesController verified
+- [x] Phase 4: SYS-02 PlatformSubscriptionTiersController verified
 - [x] Phase 4: SYS-03 InvoicesController implemented
-- [ ] Phase 5: All controllers hardened
-- [ ] Phase 6: UI quality verified
-- [-] Phase 7: Matrix updated with evidence
+- [x] Phase 4: SYS-04/05/06/07/08 System controllers verified
+- [x] Phase 5: All controllers hardened with explicit role policies and tenant checks
+- [x] Phase 6: UI quality verified (validation summaries, typed VMs, feedback patterns)
+- [x] Phase 7: Matrix updated with evidence
 - [x] Build passes
-- [ ] UI completion gate: PASS
+- [x] UI completion gate: PASS

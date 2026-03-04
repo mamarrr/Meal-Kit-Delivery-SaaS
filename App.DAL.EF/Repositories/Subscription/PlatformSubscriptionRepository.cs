@@ -21,4 +21,32 @@ public class PlatformSubscriptionRepository : BaseRepository<PlatformSubscriptio
             .Where(ps => ps.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<PlatformSubscription?> GetCurrentActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Include(ps => ps.PlatformSubscriptionTier)
+            .Include(ps => ps.PlatformSubscriptionStatus)
+            .Where(ps => ps.CompanyId == companyId
+                         && ps.DeletedAt == null
+                         && ps.ValidFrom <= DateTime.UtcNow
+                         && (ps.ValidTo == null || ps.ValidTo >= DateTime.UtcNow)
+                         && ps.PlatformSubscriptionStatus != null
+                         && ps.PlatformSubscriptionStatus.Code == "active")
+            .OrderByDescending(ps => ps.ValidFrom)
+            .FirstOrDefaultAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<ICollection<PlatformSubscription>> GetAllForBillingAsync()
+    {
+        return await RepositoryDbSet
+            .Include(ps => ps.Company)
+            .Include(ps => ps.PlatformSubscriptionTier)
+            .Include(ps => ps.PlatformSubscriptionStatus)
+            .Where(ps => ps.DeletedAt == null)
+            .OrderByDescending(ps => ps.ValidFrom)
+            .ToListAsync();
+    }
 }

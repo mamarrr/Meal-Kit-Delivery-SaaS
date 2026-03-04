@@ -21,4 +21,12 @@ public class BoxRepository : BaseRepository<Box, AppDbContext>, IBoxRepository
             .Where(b => b.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<int> CountActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(b => b.CompanyId == companyId && b.DeletedAt == null)
+            .CountAsync();
+    }
 }

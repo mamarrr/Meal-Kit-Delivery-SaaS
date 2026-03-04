@@ -14,5 +14,15 @@ public class PlatformSubscriptionService : BaseTenantService<PlatformSubscriptio
     {
         return await Repository.GetAllByCompanyIdAsync(companyId);
     }
+
+    public async Task<PlatformSubscription?> GetCurrentActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await Repository.GetCurrentActiveByCompanyIdAsync(companyId);
+    }
+
+    public async Task<ICollection<PlatformSubscription>> GetAllForBillingAsync()
+    {
+        return await Repository.GetAllForBillingAsync();
+    }
 }
 

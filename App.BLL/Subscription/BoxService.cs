@@ -14,5 +14,10 @@ public class BoxService : BaseTenantService<Box, IBoxRepository>, IBoxService
     {
         return await Repository.GetAllByCompanyIdAsync(companyId);
     }
+
+    public async Task<int> CountActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await Repository.CountActiveByCompanyIdAsync(companyId);
+    }
 }
 
