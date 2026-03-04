@@ -1,21 +1,19 @@
-@model IEnumerable<App.Domain.Delivery.DeliveryAttempt>
-@using App.Domain.Delivery
+@model WebApp.ViewModels.Deliveries.DeliveryAttemptsViewModel
 
 @{
     ViewData["Title"] = "Delivery Attempts";
-    var delivery = ViewBag.Delivery as Delivery;
 }
 
 <h1>Delivery Attempts</h1>
 
 <div class="mb-3">
-    <h4>Delivery: @delivery?.Id.ToString()[..8]...</h4>
-    <p>Scheduled: @delivery?.ScheduledTime.ToString("yyyy-MM-dd HH:mm")</p>
-    <p>Status: @delivery?.DeliveryStatus?.Label</p>
+    <h4>Delivery: @Model.Delivery.Id.ToString()[..8]...</h4>
+    <p>Scheduled: @Model.Delivery.ScheduledTime.ToString("yyyy-MM-dd HH:mm")</p>
+    <p>Status: @Model.Delivery.DeliveryStatus?.Label</p>
 </div>
 
 <p>
-    <a asp-action="Details" asp-route-id="@delivery?.Id" class="btn btn-secondary">Back to Delivery</a>
+    <a asp-action="Details" asp-route-id="@Model.Delivery.Id" class="btn btn-secondary">Back to Delivery</a>
     <a asp-controller="DeliveryAttempts" asp-action="Create" class="btn btn-primary">Record New Attempt</a>
 </p>
 
@@ -30,9 +28,9 @@
         </tr>
     </thead>
     <tbody>
-        @if (Model.Any())
+        @if (Model.Attempts.Any())
         {
-            foreach (var item in Model)
+            foreach (var item in Model.Attempts)
             {
                 <tr>
                     <td>@item.AttemptNo</td>

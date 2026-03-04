@@ -264,8 +264,11 @@ namespace WebApp.Controllers
             }
 
             var attempts = await _deliveryAttemptService.GetAllByDeliveryIdAsync(id.Value);
-            ViewBag.Delivery = delivery;
-            return View(attempts);
+            return View(new DeliveryAttemptsViewModel
+            {
+                Delivery = delivery,
+                Attempts = attempts.ToList()
+            });
         }
 
         private async Task<DeliveryEditViewModel> BuildEditViewModelAsync(Delivery delivery, Guid companyId)
