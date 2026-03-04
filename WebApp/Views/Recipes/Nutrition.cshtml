@@ -1,0 +1,71 @@
+@model WebApp.ViewModels.Recipes.RecipeNutritionEditViewModel
+
+@{
+    ViewData["Title"] = "Recipe Nutrition";
+}
+
+<h1>Recipe Nutrition</h1>
+<h4>@Model.RecipeName</h4>
+<p class="text-muted">Maintain nutritional data used in customer filtering and recommendation workflows.</p>
+
+<div class="row">
+    <div class="col-lg-8">
+        <form asp-action="Nutrition" asp-route-id="@Model.RecipeId" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="RecipeId" />
+            <input type="hidden" asp-for="RecipeName" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CaloriesKcal" class="form-label"></label>
+                    <input asp-for="CaloriesKcal" class="form-control" />
+                    <span asp-validation-for="CaloriesKcal" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="ProteinG" class="form-label"></label>
+                    <input asp-for="ProteinG" class="form-control" />
+                    <span asp-validation-for="ProteinG" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="CarbsG" class="form-label"></label>
+                    <input asp-for="CarbsG" class="form-control" />
+                    <span asp-validation-for="CarbsG" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="FatG" class="form-label"></label>
+                    <input asp-for="FatG" class="form-control" />
+                    <span asp-validation-for="FatG" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="FiberG" class="form-label"></label>
+                    <input asp-for="FiberG" class="form-control" />
+                    <span asp-validation-for="FiberG" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="SodiumMg" class="form-label"></label>
+                    <input asp-for="SodiumMg" class="form-control" />
+                    <span asp-validation-for="SodiumMg" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="SugarG" class="form-label"></label>
+                    <input asp-for="SugarG" class="form-control" />
+                    <span asp-validation-for="SugarG" class="text-danger"></span>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="SaturatedFatG" class="form-label"></label>
+                    <input asp-for="SaturatedFatG" class="form-control" />
+                    <span asp-validation-for="SaturatedFatG" class="text-danger"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save nutrition</button>
+            <a asp-action="Details" asp-route-id="@Model.RecipeId" class="btn btn-outline-secondary ms-2">Back to recipe</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

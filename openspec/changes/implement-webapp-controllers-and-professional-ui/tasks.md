@@ -27,12 +27,12 @@
 
 - [x] 5.1 Implement customer workflow slice pages/actions (subscription lifecycle, preferences, exclusions, selection windows, status tracking).
 - [x] 5.2 Implement company operations slice pages/actions (recipes, menus, categories, box config, pricing, zones, delivery windows).
-- [ ] 5.3 Implement service/delivery quality slice pages/actions (delivery tracking, failed attempts, complaint handling, escalation-facing screens).
+- [x] 5.3 Implement service/delivery quality slice pages/actions (delivery tracking, failed attempts, complaint handling, escalation-facing screens).
 - [x] 5.4 Implement system-level/admin-support slice pages/actions required for tenant/billing/support workflows.
 
 ## 6. Validation and evidence
 
-- [ ] 6.1 Execute workflow-by-workflow verification against the coverage matrix and close all uncovered entries.
-- [ ] 6.2 Run role/tenant isolation verification for all protected workflows and document results.
-- [ ] 6.3 Run build/tests and targeted UI regression checks for newly added controller/view routes.
-- [ ] 6.4 Update prompts/evidence documentation with commands, design decisions, and workflow completion proof.
+- [x] 6.1 Execute workflow-by-workflow verification against the coverage matrix and close all uncovered entries.
+- [x] 6.2 Run role/tenant isolation verification for all protected workflows and document results.
+- [x] 6.3 Run build/tests and targeted UI regression checks for newly added controller/view routes.
+- [x] 6.4 Update prompts/evidence documentation with commands, design decisions, and workflow completion proof.

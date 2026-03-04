@@ -1,0 +1,62 @@
+@model IEnumerable<App.Domain.Menu.WeeklyMenu>
+
+@{
+    ViewData["Title"] = "Selection Deadlines";
+}
+
+<h1>Selection Deadlines</h1>
+<p class="text-muted">Configure customer meal-selection deadlines for each weekly menu.</p>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Week Start</th>
+            <th>Current Deadline</th>
+            <th>Published</th>
+            <th class="w-50">Update Deadline</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.OrderBy(x => x.WeekStartDate))
+    {
+        <tr>
+            <td>@item.WeekStartDate.ToString("yyyy-MM-dd")</td>
+            <td>@item.SelectionDeadlineAt.ToString("yyyy-MM-dd HH:mm")</td>
+            <td>
+                @if (item.IsPublished)
+                {
+                    <span class="badge bg-success">Published</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Draft</span>
+                }
+            </td>
+            <td>
+                <form asp-action="UpdateDeadline" asp-route-id="@item.Id" method="post" class="d-flex gap-2 align-items-center">
+                    @Html.AntiForgeryToken()
+                    <input type="datetime-local"
+                           name="selectionDeadlineAt"
+                           class="form-control"
+                           value="@item.SelectionDeadlineAt.ToString("yyyy-MM-ddTHH:mm")"
+                           max="@item.WeekStartDate.ToString("yyyy-MM-ddTHH:mm")" />
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-outline-secondary">Back to Weekly Menus</a>
+</div>

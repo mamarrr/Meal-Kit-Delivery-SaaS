@@ -7,7 +7,7 @@ using WebApp.ViewModels.DietaryCategories;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyManager")]
     public class DietaryCategoriesController : Controller
     {
         private readonly IDietaryCategoryService _dietaryCategoryService;

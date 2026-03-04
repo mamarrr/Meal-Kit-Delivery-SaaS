@@ -8,7 +8,7 @@ using WebApp.ViewModels.SystemSettings;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemAdmin")]
     public class SystemSettingsController : Controller
     {
         private readonly ISystemSettingService _systemSettingService;

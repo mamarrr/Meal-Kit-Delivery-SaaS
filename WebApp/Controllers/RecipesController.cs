@@ -1,20 +1,24 @@
 using App.Contracts.BLL.Menu;
+using App.DAL.EF;
 using App.Domain.Menu;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApp.ViewModels.Recipes;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyManager")]
     public class RecipesController : Controller
     {
         private readonly IRecipeService _recipeService;
+        private readonly AppDbContext _appDbContext;
 
-        public RecipesController(IRecipeService recipeService)
+        public RecipesController(IRecipeService recipeService, AppDbContext appDbContext)
         {
             _recipeService = recipeService;
+            _appDbContext = appDbContext;
         }
 
         // GET: Recipes
@@ -50,6 +54,107 @@ namespace WebApp.Controllers
             }
 
             return View(recipe);
+        }
+
+        // GET: Recipes/Nutrition/5
+        [Authorize(Policy = "CompanyManager")]
+        public async Task<IActionResult> Nutrition(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var recipe = await _recipeService.GetByIdAsync(id.Value, companyId.Value);
+            if (recipe == null)
+            {
+                return NotFound();
+            }
+
+            var nutritionalInfo = recipe.NutritionalInfo;
+
+            return View(new RecipeNutritionEditViewModel
+            {
+                RecipeId = recipe.Id,
+                RecipeName = recipe.Name,
+                CaloriesKcal = nutritionalInfo?.CaloriesKcal ?? 0,
+                ProteinG = nutritionalInfo?.ProteinG ?? 0,
+                CarbsG = nutritionalInfo?.CarbsG ?? 0,
+                FatG = nutritionalInfo?.FatG ?? 0,
+                FiberG = nutritionalInfo?.FiberG ?? 0,
+                SodiumMg = nutritionalInfo?.SodiumMg ?? 0,
+                SugarG = nutritionalInfo?.SugarG ?? 0,
+                SaturatedFatG = nutritionalInfo?.SaturatedFatG ?? 0
+            });
+        }
+
+        // POST: Recipes/Nutrition/5
+        [HttpPost]
+        [Authorize(Policy = "CompanyManager")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Nutrition(Guid id, RecipeNutritionEditViewModel viewModel)
+        {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (id != viewModel.RecipeId)
+            {
+                return NotFound();
+            }
+
+            var recipe = await _recipeService.GetByIdAsync(id, companyId.Value);
+            if (recipe == null)
+            {
+                return NotFound();
+            }
+
+            viewModel.RecipeName = recipe.Name;
+
+            if (!ModelState.IsValid)
+            {
+                return View(viewModel);
+            }
+
+            var nutritionalInfo = await _appDbContext.NutritionalInfos
+                .FirstOrDefaultAsync(n => n.RecipeId == id);
+
+            if (nutritionalInfo == null)
+            {
+                nutritionalInfo = new NutritionalInfo
+                {
+                    RecipeId = id,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _appDbContext.NutritionalInfos.Add(nutritionalInfo);
+            }
+            else
+            {
+                nutritionalInfo.UpdatedAt = DateTime.UtcNow;
+            }
+
+            nutritionalInfo.CaloriesKcal = viewModel.CaloriesKcal;
+            nutritionalInfo.ProteinG = viewModel.ProteinG;
+            nutritionalInfo.CarbsG = viewModel.CarbsG;
+            nutritionalInfo.FatG = viewModel.FatG;
+            nutritionalInfo.FiberG = viewModel.FiberG;
+            nutritionalInfo.SodiumMg = viewModel.SodiumMg;
+            nutritionalInfo.SugarG = viewModel.SugarG;
+            nutritionalInfo.SaturatedFatG = viewModel.SaturatedFatG;
+
+            await _appDbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Nutritional data updated.";
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // GET: Recipes/Create

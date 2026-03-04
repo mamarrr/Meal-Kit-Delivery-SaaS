@@ -6,6 +6,11 @@
 
 <h1>Details</h1>
 
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
 <div>
     <h4>Recipe</h4>
     <hr />
@@ -74,6 +79,7 @@
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
+    <a asp-action="Nutrition" asp-route-id="@Model?.Id">Nutrition</a> |
     <a asp-action="Index">Back to List</a>
 </div>
 

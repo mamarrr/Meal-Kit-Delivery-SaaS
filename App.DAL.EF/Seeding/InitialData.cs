@@ -13,11 +13,13 @@ public static class InitialData
             ("admin", null),
             ("user", null),
             ("root", null),
+            ("SystemAdmin", null)
         ];
 
     public static readonly (string name, string password, Guid? id, string[] roles)[]
         Users =
         [
+            ("Admin@email.com", "Admin123!", null, ["admin", "root", "user", "SystemAdmin"]),
             ("akaver@akaver.com", "Kala.Maja.101", null, ["admin", "root", "user"]),
             ("andres.kaver@taltech.ee", "Kala.Maja.101", null, ["admin", "root", "user"]),
         ];

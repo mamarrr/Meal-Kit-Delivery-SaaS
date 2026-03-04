@@ -55,6 +55,7 @@ public static class DalServiceExtensions
         services.AddScoped<IDeliveryZoneRepository, DeliveryZoneRepository>();
         services.AddScoped<IDeliveryWindowRepository, DeliveryWindowRepository>();
         services.AddScoped<IDeliveryRepository, DeliveryRepository>();
+        services.AddScoped<IDeliveryAttemptRepository, DeliveryAttemptRepository>();
         services.AddScoped<IQualityComplaintRepository, QualityComplaintRepository>();
         
         // Identity domain repositories

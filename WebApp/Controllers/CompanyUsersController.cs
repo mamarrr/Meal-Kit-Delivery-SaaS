@@ -9,7 +9,7 @@ using WebApp.ViewModels.CompanyUsers;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyAdmin")]
     public class CompanyUsersController : Controller
     {
         private readonly ICompanyAppUserService _companyAppUserService;
@@ -87,6 +87,18 @@ namespace WebApp.Controllers
             }
 
             var companyAppUser = viewModel.CompanyAppUser;
+
+            if (!await IsAllowedRoleAsync(companyAppUser.CompanyRoleId))
+            {
+                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.CompanyRoleId), "Selected role is not allowed for tenant assignments.");
+            }
+
+            var existingAssignments = await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
+            if (existingAssignments.Any(x => x.AppUserId == companyAppUser.AppUserId))
+            {
+                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.AppUserId), "User is already assigned to this tenant.");
+            }
+
             if (ModelState.IsValid)
             {
                 companyAppUser.CompanyId = companyId.Value;
@@ -147,6 +159,17 @@ namespace WebApp.Controllers
             if (id != companyAppUser.Id)
             {
                 return NotFound();
+            }
+
+            if (!await IsAllowedRoleAsync(companyAppUser.CompanyRoleId))
+            {
+                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.CompanyRoleId), "Selected role is not allowed for tenant assignments.");
+            }
+
+            var existingAssignments = await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
+            if (existingAssignments.Any(x => x.AppUserId == companyAppUser.AppUserId && x.Id != companyAppUser.Id))
+            {
+                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.AppUserId), "User is already assigned to this tenant.");
             }
 
             if (ModelState.IsValid)
@@ -210,14 +233,30 @@ namespace WebApp.Controllers
 
         private async Task<CompanyUserEditViewModel> BuildEditViewModelAsync(CompanyAppUser companyAppUser)
         {
+            var companyId = GetCurrentCompanyId();
+            var allowedRoleCodes = new[] { "owner", "admin", "manager", "employee" };
+
             var users = await _appUserService.GetAllAsync();
-            var roles = await _companyRoleService.GetAllAsync();
+            var roles = (await _companyRoleService.GetAllAsync())
+                .Where(r => allowedRoleCodes.Contains(r.Code.ToLowerInvariant()))
+                .ToList();
+
+            var existingUsers = companyId == null
+                ? []
+                : (await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value))
+                .Select(x => x.AppUserId)
+                .ToHashSet();
+
+            var candidateUsers = users
+                .Where(u => companyAppUser.AppUserId == Guid.Empty || u.Id == companyAppUser.AppUserId || !existingUsers.Contains(u.Id))
+                .OrderBy(u => u.Email)
+                .ToList();
 
             return new CompanyUserEditViewModel
             {
                 CompanyAppUser = companyAppUser,
-                AppUserOptions = users
-                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(u.Id.ToString(), u.Id.ToString(), u.Id == companyAppUser.AppUserId))
+                AppUserOptions = candidateUsers
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(u.Email ?? u.Id.ToString(), u.Id.ToString(), u.Id == companyAppUser.AppUserId))
                     .ToList(),
                 CompanyRoleOptions = roles
                     .Select(r => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(r.Label, r.Id.ToString(), r.Id == companyAppUser.CompanyRoleId))
@@ -245,6 +284,14 @@ namespace WebApp.Controllers
             return Guid.TryParse(userIdRaw, out var userId)
                 ? userId
                 : null;
+        }
+
+        private async Task<bool> IsAllowedRoleAsync(Guid roleId)
+        {
+            var allowedRoleCodes = new[] { "owner", "admin", "manager", "employee" };
+            var role = await _companyRoleService.GetByIdAsync(roleId);
+
+            return role != null && allowedRoleCodes.Contains(role.Code.ToLowerInvariant());
         }
     }
 }

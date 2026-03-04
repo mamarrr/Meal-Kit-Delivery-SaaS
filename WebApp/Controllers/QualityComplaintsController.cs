@@ -8,7 +8,7 @@ using WebApp.ViewModels.QualityComplaints;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Roles = "Customer,CompanyOwner,CompanyAdmin,CompanyManager,CompanyEmployee")]
     public class QualityComplaintsController : Controller
     {
         private readonly IQualityComplaintService _qualityComplaintService;
@@ -211,6 +211,63 @@ namespace WebApp.Controllers
 
             await _qualityComplaintService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: QualityComplaints/Escalate/5
+        [Authorize(Roles = "CompanyManager,CompanyAdmin")]
+        public async Task<IActionResult> Escalate(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = await _qualityComplaintService.GetByIdAsync(id.Value, companyId.Value);
+            if (qualityComplaint == null)
+            {
+                return NotFound();
+            }
+
+            return View(qualityComplaint);
+        }
+
+        // POST: QualityComplaints/Escalate/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "CompanyManager,CompanyAdmin")]
+        public async Task<IActionResult> Escalate(Guid id, string escalationAction)
+        {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = await _qualityComplaintService.GetByIdAsync(id, companyId.Value);
+            if (qualityComplaint == null)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrWhiteSpace(escalationAction))
+            {
+                ModelState.AddModelError("escalationAction", "Escalation action is required");
+                return View(qualityComplaint);
+            }
+
+            // Update escalation fields
+            qualityComplaint.EscalatedAt = DateTime.UtcNow;
+            qualityComplaint.EscalationAction = escalationAction;
+            qualityComplaint.UpdatedAt = DateTime.UtcNow;
+
+            await _qualityComplaintService.UpdateAsync(qualityComplaint, companyId.Value);
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         private async Task<QualityComplaintEditViewModel> BuildEditViewModelAsync(QualityComplaint qualityComplaint, Guid companyId)

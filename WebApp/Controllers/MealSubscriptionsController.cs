@@ -8,7 +8,7 @@ using WebApp.ViewModels.MealSubscriptions;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CustomerAccess")]
     public class MealSubscriptionsController : Controller
     {
         private readonly IMealSubscriptionService _mealSubscriptionService;

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "SystemAdmin")]
     public class AnalyticsController : Controller
     {
         private readonly ISystemAnalyticsSnapshotService _systemAnalyticsSnapshotService;

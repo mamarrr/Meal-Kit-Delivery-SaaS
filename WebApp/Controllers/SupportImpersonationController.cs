@@ -9,7 +9,7 @@ using WebApp.ViewModels.SupportImpersonation;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemAdmin")]
     public class SupportImpersonationController : Controller
     {
         private readonly ISupportImpersonationSessionService _supportImpersonationSessionService;

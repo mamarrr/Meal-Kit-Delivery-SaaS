@@ -7,14 +7,75 @@ using WebApp.ViewModels.CompanySettings;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyAdmin")]
     public class CompanySettingsController : Controller
     {
         private readonly ICompanySettingsService _companySettingsService;
+        private readonly ICompanyService _companyService;
 
-        public CompanySettingsController(ICompanySettingsService companySettingsService)
+        public CompanySettingsController(
+            ICompanySettingsService companySettingsService,
+            ICompanyService companyService)
         {
             _companySettingsService = companySettingsService;
+            _companyService = companyService;
+        }
+
+        // GET: CompanySettings/Profile
+        public async Task<IActionResult> Profile()
+        {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var company = await _companyService.GetByIdAsync(companyId.Value);
+            if (company == null)
+            {
+                return NotFound();
+            }
+
+            return View(new CompanyProfileEditViewModel { Company = company });
+        }
+
+        // POST: CompanySettings/Profile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(CompanyProfileEditViewModel viewModel)
+        {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Company == null || viewModel.Company.Id != companyId.Value)
+            {
+                return BadRequest();
+            }
+
+            var existing = await _companyService.GetByIdAsync(companyId.Value);
+            if (existing == null)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                existing.Name = viewModel.Company.Name;
+                existing.Slug = viewModel.Company.Slug;
+                existing.RegistrationNumber = viewModel.Company.RegistrationNumber;
+                existing.ContactEmail = viewModel.Company.ContactEmail;
+                existing.ContactPhone = viewModel.Company.ContactPhone;
+                existing.WebSiteUrl = viewModel.Company.WebSiteUrl;
+                existing.UpdatedAt = DateTime.UtcNow;
+
+                await _companyService.UpdateAsync(existing);
+                return RedirectToAction(nameof(Profile));
+            }
+
+            return View(viewModel);
         }
 
         // GET: CompanySettings

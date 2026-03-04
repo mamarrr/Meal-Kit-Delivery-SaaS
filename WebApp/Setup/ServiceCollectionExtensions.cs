@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeliveryService, DeliveryService>();
         services.AddScoped<IDeliveryZoneService, DeliveryZoneService>();
         services.AddScoped<IDeliveryWindowService, DeliveryWindowService>();
+        services.AddScoped<IDeliveryAttemptService, DeliveryAttemptService>();
         services.AddScoped<IQualityComplaintService, QualityComplaintService>();
         services.AddScoped<IOperationalLookupService, OperationalLookupService>();
 

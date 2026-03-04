@@ -8,7 +8,7 @@ using WebApp.ViewModels.CustomerExclusions;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CustomerAccess")]
     public class CustomerExclusionsController : Controller
     {
         private readonly ICustomerExclusionService _customerExclusionService;

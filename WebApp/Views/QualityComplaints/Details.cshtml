@@ -80,6 +80,14 @@
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
+    @if (Model?.EscalatedAt == null)
+    {
+        <a asp-action="Escalate" asp-route-id="@Model?.Id" class="btn btn-warning">Escalate</a> <span>|</span>
+    }
+    else
+    {
+        <span class="badge bg-warning">Escalated</span> <span>|</span>
+    }
     <a asp-action="Index">Back to List</a>
 </div>
 

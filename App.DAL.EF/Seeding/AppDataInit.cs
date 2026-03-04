@@ -121,7 +121,9 @@ public static class AppDataInit
                 {
                     Email = userInfo.name,
                     UserName = userInfo.name,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    FirstName = userInfo.name,
+                    LastName = "User"
                 };
                 var result = userManager.CreateAsync(user, userInfo.password).Result;
                 if (!result.Succeeded)

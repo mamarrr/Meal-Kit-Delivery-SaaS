@@ -8,7 +8,7 @@ using WebApp.ViewModels.CustomerPreferences;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CustomerAccess")]
     public class CustomerPreferencesController : Controller
     {
         private readonly ICustomerPreferenceService _customerPreferenceService;

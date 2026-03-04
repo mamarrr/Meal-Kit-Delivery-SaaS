@@ -9,7 +9,7 @@ using WebApp.ViewModels.SupportTickets;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemSupport")]
     public class SupportTicketsController : Controller
     {
         private readonly ISupportTicketService _supportTicketService;

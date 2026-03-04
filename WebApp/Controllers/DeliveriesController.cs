@@ -11,10 +11,11 @@ using WebApp.ViewModels.Deliveries;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Roles = "Customer,CompanyOwner,CompanyAdmin,CompanyManager,CompanyEmployee")]
     public class DeliveriesController : Controller
     {
         private readonly IDeliveryService _deliveryService;
+        private readonly IDeliveryAttemptService _deliveryAttemptService;
         private readonly ICustomerService _customerService;
         private readonly IWeeklyMenuService _weeklyMenuService;
         private readonly IDeliveryZoneService _deliveryZoneService;
@@ -25,6 +26,7 @@ namespace WebApp.Controllers
 
         public DeliveriesController(
             IDeliveryService deliveryService,
+            IDeliveryAttemptService deliveryAttemptService,
             ICustomerService customerService,
             IWeeklyMenuService weeklyMenuService,
             IDeliveryZoneService deliveryZoneService,
@@ -34,6 +36,7 @@ namespace WebApp.Controllers
             IOperationalLookupService operationalLookupService)
         {
             _deliveryService = deliveryService;
+            _deliveryAttemptService = deliveryAttemptService;
             _customerService = customerService;
             _weeklyMenuService = weeklyMenuService;
             _deliveryZoneService = deliveryZoneService;
@@ -238,6 +241,31 @@ namespace WebApp.Controllers
 
             await _deliveryService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Deliveries/Attempts/5
+        public async Task<IActionResult> Attempts(Guid? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var delivery = await _deliveryService.GetByIdAsync(id.Value, companyId.Value);
+            if (delivery == null)
+            {
+                return NotFound();
+            }
+
+            var attempts = await _deliveryAttemptService.GetAllByDeliveryIdAsync(id.Value);
+            ViewBag.Delivery = delivery;
+            return View(attempts);
         }
 
         private async Task<DeliveryEditViewModel> BuildEditViewModelAsync(Delivery delivery, Guid companyId)

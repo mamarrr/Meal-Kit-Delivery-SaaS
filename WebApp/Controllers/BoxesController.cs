@@ -7,7 +7,7 @@ using WebApp.ViewModels.Boxes;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyManager")]
     public class BoxesController : Controller
     {
         private readonly IBoxService _boxService;

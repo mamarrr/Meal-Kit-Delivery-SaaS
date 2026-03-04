@@ -7,7 +7,7 @@ using WebApp.ViewModels.BoxPrices;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyAdmin")]
     public class BoxPricesController : Controller
     {
         private readonly IBoxPriceService _boxPriceService;

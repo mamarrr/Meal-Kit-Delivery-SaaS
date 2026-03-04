@@ -7,7 +7,7 @@ using WebApp.ViewModels.PlatformSubscriptionTiers;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemBilling")]
     public class PlatformSubscriptionTiersController : Controller
     {
         private readonly IPlatformSubscriptionTierService _platformSubscriptionTierService;

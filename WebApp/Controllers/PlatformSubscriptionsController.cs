@@ -9,7 +9,7 @@ using WebApp.ViewModels.PlatformSubscriptions;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyAdmin")]
     public class PlatformSubscriptionsController : Controller
     {
         private readonly IPlatformSubscriptionService _platformSubscriptionService;

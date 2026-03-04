@@ -7,7 +7,7 @@ using WebApp.ViewModels.Companies;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemAdmin")]
     public class CompaniesController : Controller
     {
         private readonly ICompanyService _companyService;

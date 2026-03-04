@@ -9,7 +9,7 @@ using WebApp.ViewModels.SupportAccess;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Policy = "SystemSupport")]
     public class SupportAccessController : Controller
     {
         private readonly ITenantSupportAccessService _tenantSupportAccessService;

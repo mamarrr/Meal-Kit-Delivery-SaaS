@@ -1,20 +1,24 @@
 using App.Contracts.BLL.Delivery;
+using App.DAL.EF;
 using App.Domain.Delivery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WebApp.ViewModels.DeliveryZones;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyAdmin")]
     public class DeliveryZonesController : Controller
     {
         private readonly IDeliveryZoneService _deliveryZoneService;
+        private readonly AppDbContext _appDbContext;
 
-        public DeliveryZonesController(IDeliveryZoneService deliveryZoneService)
+        public DeliveryZonesController(IDeliveryZoneService deliveryZoneService, AppDbContext appDbContext)
         {
             _deliveryZoneService = deliveryZoneService;
+            _appDbContext = appDbContext;
         }
 
         // GET: DeliveryZones
@@ -81,6 +85,20 @@ namespace WebApp.Controllers
             }
 
             var deliveryZone = viewModel.DeliveryZone;
+
+            var maxZones = await GetMaxZonesForCompanyAsync(companyId.Value);
+            if (maxZones.HasValue)
+            {
+                var zoneCount = await _appDbContext.DeliveryZones
+                    .Where(z => z.CompanyId == companyId.Value && z.DeletedAt == null)
+                    .CountAsync();
+
+                if (zoneCount >= maxZones.Value)
+                {
+                    ModelState.AddModelError(string.Empty, $"Your current plan allows up to {maxZones.Value} delivery zones.");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 deliveryZone.CreatedAt = DateTime.UtcNow;
@@ -222,6 +240,22 @@ namespace WebApp.Controllers
             return Guid.TryParse(userIdRaw, out var userId)
                 ? userId
                 : null;
+        }
+
+        private async Task<int?> GetMaxZonesForCompanyAsync(Guid companyId)
+        {
+            var activeSubscription = await _appDbContext.PlatformSubscriptions
+                .Include(ps => ps.PlatformSubscriptionTier)
+                .Include(ps => ps.PlatformSubscriptionStatus)
+                .Where(ps => ps.CompanyId == companyId
+                             && ps.DeletedAt == null
+                             && (ps.ValidTo == null || ps.ValidTo >= DateTime.UtcNow)
+                             && ps.PlatformSubscriptionStatus != null
+                             && ps.PlatformSubscriptionStatus.Code == "active")
+                .OrderByDescending(ps => ps.ValidFrom)
+                .FirstOrDefaultAsync();
+
+            return activeSubscription?.PlatformSubscriptionTier?.MaxZones;
         }
     }
 }

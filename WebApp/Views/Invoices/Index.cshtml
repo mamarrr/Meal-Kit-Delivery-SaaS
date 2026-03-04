@@ -1,0 +1,44 @@
+@model IEnumerable<App.Domain.Subscription.PlatformSubscription>
+
+@{
+    ViewData["Title"] = "Billing & Invoices";
+}
+
+<h1>Billing &amp; Invoices</h1>
+<p class="text-muted">System billing overview of tenant subscriptions and billable periods.</p>
+
+<table class="table table-striped align-middle">
+    <thead>
+    <tr>
+        <th>Company</th>
+        <th>Tier</th>
+        <th>Status</th>
+        <th>Valid From</th>
+        <th>Valid To</th>
+        <th>Billing State</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        var billable = item.PlatformSubscriptionStatus?.Code == "active" && (item.ValidTo == null || item.ValidTo >= DateTime.UtcNow);
+        <tr>
+            <td>@(item.Company?.Name ?? "-")</td>
+            <td>@(item.PlatformSubscriptionTier?.Name ?? item.PlatformSubscriptionTier?.Code ?? "-")</td>
+            <td>@(item.PlatformSubscriptionStatus?.Label ?? item.PlatformSubscriptionStatus?.Code ?? "-")</td>
+            <td>@item.ValidFrom.ToString("yyyy-MM-dd")</td>
+            <td>@(item.ValidTo?.ToString("yyyy-MM-dd") ?? "Open")</td>
+            <td>
+                @if (billable)
+                {
+                    <span class="badge bg-success">Billable</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Not billable</span>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

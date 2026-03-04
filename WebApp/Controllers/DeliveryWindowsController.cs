@@ -7,7 +7,7 @@ using WebApp.ViewModels.DeliveryWindows;
 
 namespace WebApp.Controllers
 {
-    [Authorize(Roles = "user")]
+    [Authorize(Policy = "CompanyManager")]
     public class DeliveryWindowsController : Controller
     {
         private readonly IDeliveryWindowService _deliveryWindowService;
