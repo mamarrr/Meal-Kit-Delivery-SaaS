@@ -1,29 +1,45 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Core;
+using App.Contracts.BLL.Delivery;
+using App.DAL.EF;
+using App.Domain.Delivery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
-using App.Domain.Delivery;
+using WebApp.ViewModels.QualityComplaints;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class QualityComplaintsController : Controller
     {
+        private readonly IQualityComplaintService _qualityComplaintService;
+        private readonly ICustomerService _customerService;
+        private readonly IDeliveryService _deliveryService;
         private readonly AppDbContext _context;
 
-        public QualityComplaintsController(AppDbContext context)
+        public QualityComplaintsController(
+            IQualityComplaintService qualityComplaintService,
+            ICustomerService customerService,
+            IDeliveryService deliveryService,
+            AppDbContext context)
         {
+            _qualityComplaintService = qualityComplaintService;
+            _customerService = customerService;
+            _deliveryService = deliveryService;
             _context = context;
         }
 
         // GET: QualityComplaints
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.QualityComplaints.Include(q => q.Company).Include(q => q.Customer).Include(q => q.Delivery).Include(q => q.QualityComplaintStatus).Include(q => q.QualityComplaintType);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _qualityComplaintService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: QualityComplaints/Details/5
@@ -34,13 +50,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var qualityComplaint = await _context.QualityComplaints
-                .Include(q => q.Company)
-                .Include(q => q.Customer)
-                .Include(q => q.Delivery)
-                .Include(q => q.QualityComplaintStatus)
-                .Include(q => q.QualityComplaintType)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = await _qualityComplaintService.GetByIdAsync(id.Value, companyId.Value);
             if (qualityComplaint == null)
             {
                 return NotFound();
@@ -50,14 +66,15 @@ namespace WebApp.Controllers
         }
 
         // GET: QualityComplaints/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine");
-            ViewData["DeliveryId"] = new SelectList(_context.Deliveries, "Id", "AddressLine");
-            ViewData["QualityComplaintStatusId"] = new SelectList(_context.QualityComplaintStatuses, "Id", "Code");
-            ViewData["QualityComplaintTypeId"] = new SelectList(_context.QualityComplaintTypes, "Id", "Code");
-            return View();
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await BuildEditViewModelAsync(new QualityComplaint(), companyId.Value));
         }
 
         // POST: QualityComplaints/Create
@@ -65,21 +82,26 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Severity,Description,EscalatedAt,EscalationAction,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CustomerId,DeliveryId,QualityComplaintTypeId,QualityComplaintStatusId,Id")] QualityComplaint qualityComplaint)
+        public async Task<IActionResult> Create(QualityComplaintEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = viewModel.QualityComplaint;
             if (ModelState.IsValid)
             {
-                qualityComplaint.Id = Guid.NewGuid();
-                _context.Add(qualityComplaint);
-                await _context.SaveChangesAsync();
+                qualityComplaint.CreatedAt = DateTime.UtcNow;
+                qualityComplaint.UpdatedAt = null;
+                qualityComplaint.DeletedAt = null;
+
+                await _qualityComplaintService.AddAsync(qualityComplaint, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", qualityComplaint.CompanyId);
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", qualityComplaint.CustomerId);
-            ViewData["DeliveryId"] = new SelectList(_context.Deliveries, "Id", "AddressLine", qualityComplaint.DeliveryId);
-            ViewData["QualityComplaintStatusId"] = new SelectList(_context.QualityComplaintStatuses, "Id", "Code", qualityComplaint.QualityComplaintStatusId);
-            ViewData["QualityComplaintTypeId"] = new SelectList(_context.QualityComplaintTypes, "Id", "Code", qualityComplaint.QualityComplaintTypeId);
-            return View(qualityComplaint);
+
+            return View(await BuildEditViewModelAsync(qualityComplaint, companyId.Value));
         }
 
         // GET: QualityComplaints/Edit/5
@@ -90,17 +112,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var qualityComplaint = await _context.QualityComplaints.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = await _qualityComplaintService.GetByIdAsync(id.Value, companyId.Value);
             if (qualityComplaint == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", qualityComplaint.CompanyId);
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", qualityComplaint.CustomerId);
-            ViewData["DeliveryId"] = new SelectList(_context.Deliveries, "Id", "AddressLine", qualityComplaint.DeliveryId);
-            ViewData["QualityComplaintStatusId"] = new SelectList(_context.QualityComplaintStatuses, "Id", "Code", qualityComplaint.QualityComplaintStatusId);
-            ViewData["QualityComplaintTypeId"] = new SelectList(_context.QualityComplaintTypes, "Id", "Code", qualityComplaint.QualityComplaintTypeId);
-            return View(qualityComplaint);
+
+            return View(await BuildEditViewModelAsync(qualityComplaint, companyId.Value));
         }
 
         // POST: QualityComplaints/Edit/5
@@ -108,8 +132,15 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Severity,Description,EscalatedAt,EscalationAction,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CustomerId,DeliveryId,QualityComplaintTypeId,QualityComplaintStatusId,Id")] QualityComplaint qualityComplaint)
+        public async Task<IActionResult> Edit(Guid id, QualityComplaintEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = viewModel.QualityComplaint;
             if (id != qualityComplaint.Id)
             {
                 return NotFound();
@@ -117,30 +148,22 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _qualityComplaintService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(qualityComplaint);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!QualityComplaintExists(qualityComplaint.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                qualityComplaint.CompanyId = companyId.Value;
+                qualityComplaint.CreatedAt = existing.CreatedAt;
+                qualityComplaint.UpdatedAt = DateTime.UtcNow;
+                qualityComplaint.DeletedAt = existing.DeletedAt;
+
+                await _qualityComplaintService.UpdateAsync(qualityComplaint, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", qualityComplaint.CompanyId);
-            ViewData["CustomerId"] = new SelectList(_context.Customers, "Id", "AddressLine", qualityComplaint.CustomerId);
-            ViewData["DeliveryId"] = new SelectList(_context.Deliveries, "Id", "AddressLine", qualityComplaint.DeliveryId);
-            ViewData["QualityComplaintStatusId"] = new SelectList(_context.QualityComplaintStatuses, "Id", "Code", qualityComplaint.QualityComplaintStatusId);
-            ViewData["QualityComplaintTypeId"] = new SelectList(_context.QualityComplaintTypes, "Id", "Code", qualityComplaint.QualityComplaintTypeId);
-            return View(qualityComplaint);
+
+            return View(await BuildEditViewModelAsync(qualityComplaint, companyId.Value));
         }
 
         // GET: QualityComplaints/Delete/5
@@ -151,13 +174,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var qualityComplaint = await _context.QualityComplaints
-                .Include(q => q.Company)
-                .Include(q => q.Customer)
-                .Include(q => q.Delivery)
-                .Include(q => q.QualityComplaintStatus)
-                .Include(q => q.QualityComplaintType)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var qualityComplaint = await _qualityComplaintService.GetByIdAsync(id.Value, companyId.Value);
             if (qualityComplaint == null)
             {
                 return NotFound();
@@ -171,19 +194,50 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var qualityComplaint = await _context.QualityComplaints.FindAsync(id);
-            if (qualityComplaint != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.QualityComplaints.Remove(qualityComplaint);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _qualityComplaintService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool QualityComplaintExists(Guid id)
+        private async Task<QualityComplaintEditViewModel> BuildEditViewModelAsync(QualityComplaint qualityComplaint, Guid companyId)
         {
-            return _context.QualityComplaints.Any(e => e.Id == id);
+            var customers = await _customerService.GetAllByCompanyIdAsync(companyId);
+            var deliveries = await _deliveryService.GetAllByCompanyIdAsync(companyId);
+            var qualityComplaintTypes = await _context.QualityComplaintTypes.ToListAsync();
+            var qualityComplaintStatuses = await _context.QualityComplaintStatuses.ToListAsync();
+
+            return new QualityComplaintEditViewModel
+            {
+                QualityComplaint = qualityComplaint,
+                CustomerOptions = customers
+                    .Select(c => new SelectListItem($"{c.FirstName} {c.LastName} ({c.Email})", c.Id.ToString(), c.Id == qualityComplaint.CustomerId))
+                    .ToList(),
+                DeliveryOptions = deliveries
+                    .Select(d => new SelectListItem(d.AddressLine, d.Id.ToString(), d.Id == qualityComplaint.DeliveryId))
+                    .ToList(),
+                QualityComplaintTypeOptions = qualityComplaintTypes
+                    .Select(t => new SelectListItem(t.Label, t.Id.ToString(), t.Id == qualityComplaint.QualityComplaintTypeId))
+                    .ToList(),
+                QualityComplaintStatusOptions = qualityComplaintStatuses
+                    .Select(s => new SelectListItem(s.Label, s.Id.ToString(), s.Id == qualityComplaint.QualityComplaintStatusId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
         }
     }
 }

@@ -1,4 +1,4 @@
-@model App.Domain.Delivery.QualityComplaint
+@model WebApp.ViewModels.QualityComplaints.QualityComplaintEditViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -13,59 +13,40 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="Severity" class="control-label"></label>
-                <input asp-for="Severity" class="form-control" />
-                <span asp-validation-for="Severity" class="text-danger"></span>
+                <label asp-for="QualityComplaint.Severity" class="control-label"></label>
+                <input asp-for="QualityComplaint.Severity" class="form-control" />
+                <span asp-validation-for="QualityComplaint.Severity" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
+                <label asp-for="QualityComplaint.Description" class="control-label"></label>
+                <input asp-for="QualityComplaint.Description" class="form-control" />
+                <span asp-validation-for="QualityComplaint.Description" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="EscalatedAt" class="control-label"></label>
-                <input asp-for="EscalatedAt" class="form-control" />
-                <span asp-validation-for="EscalatedAt" class="text-danger"></span>
+                <label asp-for="QualityComplaint.EscalatedAt" class="control-label"></label>
+                <input asp-for="QualityComplaint.EscalatedAt" class="form-control" />
+                <span asp-validation-for="QualityComplaint.EscalatedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="EscalationAction" class="control-label"></label>
-                <input asp-for="EscalationAction" class="form-control" />
-                <span asp-validation-for="EscalationAction" class="text-danger"></span>
+                <label asp-for="QualityComplaint.EscalationAction" class="control-label"></label>
+                <input asp-for="QualityComplaint.EscalationAction" class="form-control" />
+                <span asp-validation-for="QualityComplaint.EscalationAction" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label asp-for="QualityComplaint.CustomerId" class="control-label"></label>
+                <select asp-for="QualityComplaint.CustomerId" class="form-control" asp-items="Model.CustomerOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+                <label asp-for="QualityComplaint.DeliveryId" class="control-label"></label>
+                <select asp-for="QualityComplaint.DeliveryId" class="form-control" asp-items="Model.DeliveryOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
+                <label asp-for="QualityComplaint.QualityComplaintTypeId" class="control-label"></label>
+                <select asp-for="QualityComplaint.QualityComplaintTypeId" class="form-control" asp-items="Model.QualityComplaintTypeOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class ="form-control" asp-items="ViewBag.CompanyId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="CustomerId" class="control-label"></label>
-                <select asp-for="CustomerId" class ="form-control" asp-items="ViewBag.CustomerId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeliveryId" class="control-label"></label>
-                <select asp-for="DeliveryId" class ="form-control" asp-items="ViewBag.DeliveryId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="QualityComplaintTypeId" class="control-label"></label>
-                <select asp-for="QualityComplaintTypeId" class ="form-control" asp-items="ViewBag.QualityComplaintTypeId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="QualityComplaintStatusId" class="control-label"></label>
-                <select asp-for="QualityComplaintStatusId" class ="form-control" asp-items="ViewBag.QualityComplaintStatusId"></select>
+                <label asp-for="QualityComplaint.QualityComplaintStatusId" class="control-label"></label>
+                <select asp-for="QualityComplaint.QualityComplaintStatusId" class="form-control" asp-items="Model.QualityComplaintStatusOptions"></select>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

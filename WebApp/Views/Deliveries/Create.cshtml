@@ -1,4 +1,4 @@
-@model App.Domain.Delivery.Delivery
+@model WebApp.ViewModels.Deliveries.DeliveryEditViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -13,94 +13,71 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="ScheduledTime" class="control-label"></label>
-                <input asp-for="ScheduledTime" class="form-control" />
-                <span asp-validation-for="ScheduledTime" class="text-danger"></span>
+                <label asp-for="Delivery.ScheduledTime" class="control-label"></label>
+                <input asp-for="Delivery.ScheduledTime" class="form-control" />
+                <span asp-validation-for="Delivery.ScheduledTime" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="DeliveredAt" class="control-label"></label>
-                <input asp-for="DeliveredAt" class="form-control" />
-                <span asp-validation-for="DeliveredAt" class="text-danger"></span>
+                <label asp-for="Delivery.DeliveredAt" class="control-label"></label>
+                <input asp-for="Delivery.DeliveredAt" class="form-control" />
+                <span asp-validation-for="Delivery.DeliveredAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="FailureReason" class="control-label"></label>
-                <input asp-for="FailureReason" class="form-control" />
-                <span asp-validation-for="FailureReason" class="text-danger"></span>
+                <label asp-for="Delivery.FailureReason" class="control-label"></label>
+                <input asp-for="Delivery.FailureReason" class="form-control" />
+                <span asp-validation-for="Delivery.FailureReason" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="AddressLine" class="control-label"></label>
-                <input asp-for="AddressLine" class="form-control" />
-                <span asp-validation-for="AddressLine" class="text-danger"></span>
+                <label asp-for="Delivery.AddressLine" class="control-label"></label>
+                <input asp-for="Delivery.AddressLine" class="form-control" />
+                <span asp-validation-for="Delivery.AddressLine" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="City" class="control-label"></label>
-                <input asp-for="City" class="form-control" />
-                <span asp-validation-for="City" class="text-danger"></span>
+                <label asp-for="Delivery.City" class="control-label"></label>
+                <input asp-for="Delivery.City" class="form-control" />
+                <span asp-validation-for="Delivery.City" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="PostalCode" class="control-label"></label>
-                <input asp-for="PostalCode" class="form-control" />
-                <span asp-validation-for="PostalCode" class="text-danger"></span>
+                <label asp-for="Delivery.PostalCode" class="control-label"></label>
+                <input asp-for="Delivery.PostalCode" class="form-control" />
+                <span asp-validation-for="Delivery.PostalCode" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Country" class="control-label"></label>
-                <input asp-for="Country" class="form-control" />
-                <span asp-validation-for="Country" class="text-danger"></span>
+                <label asp-for="Delivery.Country" class="control-label"></label>
+                <input asp-for="Delivery.Country" class="form-control" />
+                <span asp-validation-for="Delivery.Country" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label asp-for="Delivery.DeliveryStatusId" class="control-label"></label>
+                <select asp-for="Delivery.DeliveryStatusId" class="form-control" asp-items="Model.DeliveryStatusOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+                <label asp-for="Delivery.CustomerId" class="control-label"></label>
+                <select asp-for="Delivery.CustomerId" class="form-control" asp-items="Model.CustomerOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
+                <label asp-for="Delivery.WeeklyMenuId" class="control-label"></label>
+                <select asp-for="Delivery.WeeklyMenuId" class="form-control" asp-items="Model.WeeklyMenuOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="DeliveryStatusId" class="control-label"></label>
-                <select asp-for="DeliveryStatusId" class ="form-control" asp-items="ViewBag.DeliveryStatusId"></select>
+                <label asp-for="Delivery.DeliveryZoneId" class="control-label"></label>
+                <select asp-for="Delivery.DeliveryZoneId" class="form-control" asp-items="Model.DeliveryZoneOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class ="form-control" asp-items="ViewBag.CompanyId"></select>
+                <label asp-for="Delivery.DeliveryWindowId" class="control-label"></label>
+                <select asp-for="Delivery.DeliveryWindowId" class="form-control" asp-items="Model.DeliveryWindowOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="CustomerId" class="control-label"></label>
-                <select asp-for="CustomerId" class ="form-control" asp-items="ViewBag.CustomerId"></select>
+                <label asp-for="Delivery.BoxId" class="control-label"></label>
+                <select asp-for="Delivery.BoxId" class="form-control" asp-items="Model.BoxOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="WeeklyMenuId" class="control-label"></label>
-                <select asp-for="WeeklyMenuId" class ="form-control" asp-items="ViewBag.WeeklyMenuId"></select>
+                <label asp-for="Delivery.MealSelectionId" class="control-label"></label>
+                <select asp-for="Delivery.MealSelectionId" class="form-control" asp-items="Model.MealSelectionOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="DeliveryZoneId" class="control-label"></label>
-                <select asp-for="DeliveryZoneId" class ="form-control" asp-items="ViewBag.DeliveryZoneId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeliveryWindowId" class="control-label"></label>
-                <select asp-for="DeliveryWindowId" class ="form-control" asp-items="ViewBag.DeliveryWindowId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="BoxId" class="control-label"></label>
-                <select asp-for="BoxId" class ="form-control" asp-items="ViewBag.BoxId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="MealSelectionId" class="control-label"></label>
-                <select asp-for="MealSelectionId" class ="form-control" asp-items="ViewBag.MealSelectionId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="MealSubscriptionId" class="control-label"></label>
-                <select asp-for="MealSubscriptionId" class ="form-control" asp-items="ViewBag.MealSubscriptionId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class ="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
+                <label asp-for="Delivery.MealSubscriptionId" class="control-label"></label>
+                <select asp-for="Delivery.MealSubscriptionId" class="form-control" asp-items="Model.MealSubscriptionOptions"></select>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

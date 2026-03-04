@@ -1,29 +1,31 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Menu;
 using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class WeeklyMenusController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IWeeklyMenuService _weeklyMenuService;
 
-        public WeeklyMenusController(AppDbContext context)
+        public WeeklyMenusController(IWeeklyMenuService weeklyMenuService)
         {
-            _context = context;
+            _weeklyMenuService = weeklyMenuService;
         }
 
         // GET: WeeklyMenus
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.WeeklyMenus.Include(w => w.Company).Include(w => w.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _weeklyMenuService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: WeeklyMenus/Details/5
@@ -34,10 +36,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var weeklyMenu = await _context.WeeklyMenus
-                .Include(w => w.Company)
-                .Include(w => w.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var weeklyMenu = await _weeklyMenuService.GetByIdAsync(id.Value, companyId.Value);
             if (weeklyMenu == null)
             {
                 return NotFound();
@@ -49,8 +54,6 @@ namespace WebApp.Controllers
         // GET: WeeklyMenus/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
             return View();
         }
 
@@ -59,17 +62,26 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("WeekStartDate,SelectionDeadlineAt,TotalRecipes,IsPublished,PublishedAt,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] WeeklyMenu weeklyMenu)
+        public async Task<IActionResult> Create([Bind("WeekStartDate,SelectionDeadlineAt,TotalRecipes,IsPublished,PublishedAt")] WeeklyMenu weeklyMenu)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
             if (ModelState.IsValid)
             {
-                weeklyMenu.Id = Guid.NewGuid();
-                _context.Add(weeklyMenu);
-                await _context.SaveChangesAsync();
+                weeklyMenu.CreatedAt = DateTime.UtcNow;
+                weeklyMenu.UpdatedAt = null;
+                weeklyMenu.DeletedAt = null;
+                weeklyMenu.CreatedByAppUserId = userId.Value;
+
+                await _weeklyMenuService.AddAsync(weeklyMenu, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", weeklyMenu.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", weeklyMenu.CreatedByAppUserId);
+
             return View(weeklyMenu);
         }
 
@@ -81,13 +93,18 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var weeklyMenu = await _context.WeeklyMenus.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var weeklyMenu = await _weeklyMenuService.GetByIdAsync(id.Value, companyId.Value);
             if (weeklyMenu == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", weeklyMenu.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", weeklyMenu.CreatedByAppUserId);
+
             return View(weeklyMenu);
         }
 
@@ -96,35 +113,37 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("WeekStartDate,SelectionDeadlineAt,TotalRecipes,IsPublished,PublishedAt,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] WeeklyMenu weeklyMenu)
+        public async Task<IActionResult> Edit(Guid id, [Bind("Id,WeekStartDate,SelectionDeadlineAt,TotalRecipes,IsPublished,PublishedAt")] WeeklyMenu weeklyMenu)
         {
             if (id != weeklyMenu.Id)
             {
                 return NotFound();
             }
 
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _weeklyMenuService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(weeklyMenu);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!WeeklyMenuExists(weeklyMenu.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                weeklyMenu.CompanyId = companyId.Value;
+                weeklyMenu.CreatedByAppUserId = existing.CreatedByAppUserId;
+                weeklyMenu.CreatedAt = existing.CreatedAt;
+                weeklyMenu.UpdatedAt = DateTime.UtcNow;
+                weeklyMenu.DeletedAt = existing.DeletedAt;
+
+                await _weeklyMenuService.UpdateAsync(weeklyMenu, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", weeklyMenu.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", weeklyMenu.CreatedByAppUserId);
+
             return View(weeklyMenu);
         }
 
@@ -136,10 +155,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var weeklyMenu = await _context.WeeklyMenus
-                .Include(w => w.Company)
-                .Include(w => w.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var weeklyMenu = await _weeklyMenuService.GetByIdAsync(id.Value, companyId.Value);
             if (weeklyMenu == null)
             {
                 return NotFound();
@@ -153,19 +175,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var weeklyMenu = await _context.WeeklyMenus.FindAsync(id);
-            if (weeklyMenu != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.WeeklyMenus.Remove(weeklyMenu);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _weeklyMenuService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool WeeklyMenuExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.WeeklyMenus.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }
