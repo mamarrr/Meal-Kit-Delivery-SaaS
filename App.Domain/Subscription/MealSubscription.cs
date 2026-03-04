@@ -2,7 +2,7 @@ using Base.Contracts.Domain;
 
 namespace App.Domain.Subscription;
 
-public class MealSubscription : BaseEntity
+public class MealSubscription : BaseEntity, ITenantProvider
 {
     public bool IsActive { get; set; }
     public DateTime StartDate { get; set; }
@@ -15,6 +15,7 @@ public class MealSubscription : BaseEntity
     public DateTime? DeletedAt { get; set; }
     
     // Foreign Keys
+    public Guid CompanyId { get; set; }
     public Guid CustomerId { get; set; }
     public Guid BoxId { get; set; }
     

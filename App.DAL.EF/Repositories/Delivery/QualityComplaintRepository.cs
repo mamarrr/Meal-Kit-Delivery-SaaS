@@ -23,10 +23,10 @@ public class QualityComplaintRepository : BaseRepository<QualityComplaint, AppDb
     }
 
     /// <inheritdoc />
-    public async Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId)
+    public async Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId)
     {
         return await RepositoryDbSet
-            .Where(qc => qc.CustomerId == customerId)
+            .Where(qc => qc.CustomerId == customerId && qc.CompanyId == companyId)
             .ToListAsync();
     }
 }

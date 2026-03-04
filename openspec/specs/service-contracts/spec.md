@@ -1,0 +1,33 @@
+## Purpose
+
+Define BLL service contracts grouped by functional area, with async CRUD conventions and explicit tenant context for tenant-scoped operations.
+
+## Requirements
+
+### Requirement: Define BLL service contracts per functional area
+The system MUST define BLL service interfaces for core, menu, delivery, subscription, and identity operations, one interface per aggregate root or cohesive domain service.
+
+#### Scenario: Contracts exist for each area
+- **WHEN** a developer inspects the BLL contracts project/namespace
+- **THEN** they find service interfaces grouped by functional area (core, menu, delivery, subscription, identity)
+
+### Requirement: Service contracts provide async CRUD patterns
+Each service interface MUST expose asynchronous CRUD operations appropriate for its aggregate, using `Task`-based methods and returning DTOs or domain entities as defined by the BLL layer.
+
+#### Scenario: Async CRUD signature availability
+- **WHEN** a service interface is reviewed for a given aggregate
+- **THEN** it includes async create, read, update, and delete methods matching BLL conventions
+
+### Requirement: Tenant-scoped operations are explicit in contracts
+Service contracts MUST require tenant context for operations on tenant-scoped data, ensuring `CompanyId` is available to the caller or embedded in the service context.
+
+#### Scenario: Tenant context required in contract
+- **WHEN** a service method operates on tenant-scoped entities
+- **THEN** the contract requires tenant context (e.g., `CompanyId` parameter or tenant-bound service instance)
+
+### Requirement: Web layer depends on BLL contracts, not repositories
+The WebApp MUST consume BLL service interfaces rather than repository interfaces for business operations.
+
+#### Scenario: Controller uses BLL contract
+- **WHEN** a controller or page requires business operations
+- **THEN** it depends on a BLL service interface and not a repository interface

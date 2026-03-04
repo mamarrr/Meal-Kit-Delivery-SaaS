@@ -23,10 +23,10 @@ public class CompanyAppUserRepository : BaseRepository<CompanyAppUser, AppDbCont
     }
 
     /// <inheritdoc />
-    public async Task<ICollection<CompanyAppUser>> GetAllByAppUserIdAsync(Guid appUserId)
+    public async Task<ICollection<CompanyAppUser>> GetAllByAppUserIdAsync(Guid appUserId, Guid companyId)
     {
         return await RepositoryDbSet
-            .Where(cau => cau.AppUserId == appUserId)
+            .Where(cau => cau.AppUserId == appUserId && cau.CompanyId == companyId)
             .ToListAsync();
     }
 }

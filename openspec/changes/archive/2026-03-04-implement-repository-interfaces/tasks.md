@@ -14,5 +14,5 @@
 ## 3. Wiring and Validation
 
 - [x] 3.1 Register repositories in DI composition root (DAL/BLL setup extensions)
-- [ ] 3.2 Update BLL/data access usage to depend on repository interfaces
-- [ ] 3.3 Add/adjust tests or verification steps for tenant filtering and update behavior
+- [x] 3.2 Update BLL/data access usage to depend on repository interfaces
+- [x] 3.3 Add/adjust tests or verification steps for tenant filtering and update behavior

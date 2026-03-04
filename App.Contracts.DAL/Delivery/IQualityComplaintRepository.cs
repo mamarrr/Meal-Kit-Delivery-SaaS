@@ -16,9 +16,10 @@ public interface IQualityComplaintRepository : IRepository<QualityComplaint>
     Task<ICollection<QualityComplaint>> GetAllByCompanyIdAsync(Guid companyId);
     
     /// <summary>
-    /// Gets all quality complaints for a specific customer.
+    /// Gets all quality complaints for a specific customer within company scope.
     /// </summary>
     /// <param name="customerId">The customer ID.</param>
+    /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of quality complaints for the customer.</returns>
-    Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId);
+    Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId);
 }

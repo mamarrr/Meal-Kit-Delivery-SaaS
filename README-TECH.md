@@ -56,3 +56,11 @@ API Controllers
 dotnet aspnet-codegenerator controller -name GpsLocationsController     -m GpsLocation     -actions -dc AppDbContext -outDir ApiControllers -api --useAsyncActions  -f
 ~~~
 
+## Tenant-scoped entity convention
+
+- Implement `ITenantProvider` on every company-owned domain entity (tenant data must always expose `CompanyId`).
+- Keep platform/global entities (for example identity/system lookup entities) outside `ITenantProvider`.
+- Repository methods that query tenant-owned entities must accept company scope where needed and enforce `CompanyId` filtering in the database query.
+- Service-level create/update paths must preserve tenant ownership by assigning and/or validating `CompanyId` in tenant scope operations.
+- For detached/no-tracking update flows, continue to use explicit repository `Update()` calls before saving changes.
+

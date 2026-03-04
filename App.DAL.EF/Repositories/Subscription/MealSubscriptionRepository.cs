@@ -15,10 +15,26 @@ public class MealSubscriptionRepository : BaseRepository<MealSubscription, AppDb
     }
 
     /// <inheritdoc />
+    public async Task<ICollection<MealSubscription>> GetAllByCompanyIdAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(ms => ms.CompanyId == companyId)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
     public async Task<ICollection<MealSubscription>> GetAllByCustomerIdAsync(Guid customerId)
     {
         return await RepositoryDbSet
             .Where(ms => ms.CustomerId == customerId)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<ICollection<MealSubscription>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(ms => ms.CustomerId == customerId && ms.CompanyId == companyId)
             .ToListAsync();
     }
 }
