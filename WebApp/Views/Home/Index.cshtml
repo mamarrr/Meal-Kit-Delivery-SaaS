@@ -1,19 +1,58 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using WebApp.ViewModels.Shared
+@{
+    ViewData["Title"] = "Workflow Hub";
+
+    var headerModel = new PageHeaderViewModel
+    {
+        ContextLabel = "Platform",
+        Title = "Meal delivery workflow hub",
+        Subtitle = "Customer, company, and system workflows are being standardized and expanded through OpenSpec.",
+        StatusText = "Foundation pass"
+    };
+
+    var actionBarModel = new ActionBarViewModel
+    {
+        PrimaryActionText = "Open API docs",
+        PrimaryActionUrl = "/swagger",
+        SecondaryActionText = "Privacy",
+        SecondaryActionUrl = Url.Action("Privacy", "Home")!
+    };
+
+    var alertModel = new AlertViewModel
+    {
+        Variant = "info",
+        Title = "UI baseline in progress",
+        Message = "This page uses shared shell components to establish consistent layout, status, and action patterns.",
+        Dismissible = true
+    };
+
+    var emptyStateModel = new EmptyStateViewModel
+    {
+        Title = "Workflow pages are being added",
+        Message = "Entity-specific controller routes will populate this section in upcoming tasks.",
+        ActionText = "Review workflow inventory",
+        ActionUrl = Url.Content("~/docs/workflow-inventory.html")
+    };
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-    
-    <div x-data="{ count: 0 }">
-        <button x-on:click="count++">Alpinejs counter</button>
-        <span x-text="count"></span>
+<partial name="_PageHeader" model="headerModel"/>
+
+<partial name="_ActionBar" model="actionBarModel"/>
+
+<partial name="_AppAlert" model="alertModel"/>
+
+<section class="row g-3" aria-label="Workflow status overview">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5">Coverage matrix</h2>
+                <p class="text-muted mb-3">Workflow mapping is tracked in change artifacts to enforce pass/fail completion gates.</p>
+                <a class="btn btn-outline-primary" href="@Url.Content("~/docs/workflow-coverage-matrix.html")">View matrix artifact</a>
+            </div>
+        </div>
     </div>
-    
-    <button hx-post="/home/htmxclicked" hx-swap="innerHTML">
-        Click Me
-    </button>
-    
-</div>
+    <div class="col-12 col-lg-6">
+        <partial name="_EmptyState" model="emptyStateModel"/>
+    </div>
+</section>
 

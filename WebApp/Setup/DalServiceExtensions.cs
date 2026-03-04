@@ -3,11 +3,13 @@ using App.Contracts.DAL.Delivery;
 using App.Contracts.DAL.Identity;
 using App.Contracts.DAL.Menu;
 using App.Contracts.DAL.Subscription;
+using App.Contracts.DAL.Support;
 using App.DAL.EF.Repositories.Core;
 using App.DAL.EF.Repositories.Delivery;
 using App.DAL.EF.Repositories.Identity;
 using App.DAL.EF.Repositories.Menu;
 using App.DAL.EF.Repositories.Subscription;
+using App.DAL.EF.Repositories.Support;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace App.DAL.EF;
@@ -52,7 +54,15 @@ public static class DalServiceExtensions
         // Identity domain repositories
         services.AddScoped<IAppUserRepository, AppUserRepository>();
         services.AddScoped<IAppRefreshTokenRepository, AppRefreshTokenRepository>();
-        
+
+        // Support/system repositories
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<ITenantSupportAccessRepository, TenantSupportAccessRepository>();
+        services.AddScoped<ISupportTicketStatusRepository, SupportTicketStatusRepository>();
+        services.AddScoped<ISupportTicketRepository, SupportTicketRepository>();
+        services.AddScoped<ISupportImpersonationSessionRepository, SupportImpersonationSessionRepository>();
+        services.AddScoped<ISystemAnalyticsSnapshotRepository, SystemAnalyticsSnapshotRepository>();
+
         return services;
     }
 }

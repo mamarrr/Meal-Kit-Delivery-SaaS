@@ -1,0 +1,105 @@
+@model App.Domain.Core.CompanySettings
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>CompanySettings</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="DefaultNoRepeatWeeks" class="control-label"></label>
+                <input asp-for="DefaultNoRepeatWeeks" class="form-control" />
+                <span asp-validation-for="DefaultNoRepeatWeeks" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectionDeadlineDaysBeforeDelivery" class="control-label"></label>
+                <input asp-for="SelectionDeadlineDaysBeforeDelivery" class="form-control" />
+                <span asp-validation-for="SelectionDeadlineDaysBeforeDelivery" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AllowAutoSelection" /> @Html.DisplayNameFor(model => model.AllowAutoSelection)
+                </label>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AllowPauseSubscription" /> @Html.DisplayNameFor(model => model.AllowPauseSubscription)
+                </label>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AllowSkipWeek" /> @Html.DisplayNameFor(model => model.AllowSkipWeek)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="MinimumSubscriptionWeeks" class="control-label"></label>
+                <input asp-for="MinimumSubscriptionWeeks" class="form-control" />
+                <span asp-validation-for="MinimumSubscriptionWeeks" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MaxDeliveryAttempts" class="control-label"></label>
+                <input asp-for="MaxDeliveryAttempts" class="form-control" />
+                <span asp-validation-for="MaxDeliveryAttempts" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AllowRedeliveryAfterFailure" /> @Html.DisplayNameFor(model => model.AllowRedeliveryAfterFailure)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="ComplaintEscalationThreshold" class="control-label"></label>
+                <input asp-for="ComplaintEscalationThreshold" class="form-control" />
+                <span asp-validation-for="ComplaintEscalationThreshold" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ComplaintEscalationDaysWindow" class="control-label"></label>
+                <input asp-for="ComplaintEscalationDaysWindow" class="form-control" />
+                <span asp-validation-for="ComplaintEscalationDaysWindow" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AutoPrioritizeFreshestStock" /> @Html.DisplayNameFor(model => model.AutoPrioritizeFreshestStock)
+                </label>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AutoAssignEarliestSlot" /> @Html.DisplayNameFor(model => model.AutoAssignEarliestSlot)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="UpdatedAt" class="control-label"></label>
+                <input asp-for="UpdatedAt" class="form-control" />
+                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CompanyId" class="control-label"></label>
+                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
+                <span asp-validation-for="CompanyId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UpdatedByAppUserId" class="control-label"></label>
+                <select asp-for="UpdatedByAppUserId" class="form-control" asp-items="ViewBag.UpdatedByAppUserId"></select>
+                <span asp-validation-for="UpdatedByAppUserId" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

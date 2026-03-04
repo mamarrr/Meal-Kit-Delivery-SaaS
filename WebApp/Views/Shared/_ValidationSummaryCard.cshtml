@@ -1,0 +1,7 @@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger" role="alert" aria-live="assertive">
+        <h2 class="h6 mb-2">Please review the highlighted fields.</h2>
+        <div asp-validation-summary="ModelOnly" class="mb-0"></div>
+    </div>
+}

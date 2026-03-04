@@ -3,6 +3,7 @@ using App.Domain.Core;
 using App.Domain.Delivery;
 using App.Domain.Identity;
 using App.Domain.Menu;
+using App.Domain.Support;
 using App.Domain.Subscription;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -57,6 +58,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<QualityComplaintType> QualityComplaintTypes { get; set; }
     public DbSet<QualityComplaintStatus> QualityComplaintStatuses { get; set; }
     public DbSet<Rating> Ratings { get; set; }
+
+    // System/support entities
+    public DbSet<SystemSetting> SystemSettings { get; set; }
+    public DbSet<TenantSupportAccess> TenantSupportAccesses { get; set; }
+    public DbSet<SupportTicketStatus> SupportTicketStatuses { get; set; }
+    public DbSet<SupportTicket> SupportTickets { get; set; }
+    public DbSet<SupportImpersonationSession> SupportImpersonationSessions { get; set; }
+    public DbSet<SystemAnalyticsSnapshot> SystemAnalyticsSnapshots { get; set; }
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -76,6 +85,60 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<CompanySettings>(entity =>
         {
             entity.HasIndex(e => e.CompanyId).IsUnique();
+        });
+
+        builder.Entity<SystemSetting>(entity =>
+        {
+            entity.HasIndex(e => new { e.Category, e.Key }).IsUnique();
+            entity.HasOne(e => e.UpdatedByAppUser)
+                .WithMany(u => u.SystemSettingsUpdated)
+                .HasForeignKey(e => e.UpdatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<TenantSupportAccess>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.SupportUserId, e.RevokedAt });
+            entity.HasOne(e => e.SupportUser)
+                .WithMany(u => u.TenantSupportAccesses)
+                .HasForeignKey(e => e.SupportUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.GrantedByAppUser)
+                .WithMany(u => u.TenantSupportAccessesGranted)
+                .HasForeignKey(e => e.GrantedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<SupportTicketStatus>(entity =>
+        {
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        builder.Entity<SupportTicket>(entity =>
+        {
+            entity.HasOne(e => e.CreatedByAppUser)
+                .WithMany(u => u.SupportTicketsCreated)
+                .HasForeignKey(e => e.CreatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.AssignedToAppUser)
+                .WithMany(u => u.SupportTicketsAssigned)
+                .HasForeignKey(e => e.AssignedToAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<SupportImpersonationSession>(entity =>
+        {
+            entity.HasOne(e => e.SupportUser)
+                .WithMany(u => u.SupportImpersonationSessionsAsSupportUser)
+                .HasForeignKey(e => e.SupportUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ImpersonatedAppUser)
+                .WithMany(u => u.SupportImpersonationSessionsAsImpersonatedUser)
+                .HasForeignKey(e => e.ImpersonatedAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
         
         // Configure relationships with multiple FKs to same table

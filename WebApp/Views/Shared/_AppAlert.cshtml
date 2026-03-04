@@ -1,0 +1,14 @@
+@model WebApp.ViewModels.Shared.AlertViewModel
+
+<div class="alert alert-@Model.Variant @(Model.Dismissible ? "alert-dismissible fade show" : "")" role="alert">
+    @if (!string.IsNullOrWhiteSpace(Model.Title))
+    {
+        <h2 class="h6 mb-1">@Model.Title</h2>
+    }
+    <p class="mb-0">@Model.Message</p>
+
+    @if (Model.Dismissible)
+    {
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    }
+</div>

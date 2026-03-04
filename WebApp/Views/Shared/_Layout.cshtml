@@ -14,19 +14,36 @@
     @await RenderSectionAsync("HeaderScripts", required: false)
 </head>
 <body>
-<header>
-    <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<header class="site-header">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4" aria-label="Global navigation">
         <div class="container">
-            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">@AppNameService.AppName</a>
+            <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Home" asp-action="Index">@AppNameService.AppName</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                     aria-controls="navbarSupportedContent"
                     aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                <ul class="navbar-nav flex-grow-1">
+            <div class="navbar-collapse collapse justify-content-between">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
                     <li class="nav-item">
                         <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">@App.Resources.Views.Shared._Layout.Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Customer View
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><span class="dropdown-item-text small text-muted">Workflow pages planned in this change</span></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Company View
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><span class="dropdown-item-text small text-muted">Workflow pages planned in this change</span></li>
+                        </ul>
                     </li>
                     @if (User.IsInRole("root"))
                     {
@@ -41,20 +58,22 @@
                             </ul>
                         </li>
                     }
-                    <partial name="_LanguageSelection"/>
                 </ul>
-                <partial name="_LoginPartial"/>
+                <ul class="navbar-nav align-items-lg-center gap-lg-1">
+                    <partial name="_LanguageSelection"/>
+                    <partial name="_LoginPartial"/>
+                </ul>
             </div>
         </div>
     </nav>
 </header>
-<div class="container">
-    <main role="main" class="pb-3">
+<div class="container pb-4">
+    <main id="main-content" role="main" class="pb-3">
         @RenderBody()
     </main>
 </div>
 
-<footer class="border-top footer text-muted">
+<footer class="border-top footer text-muted py-3 mt-auto">
     <div class="container">
         @AppNameService.AppName - <a asp-area="" asp-controller="Home" asp-action="Privacy">@App.Resources.Views.Shared._Layout.Privacy</a> | 
         <a href="/swagger">Api</a> | 

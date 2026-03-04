@@ -1,0 +1,90 @@
+@model App.Domain.Delivery.QualityComplaint
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>QualityComplaint</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Severity" class="control-label"></label>
+                <input asp-for="Severity" class="form-control" />
+                <span asp-validation-for="Severity" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description" class="control-label"></label>
+                <input asp-for="Description" class="form-control" />
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EscalatedAt" class="control-label"></label>
+                <input asp-for="EscalatedAt" class="form-control" />
+                <span asp-validation-for="EscalatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EscalationAction" class="control-label"></label>
+                <input asp-for="EscalationAction" class="form-control" />
+                <span asp-validation-for="EscalationAction" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreatedAt" class="control-label"></label>
+                <input asp-for="CreatedAt" class="form-control" />
+                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="UpdatedAt" class="control-label"></label>
+                <input asp-for="UpdatedAt" class="form-control" />
+                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeletedAt" class="control-label"></label>
+                <input asp-for="DeletedAt" class="form-control" />
+                <span asp-validation-for="DeletedAt" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CompanyId" class="control-label"></label>
+                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
+                <span asp-validation-for="CompanyId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CustomerId" class="control-label"></label>
+                <select asp-for="CustomerId" class="form-control" asp-items="ViewBag.CustomerId"></select>
+                <span asp-validation-for="CustomerId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DeliveryId" class="control-label"></label>
+                <select asp-for="DeliveryId" class="form-control" asp-items="ViewBag.DeliveryId"></select>
+                <span asp-validation-for="DeliveryId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="QualityComplaintTypeId" class="control-label"></label>
+                <select asp-for="QualityComplaintTypeId" class="form-control" asp-items="ViewBag.QualityComplaintTypeId"></select>
+                <span asp-validation-for="QualityComplaintTypeId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="QualityComplaintStatusId" class="control-label"></label>
+                <select asp-for="QualityComplaintStatusId" class="form-control" asp-items="ViewBag.QualityComplaintStatusId"></select>
+                <span asp-validation-for="QualityComplaintStatusId" class="text-danger"></span>
+            </div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

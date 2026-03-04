@@ -1,0 +1,9 @@
+@model WebApp.ViewModels.Shared.FormShellViewModel
+
+<section class="form-shell card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-1">@Model.Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p class="text-muted mb-3">@Model.Description</p>
+        }

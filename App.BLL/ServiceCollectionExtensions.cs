@@ -3,11 +3,13 @@ using App.BLL.Delivery;
 using App.BLL.Identity;
 using App.BLL.Menu;
 using App.BLL.Subscription;
+using App.BLL.Support;
 using App.Contracts.BLL.Core;
 using App.Contracts.BLL.Delivery;
 using App.Contracts.BLL.Identity;
 using App.Contracts.BLL.Menu;
 using App.Contracts.BLL.Subscription;
+using App.Contracts.BLL.Support;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace App.BLL;
@@ -39,6 +41,13 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IAppUserService, AppUserService>();
         services.AddScoped<IAppRefreshTokenService, AppRefreshTokenService>();
+
+        services.AddScoped<ISystemSettingService, SystemSettingService>();
+        services.AddScoped<ITenantSupportAccessService, TenantSupportAccessService>();
+        services.AddScoped<ISupportTicketStatusService, SupportTicketStatusService>();
+        services.AddScoped<ISupportTicketService, SupportTicketService>();
+        services.AddScoped<ISupportImpersonationSessionService, SupportImpersonationSessionService>();
+        services.AddScoped<ISystemAnalyticsSnapshotService, SystemAnalyticsSnapshotService>();
 
         return services;
     }

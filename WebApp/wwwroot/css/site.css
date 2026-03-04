@@ -12,13 +12,27 @@ html {
     box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #0d6efd;
+    outline-offset: 2px;
+}
+
 html {
     position: relative;
     min-height: 100%;
 }
 
 body {
-    margin-bottom: 60px;
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    color: #1f2937;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
@@ -44,4 +58,76 @@ body {
 .navbar .btn-link.nav-link:hover,
 .navbar .btn-link.nav-link:focus {
     color: var(--bs-navbar-hover-color);
+}
+
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 2000;
+    background: #111827;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.skip-link:focus {
+    left: 0.75rem;
+    top: 0.75rem;
+}
+
+.site-header .navbar {
+    backdrop-filter: blur(6px);
+}
+
+.page-header-shell {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+}
+
+.status-chip {
+    font-weight: 600;
+}
+
+.action-bar {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.form-shell {
+    background: #fff;
+}
+
+.workflow-table-shell {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+}
+
+.workflow-table-shell table {
+    margin-bottom: 0;
+}
+
+.empty-state {
+    background: #fff;
+    border-style: dashed !important;
+}
+
+@media (max-width: 992px) {
+    .page-header-shell {
+        padding: 0.875rem 1rem;
+    }
+
+    .action-bar {
+        align-items: stretch !important;
+    }
+
+    .action-bar .btn {
+        width: 100%;
+    }
 }

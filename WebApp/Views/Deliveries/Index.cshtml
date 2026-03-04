@@ -1,0 +1,150 @@
+@model IEnumerable<App.Domain.Delivery.Delivery>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.ScheduledTime)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeliveredAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.FailureReason)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AddressLine)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.City)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PostalCode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Country)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CreatedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.UpdatedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeletedAt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeliveryStatus)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Company)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Customer)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.WeeklyMenu)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeliveryZone)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DeliveryWindow)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Box)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MealSelection)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MealSubscription)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CreatedByAppUser)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.ScheduledTime)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DeliveredAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FailureReason)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AddressLine)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.City)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PostalCode)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Country)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CreatedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UpdatedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DeletedAt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DeliveryStatus!.Code)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Company!.ContactEmail)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Customer!.AddressLine)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.WeeklyMenu!.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DeliveryZone!.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DeliveryWindow!.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Box!.DisplayName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MealSelection!.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MealSubscription!.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CreatedByAppUser!.FirstName)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+

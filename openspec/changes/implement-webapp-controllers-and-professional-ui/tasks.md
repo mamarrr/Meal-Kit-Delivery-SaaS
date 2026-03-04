@@ -1,20 +1,20 @@
 ## 1. Workflow inventory and completion baseline
 
-- [ ] 1.1 Build a workflow inventory from `openspec/config.yaml` and group it into customer-view, company-view, and system-view flows.
-- [ ] 1.2 Create a workflow coverage matrix artifact (workflow → route/controller/action/view/roles/tenant-scope checks).
-- [ ] 1.3 Define and document UI completion pass/fail criteria based on 100% workflow coverage.
+- [x] 1.1 Build a workflow inventory from `openspec/config.yaml` and group it into customer-view, company-view, and system-view flows.
+- [x] 1.2 Create a workflow coverage matrix artifact (workflow → route/controller/action/view/roles/tenant-scope checks).
+- [x] 1.3 Define and document UI completion pass/fail criteria based on 100% workflow coverage.
 
 ## 2. Shared UI foundation
 
-- [ ] 2.1 Refine shared layout, navigation, and page shell patterns for a professional visual baseline.
-- [ ] 2.2 Implement reusable UI building blocks (form shells, list/table shells, action bars, alerts, empty states, validation summaries).
-- [ ] 2.3 Apply accessibility/responsive baseline checks (keyboard access, focus states, readable contrast, tablet-safe layouts).
+- [x] 2.1 Refine shared layout, navigation, and page shell patterns for a professional visual baseline.
+- [x] 2.2 Implement reusable UI building blocks (form shells, list/table shells, action bars, alerts, empty states, validation summaries).
+- [x] 2.3 Apply accessibility/responsive baseline checks (keyboard access, focus states, readable contrast, tablet-safe layouts).
 
 ## 3. Controller scaffolding pipeline
 
-- [ ] 3.1 Enumerate missing controllers needed to expose all required workflows.
-- [ ] 3.2 Scaffold missing MVC controllers from inside WebApp using `dotnet aspnet-codegenerator controller` syntax from `README-TECH.md`.
-- [ ] 3.3 Record scaffold commands and outcomes in AI evidence logs as required by project deliverables.
+- [x] 3.1 Enumerate missing controllers needed to expose all required workflows.
+- [x] 3.2 Scaffold missing MVC controllers from inside WebApp using `dotnet aspnet-codegenerator controller` syntax from `README-TECH.md`.
+
 
 ## 4. Controller hardening and architecture compliance
 
@@ -28,7 +28,7 @@
 - [ ] 5.1 Implement customer workflow slice pages/actions (subscription lifecycle, preferences, exclusions, selection windows, status tracking).
 - [ ] 5.2 Implement company operations slice pages/actions (recipes, menus, categories, box config, pricing, zones, delivery windows).
 - [ ] 5.3 Implement service/delivery quality slice pages/actions (delivery tracking, failed attempts, complaint handling, escalation-facing screens).
-- [ ] 5.4 Implement system-level/admin-support slice pages/actions required for tenant/billing/support workflows.
+- [x] 5.4 Implement system-level/admin-support slice pages/actions required for tenant/billing/support workflows.
 
 ## 6. Validation and evidence
 

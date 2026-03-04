@@ -1,4 +1,5 @@
 using App.Domain.Identity;
+using App.Domain.Support;
 using Base.Contracts.Domain;
 
 namespace App.Domain.Core;
@@ -35,4 +36,7 @@ public class Company : BaseEntity
     public ICollection<CompanyAppUser>? CompanyAppUsers { get; set; }
     public ICollection<BoxPrice>? BoxPrices { get; set; }
     public ICollection<App.Domain.Delivery.Delivery>? Deliveries { get; set; }
+    public ICollection<TenantSupportAccess>? TenantSupportAccesses { get; set; }
+    public ICollection<SupportTicket>? SupportTickets { get; set; }
+    public ICollection<SupportImpersonationSession>? SupportImpersonationSessions { get; set; }
 }

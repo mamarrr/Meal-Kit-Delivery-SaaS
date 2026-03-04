@@ -1,0 +1,18 @@
+@model WebApp.ViewModels.Shared.PageHeaderViewModel
+
+<header class="page-header-shell mb-4">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+            <p class="text-uppercase text-muted small fw-semibold mb-1">@Model.ContextLabel</p>
+            <h1 class="h3 mb-1">@Model.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+            {
+                <p class="text-muted mb-0">@Model.Subtitle</p>
+            }
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.StatusText))
+        {
+            <span class="badge text-bg-light border status-chip">@Model.StatusText</span>
+        }
+    </div>
+</header>

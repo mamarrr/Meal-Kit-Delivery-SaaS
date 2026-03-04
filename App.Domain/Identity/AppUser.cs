@@ -34,4 +34,11 @@ public class AppUser : IdentityUser<Guid>, IBaseEntity
     public ICollection<BoxPrice>? BoxPricesCreated { get; set; }
     public ICollection<App.Domain.Delivery.Delivery>? DeliveriesCreated { get; set; }
     public ICollection<DeliveryAttempt>? DeliveryAttemptsCreated { get; set; }
+    public ICollection<App.Domain.Support.SystemSetting>? SystemSettingsUpdated { get; set; }
+    public ICollection<App.Domain.Support.TenantSupportAccess>? TenantSupportAccesses { get; set; }
+    public ICollection<App.Domain.Support.TenantSupportAccess>? TenantSupportAccessesGranted { get; set; }
+    public ICollection<App.Domain.Support.SupportTicket>? SupportTicketsCreated { get; set; }
+    public ICollection<App.Domain.Support.SupportTicket>? SupportTicketsAssigned { get; set; }
+    public ICollection<App.Domain.Support.SupportImpersonationSession>? SupportImpersonationSessionsAsSupportUser { get; set; }
+    public ICollection<App.Domain.Support.SupportImpersonationSession>? SupportImpersonationSessionsAsImpersonatedUser { get; set; }
 }

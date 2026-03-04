@@ -3,7 +3,6 @@
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
 
-<ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item">
@@ -24,4 +23,3 @@ else
         <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">@App.Resources.Views.Shared._Layout.Login</a>
     </li>
 }
-</ul>

@@ -1,0 +1,15 @@
+@model WebApp.ViewModels.Shared.ActionBarViewModel
+
+<div class="action-bar d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="small text-muted">Workflow actions</div>
+    <div class="d-flex gap-2">
+        @if (!string.IsNullOrWhiteSpace(Model.SecondaryActionText) && !string.IsNullOrWhiteSpace(Model.SecondaryActionUrl))
+        {
+            <a class="btn btn-outline-secondary" href="@Model.SecondaryActionUrl">@Model.SecondaryActionText</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.PrimaryActionText) && !string.IsNullOrWhiteSpace(Model.PrimaryActionUrl))
+        {
+            <a class="btn btn-primary" href="@Model.PrimaryActionUrl">@Model.PrimaryActionText</a>
+        }
+    </div>
+</div>
