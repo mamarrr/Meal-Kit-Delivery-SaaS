@@ -1,4 +1,4 @@
-@model App.Domain.Support.TenantSupportAccess
+@model WebApp.ViewModels.SupportAccess.SupportAccessEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,41 +13,41 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
-                <span asp-validation-for="CompanyId" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.CompanyId" class="control-label"></label>
+                <select asp-for="TenantSupportAccess.CompanyId" class="form-control" asp-items="Model.CompanyOptions"></select>
+                <span asp-validation-for="TenantSupportAccess.CompanyId" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="SupportUserId" class="control-label"></label>
-                <select asp-for="SupportUserId" class="form-control" asp-items="ViewBag.SupportUserId"></select>
-                <span asp-validation-for="SupportUserId" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.SupportUserId" class="control-label"></label>
+                <select asp-for="TenantSupportAccess.SupportUserId" class="form-control" asp-items="Model.SupportUserOptions"></select>
+                <span asp-validation-for="TenantSupportAccess.SupportUserId" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsReadOnly" /> @Html.DisplayNameFor(model => model.IsReadOnly)
+                    <input class="form-check-input" asp-for="TenantSupportAccess.IsReadOnly" /> @Html.DisplayNameFor(model => model.TenantSupportAccess.IsReadOnly)
                 </label>
             </div>
             <div class="form-group">
-                <label asp-for="Reason" class="control-label"></label>
-                <input asp-for="Reason" class="form-control" />
-                <span asp-validation-for="Reason" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.Reason" class="control-label"></label>
+                <input asp-for="TenantSupportAccess.Reason" class="form-control" />
+                <span asp-validation-for="TenantSupportAccess.Reason" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="GrantedAt" class="control-label"></label>
-                <input asp-for="GrantedAt" class="form-control" />
-                <span asp-validation-for="GrantedAt" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.GrantedAt" class="control-label"></label>
+                <input asp-for="TenantSupportAccess.GrantedAt" class="form-control" />
+                <span asp-validation-for="TenantSupportAccess.GrantedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="RevokedAt" class="control-label"></label>
-                <input asp-for="RevokedAt" class="form-control" />
-                <span asp-validation-for="RevokedAt" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.RevokedAt" class="control-label"></label>
+                <input asp-for="TenantSupportAccess.RevokedAt" class="form-control" />
+                <span asp-validation-for="TenantSupportAccess.RevokedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="GrantedByAppUserId" class="control-label"></label>
-                <select asp-for="GrantedByAppUserId" class="form-control" asp-items="ViewBag.GrantedByAppUserId"></select>
-                <span asp-validation-for="GrantedByAppUserId" class="text-danger"></span>
+                <label asp-for="TenantSupportAccess.GrantedByAppUserId" class="control-label"></label>
+                <select asp-for="TenantSupportAccess.GrantedByAppUserId" class="form-control" asp-items="Model.GrantedByUserOptions"></select>
+                <span asp-validation-for="TenantSupportAccess.GrantedByAppUserId" class="text-danger"></span>
             </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="TenantSupportAccess.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

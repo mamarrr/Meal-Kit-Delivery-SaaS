@@ -4,11 +4,12 @@ using App.Contracts.BLL.Support;
 using App.Domain.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+using WebApp.ViewModels.SupportImpersonation;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public class SupportImpersonationController : Controller
     {
         private readonly ISupportImpersonationSessionService _supportImpersonationSessionService;
@@ -51,8 +52,7 @@ namespace WebApp.Controllers
         // GET: SupportImpersonation/Create
         public async Task<IActionResult> Create()
         {
-            await LoadSelectionsAsync();
-            return View();
+            return View(await BuildEditViewModelAsync(new SupportImpersonationSession()));
         }
 
         // POST: SupportImpersonation/Create
@@ -60,16 +60,22 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CompanyId,SupportUserId,ImpersonatedAppUserId,Reason,StartedAt,EndedAt,Id")] SupportImpersonationSession supportImpersonationSession)
+        public async Task<IActionResult> Create(SupportImpersonationEditViewModel viewModel)
         {
+            if (viewModel.SupportImpersonationSession == null)
+            {
+                return BadRequest();
+            }
+
+            var supportImpersonationSession = viewModel.SupportImpersonationSession;
             if (ModelState.IsValid)
             {
                 supportImpersonationSession.StartedAt = DateTime.UtcNow;
                 await _supportImpersonationSessionService.AddAsync(supportImpersonationSession);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(supportImpersonationSession.CompanyId, supportImpersonationSession.ImpersonatedAppUserId, supportImpersonationSession.SupportUserId);
-            return View(supportImpersonationSession);
+
+            return View(await BuildEditViewModelAsync(supportImpersonationSession));
         }
 
         // GET: SupportImpersonation/Edit/5
@@ -85,8 +91,8 @@ namespace WebApp.Controllers
             {
                 return NotFound();
             }
-            await LoadSelectionsAsync(supportImpersonationSession.CompanyId, supportImpersonationSession.ImpersonatedAppUserId, supportImpersonationSession.SupportUserId);
-            return View(supportImpersonationSession);
+
+            return View(await BuildEditViewModelAsync(supportImpersonationSession));
         }
 
         // POST: SupportImpersonation/Edit/5
@@ -94,8 +100,14 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CompanyId,SupportUserId,ImpersonatedAppUserId,Reason,StartedAt,EndedAt,Id")] SupportImpersonationSession supportImpersonationSession)
+        public async Task<IActionResult> Edit(Guid id, SupportImpersonationEditViewModel viewModel)
         {
+            if (viewModel.SupportImpersonationSession == null)
+            {
+                return BadRequest();
+            }
+
+            var supportImpersonationSession = viewModel.SupportImpersonationSession;
             if (id != supportImpersonationSession.Id)
             {
                 return NotFound();
@@ -109,11 +121,12 @@ namespace WebApp.Controllers
                     return NotFound();
                 }
 
+                supportImpersonationSession.StartedAt = existing.StartedAt;
                 await _supportImpersonationSessionService.UpdateAsync(supportImpersonationSession);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(supportImpersonationSession.CompanyId, supportImpersonationSession.ImpersonatedAppUserId, supportImpersonationSession.SupportUserId);
-            return View(supportImpersonationSession);
+
+            return View(await BuildEditViewModelAsync(supportImpersonationSession));
         }
 
         // GET: SupportImpersonation/Delete/5
@@ -142,14 +155,30 @@ namespace WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadSelectionsAsync(Guid? companyId = null, Guid? impersonatedAppUserId = null, Guid? supportUserId = null)
+        private async Task<SupportImpersonationEditViewModel> BuildEditViewModelAsync(SupportImpersonationSession supportImpersonationSession)
         {
             var companies = await _companyService.GetAllAsync();
             var users = await _appUserService.GetAllAsync();
 
-            ViewData["CompanyId"] = new SelectList(companies, "Id", "ContactEmail", companyId);
-            ViewData["ImpersonatedAppUserId"] = new SelectList(users, "Id", "FirstName", impersonatedAppUserId);
-            ViewData["SupportUserId"] = new SelectList(users, "Id", "FirstName", supportUserId);
+            return new SupportImpersonationEditViewModel
+            {
+                SupportImpersonationSession = supportImpersonationSession,
+                CompanyOptions = companies
+                    .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(c.Name, c.Id.ToString(), c.Id == supportImpersonationSession.CompanyId))
+                    .ToList(),
+                SupportUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == supportImpersonationSession.SupportUserId))
+                    .ToList(),
+                ImpersonatedUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == supportImpersonationSession.ImpersonatedAppUserId))
+                    .ToList()
+            };
         }
     }
 }

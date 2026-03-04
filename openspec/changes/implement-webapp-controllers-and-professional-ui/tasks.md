@@ -18,10 +18,10 @@
 
 ## 4. Controller hardening and architecture compliance
 
-- [ ] 4.1 Replace scaffolded direct data-access patterns with App.Contracts.BLL service interface usage.
-- [ ] 4.2 Add/verify role authorization attributes and tenant context enforcement in every tenant-owned action.
-- [ ] 4.3 Convert complex controller views to typed view models (no ViewBag/ViewData) and align binding/validation patterns.
-- [ ] 4.4 Verify update flows route through no-tracking-safe service/repository update paths.
+- [x] 4.1 Replace scaffolded direct data-access patterns with App.Contracts.BLL service interface usage.
+- [x] 4.2 Add/verify role authorization attributes and tenant context enforcement in every tenant-owned action.
+- [x] 4.3 Convert complex controller views to typed view models (no ViewBag/ViewData) and align binding/validation patterns.
+- [x] 4.4 Verify update flows route through no-tracking-safe service/repository update paths.
 
 ## 5. Workflow implementation slices
 

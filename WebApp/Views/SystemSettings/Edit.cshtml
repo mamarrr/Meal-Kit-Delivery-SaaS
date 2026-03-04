@@ -1,4 +1,4 @@
-@model App.Domain.Support.SystemSetting
+@model WebApp.ViewModels.SystemSettings.SystemSettingEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,41 +13,41 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="Category" class="control-label"></label>
-                <input asp-for="Category" class="form-control" />
-                <span asp-validation-for="Category" class="text-danger"></span>
+                <label asp-for="SystemSetting.Category" class="control-label"></label>
+                <input asp-for="SystemSetting.Category" class="form-control" />
+                <span asp-validation-for="SystemSetting.Category" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Key" class="control-label"></label>
-                <input asp-for="Key" class="form-control" />
-                <span asp-validation-for="Key" class="text-danger"></span>
+                <label asp-for="SystemSetting.Key" class="control-label"></label>
+                <input asp-for="SystemSetting.Key" class="form-control" />
+                <span asp-validation-for="SystemSetting.Key" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Value" class="control-label"></label>
-                <input asp-for="Value" class="form-control" />
-                <span asp-validation-for="Value" class="text-danger"></span>
+                <label asp-for="SystemSetting.Value" class="control-label"></label>
+                <input asp-for="SystemSetting.Value" class="form-control" />
+                <span asp-validation-for="SystemSetting.Value" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ValueType" class="control-label"></label>
-                <input asp-for="ValueType" class="form-control" />
-                <span asp-validation-for="ValueType" class="text-danger"></span>
+                <label asp-for="SystemSetting.ValueType" class="control-label"></label>
+                <input asp-for="SystemSetting.ValueType" class="form-control" />
+                <span asp-validation-for="SystemSetting.ValueType" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsSensitive" /> @Html.DisplayNameFor(model => model.IsSensitive)
+                    <input class="form-check-input" asp-for="SystemSetting.IsSensitive" /> @Html.DisplayNameFor(model => model.SystemSetting.IsSensitive)
                 </label>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+                <label asp-for="SystemSetting.UpdatedAt" class="control-label"></label>
+                <input asp-for="SystemSetting.UpdatedAt" class="form-control" />
+                <span asp-validation-for="SystemSetting.UpdatedAt" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedByAppUserId" class="control-label"></label>
-                <select asp-for="UpdatedByAppUserId" class="form-control" asp-items="ViewBag.UpdatedByAppUserId"></select>
-                <span asp-validation-for="UpdatedByAppUserId" class="text-danger"></span>
+                <label asp-for="SystemSetting.UpdatedByAppUserId" class="control-label"></label>
+                <select asp-for="SystemSetting.UpdatedByAppUserId" class="form-control" asp-items="Model.UpdatedByUserOptions"></select>
+                <span asp-validation-for="SystemSetting.UpdatedByAppUserId" class="text-danger"></span>
             </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="SystemSetting.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

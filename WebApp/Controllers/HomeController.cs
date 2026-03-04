@@ -13,13 +13,16 @@ namespace WebApp.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly AppDbContext _context;
     private static int _counter = 0;
 
-    public HomeController(AppDbContext context, ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-        _context = context;
+    }
+
+    public HomeController(AppDbContext context, ILogger<HomeController> logger)
+        : this(logger)
+    {
     }
 
     public async Task<IActionResult> Index()

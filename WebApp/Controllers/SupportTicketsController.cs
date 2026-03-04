@@ -4,11 +4,12 @@ using App.Contracts.BLL.Support;
 using App.Domain.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+using WebApp.ViewModels.SupportTickets;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public class SupportTicketsController : Controller
     {
         private readonly ISupportTicketService _supportTicketService;
@@ -54,8 +55,7 @@ namespace WebApp.Controllers
         // GET: SupportTickets/Create
         public async Task<IActionResult> Create()
         {
-            await LoadSelectionsAsync();
-            return View();
+            return View(await BuildEditViewModelAsync(new SupportTicket()));
         }
 
         // POST: SupportTickets/Create
@@ -63,16 +63,30 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Title,Description,Priority,CreatedAt,UpdatedAt,ClosedAt,CompanyId,CreatedByAppUserId,AssignedToAppUserId,SupportTicketStatusId,Id")] SupportTicket supportTicket)
+        public async Task<IActionResult> Create(SupportTicketEditViewModel viewModel)
         {
+            if (viewModel.SupportTicket == null)
+            {
+                return BadRequest();
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            var supportTicket = viewModel.SupportTicket;
             if (ModelState.IsValid)
             {
                 supportTicket.CreatedAt = DateTime.UtcNow;
+                supportTicket.CreatedByAppUserId = userId.Value;
+                supportTicket.UpdatedAt = null;
                 await _supportTicketService.AddAsync(supportTicket);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(supportTicket.CompanyId, supportTicket.CreatedByAppUserId, supportTicket.AssignedToAppUserId, supportTicket.SupportTicketStatusId);
-            return View(supportTicket);
+
+            return View(await BuildEditViewModelAsync(supportTicket));
         }
 
         // GET: SupportTickets/Edit/5
@@ -88,8 +102,8 @@ namespace WebApp.Controllers
             {
                 return NotFound();
             }
-            await LoadSelectionsAsync(supportTicket.CompanyId, supportTicket.CreatedByAppUserId, supportTicket.AssignedToAppUserId, supportTicket.SupportTicketStatusId);
-            return View(supportTicket);
+
+            return View(await BuildEditViewModelAsync(supportTicket));
         }
 
         // POST: SupportTickets/Edit/5
@@ -97,8 +111,14 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Title,Description,Priority,CreatedAt,UpdatedAt,ClosedAt,CompanyId,CreatedByAppUserId,AssignedToAppUserId,SupportTicketStatusId,Id")] SupportTicket supportTicket)
+        public async Task<IActionResult> Edit(Guid id, SupportTicketEditViewModel viewModel)
         {
+            if (viewModel.SupportTicket == null)
+            {
+                return BadRequest();
+            }
+
+            var supportTicket = viewModel.SupportTicket;
             if (id != supportTicket.Id)
             {
                 return NotFound();
@@ -112,12 +132,14 @@ namespace WebApp.Controllers
                     return NotFound();
                 }
 
+                supportTicket.CreatedAt = existing.CreatedAt;
+                supportTicket.CreatedByAppUserId = existing.CreatedByAppUserId;
                 supportTicket.UpdatedAt = DateTime.UtcNow;
                 await _supportTicketService.UpdateAsync(supportTicket);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(supportTicket.CompanyId, supportTicket.CreatedByAppUserId, supportTicket.AssignedToAppUserId, supportTicket.SupportTicketStatusId);
-            return View(supportTicket);
+
+            return View(await BuildEditViewModelAsync(supportTicket));
         }
 
         // GET: SupportTickets/Delete/5
@@ -146,16 +168,45 @@ namespace WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadSelectionsAsync(Guid? companyId = null, Guid? createdByUserId = null, Guid? assignedToUserId = null, Guid? statusId = null)
+        private async Task<SupportTicketEditViewModel> BuildEditViewModelAsync(SupportTicket supportTicket)
         {
             var companies = await _companyService.GetAllAsync();
             var users = await _appUserService.GetAllAsync();
             var statuses = await _supportTicketStatusService.GetAllAsync();
 
-            ViewData["AssignedToAppUserId"] = new SelectList(users, "Id", "FirstName", assignedToUserId);
-            ViewData["CompanyId"] = new SelectList(companies, "Id", "ContactEmail", companyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(users, "Id", "FirstName", createdByUserId);
-            ViewData["SupportTicketStatusId"] = new SelectList(statuses, "Id", "Code", statusId);
+            return new SupportTicketEditViewModel
+            {
+                SupportTicket = supportTicket,
+                CompanyOptions = companies
+                    .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(c.Name, c.Id.ToString(), c.Id == supportTicket.CompanyId))
+                    .ToList(),
+                CreatedByUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == supportTicket.CreatedByAppUserId))
+                    .ToList(),
+                AssignedToUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == supportTicket.AssignedToAppUserId))
+                    .ToList(),
+                StatusOptions = statuses
+                    .Select(s => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(s.Label, s.Id.ToString(), s.Id == supportTicket.SupportTicketStatusId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

@@ -4,11 +4,12 @@ using App.Contracts.BLL.Support;
 using App.Domain.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+using WebApp.ViewModels.SupportAccess;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public class SupportAccessController : Controller
     {
         private readonly ITenantSupportAccessService _tenantSupportAccessService;
@@ -51,8 +52,7 @@ namespace WebApp.Controllers
         // GET: SupportAccess/Create
         public async Task<IActionResult> Create()
         {
-            await LoadSelectionsAsync();
-            return View();
+            return View(await BuildEditViewModelAsync(new TenantSupportAccess()));
         }
 
         // POST: SupportAccess/Create
@@ -60,15 +60,29 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CompanyId,SupportUserId,IsReadOnly,Reason,GrantedAt,RevokedAt,GrantedByAppUserId,Id")] TenantSupportAccess tenantSupportAccess)
+        public async Task<IActionResult> Create(SupportAccessEditViewModel viewModel)
         {
+            if (viewModel.TenantSupportAccess == null)
+            {
+                return BadRequest();
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            var tenantSupportAccess = viewModel.TenantSupportAccess;
             if (ModelState.IsValid)
             {
+                tenantSupportAccess.GrantedByAppUserId = userId.Value;
+                tenantSupportAccess.GrantedAt = DateTime.UtcNow;
                 await _tenantSupportAccessService.AddAsync(tenantSupportAccess);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(tenantSupportAccess.CompanyId, tenantSupportAccess.GrantedByAppUserId, tenantSupportAccess.SupportUserId);
-            return View(tenantSupportAccess);
+
+            return View(await BuildEditViewModelAsync(tenantSupportAccess));
         }
 
         // GET: SupportAccess/Edit/5
@@ -84,8 +98,8 @@ namespace WebApp.Controllers
             {
                 return NotFound();
             }
-            await LoadSelectionsAsync(tenantSupportAccess.CompanyId, tenantSupportAccess.GrantedByAppUserId, tenantSupportAccess.SupportUserId);
-            return View(tenantSupportAccess);
+
+            return View(await BuildEditViewModelAsync(tenantSupportAccess));
         }
 
         // POST: SupportAccess/Edit/5
@@ -93,8 +107,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("CompanyId,SupportUserId,IsReadOnly,Reason,GrantedAt,RevokedAt,GrantedByAppUserId,Id")] TenantSupportAccess tenantSupportAccess)
+        public async Task<IActionResult> Edit(Guid id, SupportAccessEditViewModel viewModel)
         {
+            if (viewModel.TenantSupportAccess == null)
+            {
+                return BadRequest();
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            var tenantSupportAccess = viewModel.TenantSupportAccess;
             if (id != tenantSupportAccess.Id)
             {
                 return NotFound();
@@ -108,11 +134,13 @@ namespace WebApp.Controllers
                     return NotFound();
                 }
 
+                tenantSupportAccess.GrantedByAppUserId = existing.GrantedByAppUserId;
+                tenantSupportAccess.GrantedAt = existing.GrantedAt;
                 await _tenantSupportAccessService.UpdateAsync(tenantSupportAccess);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadSelectionsAsync(tenantSupportAccess.CompanyId, tenantSupportAccess.GrantedByAppUserId, tenantSupportAccess.SupportUserId);
-            return View(tenantSupportAccess);
+
+            return View(await BuildEditViewModelAsync(tenantSupportAccess));
         }
 
         // GET: SupportAccess/Delete/5
@@ -141,14 +169,41 @@ namespace WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadSelectionsAsync(Guid? companyId = null, Guid? grantedByUserId = null, Guid? supportUserId = null)
+        private async Task<SupportAccessEditViewModel> BuildEditViewModelAsync(TenantSupportAccess tenantSupportAccess)
         {
             var companies = await _companyService.GetAllAsync();
             var users = await _appUserService.GetAllAsync();
 
-            ViewData["CompanyId"] = new SelectList(companies, "Id", "ContactEmail", companyId);
-            ViewData["GrantedByAppUserId"] = new SelectList(users, "Id", "FirstName", grantedByUserId);
-            ViewData["SupportUserId"] = new SelectList(users, "Id", "FirstName", supportUserId);
+            return new SupportAccessEditViewModel
+            {
+                TenantSupportAccess = tenantSupportAccess,
+                CompanyOptions = companies
+                    .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(c.Name, c.Id.ToString(), c.Id == tenantSupportAccess.CompanyId))
+                    .ToList(),
+                GrantedByUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == tenantSupportAccess.GrantedByAppUserId))
+                    .ToList(),
+                SupportUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == tenantSupportAccess.SupportUserId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

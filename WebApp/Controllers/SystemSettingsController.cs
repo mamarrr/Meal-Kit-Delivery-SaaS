@@ -3,11 +3,12 @@ using App.Contracts.BLL.Support;
 using App.Domain.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+using WebApp.ViewModels.SystemSettings;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "admin")]
     public class SystemSettingsController : Controller
     {
         private readonly ISystemSettingService _systemSettingService;
@@ -45,8 +46,7 @@ namespace WebApp.Controllers
         // GET: SystemSettings/Create
         public async Task<IActionResult> Create()
         {
-            await LoadUsersAsync();
-            return View();
+            return View(await BuildEditViewModelAsync(new SystemSetting()));
         }
 
         // POST: SystemSettings/Create
@@ -54,16 +54,29 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Category,Key,Value,ValueType,IsSensitive,UpdatedAt,UpdatedByAppUserId,Id")] SystemSetting systemSetting)
+        public async Task<IActionResult> Create(SystemSettingEditViewModel viewModel)
         {
+            if (viewModel.SystemSetting == null)
+            {
+                return BadRequest();
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            var systemSetting = viewModel.SystemSetting;
             if (ModelState.IsValid)
             {
                 systemSetting.UpdatedAt = DateTime.UtcNow;
+                systemSetting.UpdatedByAppUserId = userId;
                 await _systemSettingService.AddAsync(systemSetting);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadUsersAsync(systemSetting.UpdatedByAppUserId);
-            return View(systemSetting);
+
+            return View(await BuildEditViewModelAsync(systemSetting));
         }
 
         // GET: SystemSettings/Edit/5
@@ -79,8 +92,7 @@ namespace WebApp.Controllers
             {
                 return NotFound();
             }
-            await LoadUsersAsync(systemSetting.UpdatedByAppUserId);
-            return View(systemSetting);
+            return View(await BuildEditViewModelAsync(systemSetting));
         }
 
         // POST: SystemSettings/Edit/5
@@ -88,8 +100,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Category,Key,Value,ValueType,IsSensitive,UpdatedAt,UpdatedByAppUserId,Id")] SystemSetting systemSetting)
+        public async Task<IActionResult> Edit(Guid id, SystemSettingEditViewModel viewModel)
         {
+            if (viewModel.SystemSetting == null)
+            {
+                return BadRequest();
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            var systemSetting = viewModel.SystemSetting;
             if (id != systemSetting.Id)
             {
                 return NotFound();
@@ -104,11 +128,12 @@ namespace WebApp.Controllers
                 }
 
                 systemSetting.UpdatedAt = DateTime.UtcNow;
+                systemSetting.UpdatedByAppUserId = userId;
                 await _systemSettingService.UpdateAsync(systemSetting);
                 return RedirectToAction(nameof(Index));
             }
-            await LoadUsersAsync(systemSetting.UpdatedByAppUserId);
-            return View(systemSetting);
+
+            return View(await BuildEditViewModelAsync(systemSetting));
         }
 
         // GET: SystemSettings/Delete/5
@@ -137,10 +162,31 @@ namespace WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadUsersAsync(Guid? selectedUserId = null)
+        private async Task<SystemSettingEditViewModel> BuildEditViewModelAsync(SystemSetting systemSetting)
         {
             var users = await _appUserService.GetAllAsync();
-            ViewData["UpdatedByAppUserId"] = new SelectList(users, "Id", "FirstName", selectedUserId);
+
+            return new SystemSettingEditViewModel
+            {
+                SystemSetting = systemSetting,
+                UpdatedByUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{u.FirstName} {u.LastName}".Trim(),
+                        u.Id.ToString(),
+                        u.Id == systemSetting.UpdatedByAppUserId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

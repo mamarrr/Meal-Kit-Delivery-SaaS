@@ -8,7 +8,7 @@ using WebApp.ViewModels.MealSelections;
 
 namespace WebApp.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "user")]
     public class MealSelectionsController : Controller
     {
         private readonly IMealSelectionService _mealSelectionService;
