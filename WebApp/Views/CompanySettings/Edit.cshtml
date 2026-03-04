@@ -1,4 +1,4 @@
-@model App.Domain.Core.CompanySettings
+@model WebApp.ViewModels.CompanySettings.CompanySettingsEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,81 +13,66 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="DefaultNoRepeatWeeks" class="control-label"></label>
-                <input asp-for="DefaultNoRepeatWeeks" class="form-control" />
-                <span asp-validation-for="DefaultNoRepeatWeeks" class="text-danger"></span>
+                <label asp-for="CompanySettings.DefaultNoRepeatWeeks" class="control-label"></label>
+                <input asp-for="CompanySettings.DefaultNoRepeatWeeks" class="form-control" />
+                <span asp-validation-for="CompanySettings.DefaultNoRepeatWeeks" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="SelectionDeadlineDaysBeforeDelivery" class="control-label"></label>
-                <input asp-for="SelectionDeadlineDaysBeforeDelivery" class="form-control" />
-                <span asp-validation-for="SelectionDeadlineDaysBeforeDelivery" class="text-danger"></span>
+                <label asp-for="CompanySettings.SelectionDeadlineDaysBeforeDelivery" class="control-label"></label>
+                <input asp-for="CompanySettings.SelectionDeadlineDaysBeforeDelivery" class="form-control" />
+                <span asp-validation-for="CompanySettings.SelectionDeadlineDaysBeforeDelivery" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AllowAutoSelection" /> @Html.DisplayNameFor(model => model.AllowAutoSelection)
+                    <input class="form-check-input" asp-for="CompanySettings.AllowAutoSelection" /> @Html.DisplayNameFor(model => model.CompanySettings.AllowAutoSelection)
                 </label>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AllowPauseSubscription" /> @Html.DisplayNameFor(model => model.AllowPauseSubscription)
+                    <input class="form-check-input" asp-for="CompanySettings.AllowPauseSubscription" /> @Html.DisplayNameFor(model => model.CompanySettings.AllowPauseSubscription)
                 </label>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AllowSkipWeek" /> @Html.DisplayNameFor(model => model.AllowSkipWeek)
+                    <input class="form-check-input" asp-for="CompanySettings.AllowSkipWeek" /> @Html.DisplayNameFor(model => model.CompanySettings.AllowSkipWeek)
                 </label>
             </div>
             <div class="form-group">
-                <label asp-for="MinimumSubscriptionWeeks" class="control-label"></label>
-                <input asp-for="MinimumSubscriptionWeeks" class="form-control" />
-                <span asp-validation-for="MinimumSubscriptionWeeks" class="text-danger"></span>
+                <label asp-for="CompanySettings.MinimumSubscriptionWeeks" class="control-label"></label>
+                <input asp-for="CompanySettings.MinimumSubscriptionWeeks" class="form-control" />
+                <span asp-validation-for="CompanySettings.MinimumSubscriptionWeeks" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MaxDeliveryAttempts" class="control-label"></label>
-                <input asp-for="MaxDeliveryAttempts" class="form-control" />
-                <span asp-validation-for="MaxDeliveryAttempts" class="text-danger"></span>
+                <label asp-for="CompanySettings.MaxDeliveryAttempts" class="control-label"></label>
+                <input asp-for="CompanySettings.MaxDeliveryAttempts" class="form-control" />
+                <span asp-validation-for="CompanySettings.MaxDeliveryAttempts" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AllowRedeliveryAfterFailure" /> @Html.DisplayNameFor(model => model.AllowRedeliveryAfterFailure)
+                    <input class="form-check-input" asp-for="CompanySettings.AllowRedeliveryAfterFailure" /> @Html.DisplayNameFor(model => model.CompanySettings.AllowRedeliveryAfterFailure)
                 </label>
             </div>
             <div class="form-group">
-                <label asp-for="ComplaintEscalationThreshold" class="control-label"></label>
-                <input asp-for="ComplaintEscalationThreshold" class="form-control" />
-                <span asp-validation-for="ComplaintEscalationThreshold" class="text-danger"></span>
+                <label asp-for="CompanySettings.ComplaintEscalationThreshold" class="control-label"></label>
+                <input asp-for="CompanySettings.ComplaintEscalationThreshold" class="form-control" />
+                <span asp-validation-for="CompanySettings.ComplaintEscalationThreshold" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ComplaintEscalationDaysWindow" class="control-label"></label>
-                <input asp-for="ComplaintEscalationDaysWindow" class="form-control" />
-                <span asp-validation-for="ComplaintEscalationDaysWindow" class="text-danger"></span>
+                <label asp-for="CompanySettings.ComplaintEscalationDaysWindow" class="control-label"></label>
+                <input asp-for="CompanySettings.ComplaintEscalationDaysWindow" class="form-control" />
+                <span asp-validation-for="CompanySettings.ComplaintEscalationDaysWindow" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AutoPrioritizeFreshestStock" /> @Html.DisplayNameFor(model => model.AutoPrioritizeFreshestStock)
+                    <input class="form-check-input" asp-for="CompanySettings.AutoPrioritizeFreshestStock" /> @Html.DisplayNameFor(model => model.CompanySettings.AutoPrioritizeFreshestStock)
                 </label>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AutoAssignEarliestSlot" /> @Html.DisplayNameFor(model => model.AutoAssignEarliestSlot)
+                    <input class="form-check-input" asp-for="CompanySettings.AutoAssignEarliestSlot" /> @Html.DisplayNameFor(model => model.CompanySettings.AutoAssignEarliestSlot)
                 </label>
             </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
-                <span asp-validation-for="CompanyId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedByAppUserId" class="control-label"></label>
-                <select asp-for="UpdatedByAppUserId" class="form-control" asp-items="ViewBag.UpdatedByAppUserId"></select>
-                <span asp-validation-for="UpdatedByAppUserId" class="text-danger"></span>
-            </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CompanySettings.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

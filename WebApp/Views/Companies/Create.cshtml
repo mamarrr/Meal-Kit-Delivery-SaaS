@@ -1,4 +1,4 @@
-@model App.Domain.Core.Company
+@model WebApp.ViewModels.Companies.CompanyEditViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -13,58 +13,34 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+                <label asp-for="Company.Name" class="control-label"></label>
+                <input asp-for="Company.Name" class="form-control" />
+                <span asp-validation-for="Company.Name" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Slug" class="control-label"></label>
-                <input asp-for="Slug" class="form-control" />
-                <span asp-validation-for="Slug" class="text-danger"></span>
+                <label asp-for="Company.Slug" class="control-label"></label>
+                <input asp-for="Company.Slug" class="form-control" />
+                <span asp-validation-for="Company.Slug" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="RegistrationNumber" class="control-label"></label>
-                <input asp-for="RegistrationNumber" class="form-control" />
-                <span asp-validation-for="RegistrationNumber" class="text-danger"></span>
+                <label asp-for="Company.RegistrationNumber" class="control-label"></label>
+                <input asp-for="Company.RegistrationNumber" class="form-control" />
+                <span asp-validation-for="Company.RegistrationNumber" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ContactEmail" class="control-label"></label>
-                <input asp-for="ContactEmail" class="form-control" />
-                <span asp-validation-for="ContactEmail" class="text-danger"></span>
+                <label asp-for="Company.ContactEmail" class="control-label"></label>
+                <input asp-for="Company.ContactEmail" class="form-control" />
+                <span asp-validation-for="Company.ContactEmail" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ContactPhone" class="control-label"></label>
-                <input asp-for="ContactPhone" class="form-control" />
-                <span asp-validation-for="ContactPhone" class="text-danger"></span>
+                <label asp-for="Company.ContactPhone" class="control-label"></label>
+                <input asp-for="Company.ContactPhone" class="form-control" />
+                <span asp-validation-for="Company.ContactPhone" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="WebSiteUrl" class="control-label"></label>
-                <input asp-for="WebSiteUrl" class="form-control" />
-                <span asp-validation-for="WebSiteUrl" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeActivatedAt" class="control-label"></label>
-                <input asp-for="DeActivatedAt" class="form-control" />
-                <span asp-validation-for="DeActivatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class ="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
+                <label asp-for="Company.WebSiteUrl" class="control-label"></label>
+                <input asp-for="Company.WebSiteUrl" class="form-control" />
+                <span asp-validation-for="Company.WebSiteUrl" class="text-danger"></span>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

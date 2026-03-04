@@ -1,29 +1,41 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Core;
+using App.Contracts.BLL.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using Microsoft.AspNetCore.Authorization;
 using App.Domain.Core;
+using System.Security.Claims;
+using System.Linq;
+using WebApp.ViewModels.CompanyUsers;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class CompanyUsersController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICompanyAppUserService _companyAppUserService;
+        private readonly ICompanyRoleService _companyRoleService;
+        private readonly IAppUserService _appUserService;
 
-        public CompanyUsersController(AppDbContext context)
+        public CompanyUsersController(
+            ICompanyAppUserService companyAppUserService,
+            ICompanyRoleService companyRoleService,
+            IAppUserService appUserService)
         {
-            _context = context;
+            _companyAppUserService = companyAppUserService;
+            _companyRoleService = companyRoleService;
+            _appUserService = appUserService;
         }
 
         // GET: CompanyUsers
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.CompanyAppUsers.Include(c => c.AppUser).Include(c => c.Company).Include(c => c.CompanyRole).Include(c => c.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: CompanyUsers/Details/5
@@ -34,12 +46,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companyAppUser = await _context.CompanyAppUsers
-                .Include(c => c.AppUser)
-                .Include(c => c.Company)
-                .Include(c => c.CompanyRole)
-                .Include(c => c.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
             if (companyAppUser == null)
             {
                 return NotFound();
@@ -49,13 +62,9 @@ namespace WebApp.Controllers
         }
 
         // GET: CompanyUsers/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CompanyRoleId"] = new SelectList(_context.CompanyRoles, "Id", "Code");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(await BuildEditViewModelAsync(new CompanyAppUser { IsActive = true }));
         }
 
         // POST: CompanyUsers/Create
@@ -63,20 +72,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("IsOwner,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,AppUserId,CompanyRoleId,CreatedByAppUserId,Id")] CompanyAppUser companyAppUser)
+        public async Task<IActionResult> Create(CompanyUserEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.CompanyAppUser == null)
+            {
+                return BadRequest();
+            }
+
+            var companyAppUser = viewModel.CompanyAppUser;
             if (ModelState.IsValid)
             {
-                companyAppUser.Id = Guid.NewGuid();
-                _context.Add(companyAppUser);
-                await _context.SaveChangesAsync();
+                companyAppUser.CompanyId = companyId.Value;
+                companyAppUser.CreatedByAppUserId = userId.Value;
+                companyAppUser.CreatedAt = DateTime.UtcNow;
+                companyAppUser.UpdatedAt = null;
+                companyAppUser.DeletedAt = null;
+
+                await _companyAppUserService.AddAsync(companyAppUser, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.AppUserId);
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companyAppUser.CompanyId);
-            ViewData["CompanyRoleId"] = new SelectList(_context.CompanyRoles, "Id", "Code", companyAppUser.CompanyRoleId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.CreatedByAppUserId);
-            return View(companyAppUser);
+
+            return View(await BuildEditViewModelAsync(companyAppUser));
         }
 
         // GET: CompanyUsers/Edit/5
@@ -87,16 +110,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companyAppUser = await _context.CompanyAppUsers.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
             if (companyAppUser == null)
             {
                 return NotFound();
             }
-            ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.AppUserId);
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companyAppUser.CompanyId);
-            ViewData["CompanyRoleId"] = new SelectList(_context.CompanyRoles, "Id", "Code", companyAppUser.CompanyRoleId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.CreatedByAppUserId);
-            return View(companyAppUser);
+
+            return View(await BuildEditViewModelAsync(companyAppUser));
         }
 
         // POST: CompanyUsers/Edit/5
@@ -104,8 +130,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("IsOwner,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,AppUserId,CompanyRoleId,CreatedByAppUserId,Id")] CompanyAppUser companyAppUser)
+        public async Task<IActionResult> Edit(Guid id, CompanyUserEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.CompanyAppUser == null)
+            {
+                return BadRequest();
+            }
+
+            var companyAppUser = viewModel.CompanyAppUser;
             if (id != companyAppUser.Id)
             {
                 return NotFound();
@@ -113,29 +151,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _companyAppUserService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(companyAppUser);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CompanyAppUserExists(companyAppUser.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                companyAppUser.CompanyId = companyId.Value;
+                companyAppUser.CreatedByAppUserId = existing.CreatedByAppUserId;
+                companyAppUser.CreatedAt = existing.CreatedAt;
+                companyAppUser.DeletedAt = existing.DeletedAt;
+                companyAppUser.UpdatedAt = DateTime.UtcNow;
+
+                await _companyAppUserService.UpdateAsync(companyAppUser, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.AppUserId);
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companyAppUser.CompanyId);
-            ViewData["CompanyRoleId"] = new SelectList(_context.CompanyRoles, "Id", "Code", companyAppUser.CompanyRoleId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companyAppUser.CreatedByAppUserId);
-            return View(companyAppUser);
+
+            return View(await BuildEditViewModelAsync(companyAppUser));
         }
 
         // GET: CompanyUsers/Delete/5
@@ -146,12 +178,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companyAppUser = await _context.CompanyAppUsers
-                .Include(c => c.AppUser)
-                .Include(c => c.Company)
-                .Include(c => c.CompanyRole)
-                .Include(c => c.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
             if (companyAppUser == null)
             {
                 return NotFound();
@@ -165,19 +198,53 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var companyAppUser = await _context.CompanyAppUsers.FindAsync(id);
-            if (companyAppUser != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.CompanyAppUsers.Remove(companyAppUser);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _companyAppUserService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CompanyAppUserExists(Guid id)
+        private async Task<CompanyUserEditViewModel> BuildEditViewModelAsync(CompanyAppUser companyAppUser)
         {
-            return _context.CompanyAppUsers.Any(e => e.Id == id);
+            var users = await _appUserService.GetAllAsync();
+            var roles = await _companyRoleService.GetAllAsync();
+
+            return new CompanyUserEditViewModel
+            {
+                CompanyAppUser = companyAppUser,
+                AppUserOptions = users
+                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(u.Id.ToString(), u.Id.ToString(), u.Id == companyAppUser.AppUserId))
+                    .ToList(),
+                CompanyRoleOptions = roles
+                    .Select(r => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(r.Label, r.Id.ToString(), r.Id == companyAppUser.CompanyRoleId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

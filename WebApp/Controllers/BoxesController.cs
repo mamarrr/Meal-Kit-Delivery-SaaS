@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Subscription;
 using App.Domain.Subscription;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApp.ViewModels.Boxes;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class BoxesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IBoxService _boxService;
 
-        public BoxesController(AppDbContext context)
+        public BoxesController(IBoxService boxService)
         {
-            _context = context;
+            _boxService = boxService;
         }
 
         // GET: Boxes
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.Boxes.Include(b => b.Company).Include(b => b.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _boxService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: Boxes/Details/5
@@ -34,10 +37,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var box = await _context.Boxes
-                .Include(b => b.Company)
-                .Include(b => b.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var box = await _boxService.GetByIdAsync(id.Value, companyId.Value);
             if (box == null)
             {
                 return NotFound();
@@ -49,9 +55,7 @@ namespace WebApp.Controllers
         // GET: Boxes/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new BoxEditViewModel { Box = new Box { IsActive = true } });
         }
 
         // POST: Boxes/Create
@@ -59,18 +63,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("MealsCount,PeopleCount,DisplayName,IsActive,CreatedAt,UpdatedAt,DeletedAt,CreatedByAppUserId,CompanyId,Id")] Box box)
+        public async Task<IActionResult> Create(BoxEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Box == null)
+            {
+                return BadRequest();
+            }
+
+            var box = viewModel.Box;
             if (ModelState.IsValid)
             {
-                box.Id = Guid.NewGuid();
-                _context.Add(box);
-                await _context.SaveChangesAsync();
+                box.CreatedAt = DateTime.UtcNow;
+                box.UpdatedAt = null;
+                box.DeletedAt = null;
+                box.CreatedByAppUserId = userId.Value;
+                box.CompanyId = companyId.Value;
+
+                await _boxService.AddAsync(box, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", box.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", box.CreatedByAppUserId);
-            return View(box);
+
+            return View(viewModel);
         }
 
         // GET: Boxes/Edit/5
@@ -81,14 +101,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var box = await _context.Boxes.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var box = await _boxService.GetByIdAsync(id.Value, companyId.Value);
             if (box == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", box.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", box.CreatedByAppUserId);
-            return View(box);
+
+            return View(new BoxEditViewModel { Box = box });
         }
 
         // POST: Boxes/Edit/5
@@ -96,8 +121,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("MealsCount,PeopleCount,DisplayName,IsActive,CreatedAt,UpdatedAt,DeletedAt,CreatedByAppUserId,CompanyId,Id")] Box box)
+        public async Task<IActionResult> Edit(Guid id, BoxEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Box == null)
+            {
+                return BadRequest();
+            }
+
+            var box = viewModel.Box;
             if (id != box.Id)
             {
                 return NotFound();
@@ -105,27 +142,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _boxService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(box);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BoxExists(box.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                box.CompanyId = companyId.Value;
+                box.CreatedByAppUserId = existing.CreatedByAppUserId;
+                box.CreatedAt = existing.CreatedAt;
+                box.DeletedAt = existing.DeletedAt;
+                box.UpdatedAt = DateTime.UtcNow;
+
+                await _boxService.UpdateAsync(box, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", box.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", box.CreatedByAppUserId);
-            return View(box);
+
+            return View(viewModel);
         }
 
         // GET: Boxes/Delete/5
@@ -136,10 +169,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var box = await _context.Boxes
-                .Include(b => b.Company)
-                .Include(b => b.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var box = await _boxService.GetByIdAsync(id.Value, companyId.Value);
             if (box == null)
             {
                 return NotFound();
@@ -153,19 +189,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var box = await _context.Boxes.FindAsync(id);
-            if (box != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.Boxes.Remove(box);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _boxService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool BoxExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.Boxes.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

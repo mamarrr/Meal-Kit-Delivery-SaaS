@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Delivery;
 using App.Domain.Delivery;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApp.ViewModels.DeliveryZones;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class DeliveryZonesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IDeliveryZoneService _deliveryZoneService;
 
-        public DeliveryZonesController(AppDbContext context)
+        public DeliveryZonesController(IDeliveryZoneService deliveryZoneService)
         {
-            _context = context;
+            _deliveryZoneService = deliveryZoneService;
         }
 
         // GET: DeliveryZones
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.DeliveryZones.Include(d => d.Company).Include(d => d.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _deliveryZoneService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: DeliveryZones/Details/5
@@ -34,10 +37,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var deliveryZone = await _context.DeliveryZones
-                .Include(d => d.Company)
-                .Include(d => d.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var deliveryZone = await _deliveryZoneService.GetByIdAsync(id.Value, companyId.Value);
             if (deliveryZone == null)
             {
                 return NotFound();
@@ -49,9 +55,10 @@ namespace WebApp.Controllers
         // GET: DeliveryZones/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new DeliveryZoneEditViewModel
+            {
+                DeliveryZone = new DeliveryZone { IsActive = true }
+            });
         }
 
         // POST: DeliveryZones/Create
@@ -59,18 +66,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] DeliveryZone deliveryZone)
+        public async Task<IActionResult> Create(DeliveryZoneEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.DeliveryZone == null)
+            {
+                return BadRequest();
+            }
+
+            var deliveryZone = viewModel.DeliveryZone;
             if (ModelState.IsValid)
             {
-                deliveryZone.Id = Guid.NewGuid();
-                _context.Add(deliveryZone);
-                await _context.SaveChangesAsync();
+                deliveryZone.CreatedAt = DateTime.UtcNow;
+                deliveryZone.UpdatedAt = null;
+                deliveryZone.DeletedAt = null;
+                deliveryZone.CompanyId = companyId.Value;
+                deliveryZone.CreatedByAppUserId = userId.Value;
+
+                await _deliveryZoneService.AddAsync(deliveryZone, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", deliveryZone.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", deliveryZone.CreatedByAppUserId);
-            return View(deliveryZone);
+
+            return View(viewModel);
         }
 
         // GET: DeliveryZones/Edit/5
@@ -81,14 +104,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var deliveryZone = await _context.DeliveryZones.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var deliveryZone = await _deliveryZoneService.GetByIdAsync(id.Value, companyId.Value);
             if (deliveryZone == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", deliveryZone.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", deliveryZone.CreatedByAppUserId);
-            return View(deliveryZone);
+
+            return View(new DeliveryZoneEditViewModel { DeliveryZone = deliveryZone });
         }
 
         // POST: DeliveryZones/Edit/5
@@ -96,8 +124,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Name,Description,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] DeliveryZone deliveryZone)
+        public async Task<IActionResult> Edit(Guid id, DeliveryZoneEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.DeliveryZone == null)
+            {
+                return BadRequest();
+            }
+
+            var deliveryZone = viewModel.DeliveryZone;
             if (id != deliveryZone.Id)
             {
                 return NotFound();
@@ -105,27 +145,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _deliveryZoneService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(deliveryZone);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!DeliveryZoneExists(deliveryZone.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                deliveryZone.CompanyId = companyId.Value;
+                deliveryZone.CreatedByAppUserId = existing.CreatedByAppUserId;
+                deliveryZone.CreatedAt = existing.CreatedAt;
+                deliveryZone.DeletedAt = existing.DeletedAt;
+                deliveryZone.UpdatedAt = DateTime.UtcNow;
+
+                await _deliveryZoneService.UpdateAsync(deliveryZone, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", deliveryZone.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", deliveryZone.CreatedByAppUserId);
-            return View(deliveryZone);
+
+            return View(viewModel);
         }
 
         // GET: DeliveryZones/Delete/5
@@ -136,10 +172,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var deliveryZone = await _context.DeliveryZones
-                .Include(d => d.Company)
-                .Include(d => d.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var deliveryZone = await _deliveryZoneService.GetByIdAsync(id.Value, companyId.Value);
             if (deliveryZone == null)
             {
                 return NotFound();
@@ -153,19 +192,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var deliveryZone = await _context.DeliveryZones.FindAsync(id);
-            if (deliveryZone != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.DeliveryZones.Remove(deliveryZone);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _deliveryZoneService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool DeliveryZoneExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.DeliveryZones.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

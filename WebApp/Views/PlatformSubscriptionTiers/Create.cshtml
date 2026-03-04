@@ -1,4 +1,4 @@
-@model App.Domain.Subscription.PlatformSubscriptionTier
+@model WebApp.ViewModels.PlatformSubscriptionTiers.PlatformSubscriptionTierEditViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -13,58 +13,39 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="Code" class="control-label"></label>
-                <input asp-for="Code" class="form-control" />
-                <span asp-validation-for="Code" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.Code" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.Code" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.Code" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.Name" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.Name" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.Name" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MaxZones" class="control-label"></label>
-                <input asp-for="MaxZones" class="form-control" />
-                <span asp-validation-for="MaxZones" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.MaxZones" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.MaxZones" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.MaxZones" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MaxSubscribers" class="control-label"></label>
-                <input asp-for="MaxSubscribers" class="form-control" />
-                <span asp-validation-for="MaxSubscribers" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.MaxSubscribers" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.MaxSubscribers" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.MaxSubscribers" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MaxEmployees" class="control-label"></label>
-                <input asp-for="MaxEmployees" class="form-control" />
-                <span asp-validation-for="MaxEmployees" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.MaxEmployees" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.MaxEmployees" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.MaxEmployees" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="MaxRecipes" class="control-label"></label>
-                <input asp-for="MaxRecipes" class="form-control" />
-                <span asp-validation-for="MaxRecipes" class="text-danger"></span>
+                <label asp-for="PlatformSubscriptionTier.MaxRecipes" class="control-label"></label>
+                <input asp-for="PlatformSubscriptionTier.MaxRecipes" class="form-control" />
+                <span asp-validation-for="PlatformSubscriptionTier.MaxRecipes" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                    <input class="form-check-input" asp-for="PlatformSubscriptionTier.IsActive" /> @Html.DisplayNameFor(model => model.PlatformSubscriptionTier.IsActive)
                 </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class ="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

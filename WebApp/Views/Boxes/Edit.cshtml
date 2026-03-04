@@ -1,4 +1,4 @@
-@model App.Domain.Subscription.Box
+@model WebApp.ViewModels.Boxes.BoxEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -13,51 +13,26 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="MealsCount" class="control-label"></label>
-                <input asp-for="MealsCount" class="form-control" />
-                <span asp-validation-for="MealsCount" class="text-danger"></span>
+                <label asp-for="Box.MealsCount" class="control-label"></label>
+                <input asp-for="Box.MealsCount" class="form-control" />
+                <span asp-validation-for="Box.MealsCount" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="PeopleCount" class="control-label"></label>
-                <input asp-for="PeopleCount" class="form-control" />
-                <span asp-validation-for="PeopleCount" class="text-danger"></span>
+                <label asp-for="Box.PeopleCount" class="control-label"></label>
+                <input asp-for="Box.PeopleCount" class="form-control" />
+                <span asp-validation-for="Box.PeopleCount" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="DisplayName" class="control-label"></label>
-                <input asp-for="DisplayName" class="form-control" />
-                <span asp-validation-for="DisplayName" class="text-danger"></span>
+                <label asp-for="Box.DisplayName" class="control-label"></label>
+                <input asp-for="Box.DisplayName" class="form-control" />
+                <span asp-validation-for="Box.DisplayName" class="text-danger"></span>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                    <input class="form-check-input" asp-for="Box.IsActive" /> @Html.DisplayNameFor(model => model.Box.IsActive)
                 </label>
             </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
-                <span asp-validation-for="CreatedByAppUserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
-                <span asp-validation-for="CompanyId" class="text-danger"></span>
-            </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="Box.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

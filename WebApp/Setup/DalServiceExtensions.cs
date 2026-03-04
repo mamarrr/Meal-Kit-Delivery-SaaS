@@ -31,6 +31,7 @@ public static class DalServiceExtensions
         services.AddScoped<ICompanySettingsRepository, CompanySettingsRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ICompanyAppUserRepository, CompanyAppUserRepository>();
+        services.AddScoped<ICompanyRoleRepository, CompanyRoleRepository>();
         services.AddScoped<ICustomerAppUserRepository, CustomerAppUserRepository>();
         
         // Menu domain repositories
@@ -46,6 +47,7 @@ public static class DalServiceExtensions
         services.AddScoped<IBoxRepository, BoxRepository>();
         services.AddScoped<IMealSubscriptionRepository, MealSubscriptionRepository>();
         services.AddScoped<IPlatformSubscriptionRepository, PlatformSubscriptionRepository>();
+        services.AddScoped<IPlatformSubscriptionStatusRepository, PlatformSubscriptionStatusRepository>();
         services.AddScoped<IPlatformSubscriptionTierRepository, PlatformSubscriptionTierRepository>();
         
         // Delivery domain repositories

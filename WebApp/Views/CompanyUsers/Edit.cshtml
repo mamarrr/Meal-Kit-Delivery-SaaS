@@ -1,4 +1,4 @@
-@model App.Domain.Core.CompanyAppUser
+@model WebApp.ViewModels.CompanyUsers.CompanyUserEditViewModel
 
 @{
     ViewData["Title"] = "Edit";
@@ -14,50 +14,25 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsOwner" /> @Html.DisplayNameFor(model => model.IsOwner)
+                    <input class="form-check-input" asp-for="CompanyAppUser.IsOwner" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsOwner)
                 </label>
             </div>
             <div class="form-group form-check">
                 <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsActive" /> @Html.DisplayNameFor(model => model.IsActive)
+                    <input class="form-check-input" asp-for="CompanyAppUser.IsActive" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsActive)
                 </label>
             </div>
             <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label asp-for="CompanyAppUser.AppUserId" class="control-label"></label>
+                <select asp-for="CompanyAppUser.AppUserId" class="form-control" asp-items="Model.AppUserOptions"></select>
+                <span asp-validation-for="CompanyAppUser.AppUserId" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
+                <label asp-for="CompanyAppUser.CompanyRoleId" class="control-label"></label>
+                <select asp-for="CompanyAppUser.CompanyRoleId" class="form-control" asp-items="Model.CompanyRoleOptions"></select>
+                <span asp-validation-for="CompanyAppUser.CompanyRoleId" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class="form-control" asp-items="ViewBag.CompanyId"></select>
-                <span asp-validation-for="CompanyId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="AppUserId" class="control-label"></label>
-                <select asp-for="AppUserId" class="form-control" asp-items="ViewBag.AppUserId"></select>
-                <span asp-validation-for="AppUserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyRoleId" class="control-label"></label>
-                <select asp-for="CompanyRoleId" class="form-control" asp-items="ViewBag.CompanyRoleId"></select>
-                <span asp-validation-for="CompanyRoleId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
-                <span asp-validation-for="CreatedByAppUserId" class="text-danger"></span>
-            </div>
-            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CompanyAppUser.Id" />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>

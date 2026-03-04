@@ -1,29 +1,26 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Subscription;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using Microsoft.AspNetCore.Authorization;
 using App.Domain.Subscription;
+using System.Security.Claims;
+using WebApp.ViewModels.PlatformSubscriptionTiers;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "admin")]
     public class PlatformSubscriptionTiersController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IPlatformSubscriptionTierService _platformSubscriptionTierService;
 
-        public PlatformSubscriptionTiersController(AppDbContext context)
+        public PlatformSubscriptionTiersController(IPlatformSubscriptionTierService platformSubscriptionTierService)
         {
-            _context = context;
+            _platformSubscriptionTierService = platformSubscriptionTierService;
         }
 
         // GET: PlatformSubscriptionTiers
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.PlatformSubscriptionTiers.Include(p => p.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            return View(await _platformSubscriptionTierService.GetAllAsync());
         }
 
         // GET: PlatformSubscriptionTiers/Details/5
@@ -34,9 +31,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscriptionTier = await _context.PlatformSubscriptionTiers
-                .Include(p => p.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var platformSubscriptionTier = await _platformSubscriptionTierService.GetByIdAsync(id.Value);
             if (platformSubscriptionTier == null)
             {
                 return NotFound();
@@ -48,8 +43,10 @@ namespace WebApp.Controllers
         // GET: PlatformSubscriptionTiers/Create
         public IActionResult Create()
         {
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new PlatformSubscriptionTierEditViewModel
+            {
+                PlatformSubscriptionTier = new PlatformSubscriptionTier { IsActive = true }
+            });
         }
 
         // POST: PlatformSubscriptionTiers/Create
@@ -57,17 +54,32 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Code,Name,MaxZones,MaxSubscribers,MaxEmployees,MaxRecipes,IsActive,CreatedAt,UpdatedAt,DeletedAt,CreatedByAppUserId,Id")] PlatformSubscriptionTier platformSubscriptionTier)
+        public async Task<IActionResult> Create(PlatformSubscriptionTierEditViewModel viewModel)
         {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.PlatformSubscriptionTier == null)
+            {
+                return BadRequest();
+            }
+
+            var platformSubscriptionTier = viewModel.PlatformSubscriptionTier;
             if (ModelState.IsValid)
             {
-                platformSubscriptionTier.Id = Guid.NewGuid();
-                _context.Add(platformSubscriptionTier);
-                await _context.SaveChangesAsync();
+                platformSubscriptionTier.CreatedByAppUserId = userId.Value;
+                platformSubscriptionTier.CreatedAt = DateTime.UtcNow;
+                platformSubscriptionTier.UpdatedAt = null;
+                platformSubscriptionTier.DeletedAt = null;
+
+                await _platformSubscriptionTierService.AddAsync(platformSubscriptionTier);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscriptionTier.CreatedByAppUserId);
-            return View(platformSubscriptionTier);
+
+            return View(viewModel);
         }
 
         // GET: PlatformSubscriptionTiers/Edit/5
@@ -78,13 +90,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscriptionTier = await _context.PlatformSubscriptionTiers.FindAsync(id);
+            var platformSubscriptionTier = await _platformSubscriptionTierService.GetByIdAsync(id.Value);
             if (platformSubscriptionTier == null)
             {
                 return NotFound();
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscriptionTier.CreatedByAppUserId);
-            return View(platformSubscriptionTier);
+
+            return View(new PlatformSubscriptionTierEditViewModel { PlatformSubscriptionTier = platformSubscriptionTier });
         }
 
         // POST: PlatformSubscriptionTiers/Edit/5
@@ -92,8 +104,14 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,MaxZones,MaxSubscribers,MaxEmployees,MaxRecipes,IsActive,CreatedAt,UpdatedAt,DeletedAt,CreatedByAppUserId,Id")] PlatformSubscriptionTier platformSubscriptionTier)
+        public async Task<IActionResult> Edit(Guid id, PlatformSubscriptionTierEditViewModel viewModel)
         {
+            if (viewModel.PlatformSubscriptionTier == null)
+            {
+                return BadRequest();
+            }
+
+            var platformSubscriptionTier = viewModel.PlatformSubscriptionTier;
             if (id != platformSubscriptionTier.Id)
             {
                 return NotFound();
@@ -101,26 +119,22 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _platformSubscriptionTierService.GetByIdAsync(id);
+                if (existing == null)
                 {
-                    _context.Update(platformSubscriptionTier);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PlatformSubscriptionTierExists(platformSubscriptionTier.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                platformSubscriptionTier.CreatedByAppUserId = existing.CreatedByAppUserId;
+                platformSubscriptionTier.CreatedAt = existing.CreatedAt;
+                platformSubscriptionTier.DeletedAt = existing.DeletedAt;
+                platformSubscriptionTier.UpdatedAt = DateTime.UtcNow;
+
+                await _platformSubscriptionTierService.UpdateAsync(platformSubscriptionTier);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscriptionTier.CreatedByAppUserId);
-            return View(platformSubscriptionTier);
+
+            return View(viewModel);
         }
 
         // GET: PlatformSubscriptionTiers/Delete/5
@@ -131,9 +145,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscriptionTier = await _context.PlatformSubscriptionTiers
-                .Include(p => p.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var platformSubscriptionTier = await _platformSubscriptionTierService.GetByIdAsync(id.Value);
             if (platformSubscriptionTier == null)
             {
                 return NotFound();
@@ -147,19 +159,19 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var platformSubscriptionTier = await _context.PlatformSubscriptionTiers.FindAsync(id);
-            if (platformSubscriptionTier != null)
-            {
-                _context.PlatformSubscriptionTiers.Remove(platformSubscriptionTier);
-            }
-
-            await _context.SaveChangesAsync();
+            await _platformSubscriptionTierService.RemoveAsync(id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PlatformSubscriptionTierExists(Guid id)
+        private Guid? GetCurrentUserId()
         {
-            return _context.PlatformSubscriptionTiers.Any(e => e.Id == id);
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

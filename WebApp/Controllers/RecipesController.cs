@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Menu;
 using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApp.ViewModels.Recipes;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class RecipesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IRecipeService _recipeService;
 
-        public RecipesController(AppDbContext context)
+        public RecipesController(IRecipeService recipeService)
         {
-            _context = context;
+            _recipeService = recipeService;
         }
 
         // GET: Recipes
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.Recipes.Include(r => r.Company).Include(r => r.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _recipeService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: Recipes/Details/5
@@ -34,10 +37,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var recipe = await _context.Recipes
-                .Include(r => r.Company)
-                .Include(r => r.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var recipe = await _recipeService.GetByIdAsync(id.Value, companyId.Value);
             if (recipe == null)
             {
                 return NotFound();
@@ -49,9 +55,10 @@ namespace WebApp.Controllers
         // GET: Recipes/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new RecipeEditViewModel
+            {
+                Recipe = new Recipe { IsActive = true }
+            });
         }
 
         // POST: Recipes/Create
@@ -59,18 +66,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description,ImageUrl,DefaultServings,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] Recipe recipe)
+        public async Task<IActionResult> Create(RecipeEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Recipe == null)
+            {
+                return BadRequest();
+            }
+
+            var recipe = viewModel.Recipe;
             if (ModelState.IsValid)
             {
-                recipe.Id = Guid.NewGuid();
-                _context.Add(recipe);
-                await _context.SaveChangesAsync();
+                recipe.CreatedAt = DateTime.UtcNow;
+                recipe.UpdatedAt = null;
+                recipe.DeletedAt = null;
+                recipe.CompanyId = companyId.Value;
+                recipe.CreatedByAppUserId = userId.Value;
+
+                await _recipeService.AddAsync(recipe, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", recipe.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", recipe.CreatedByAppUserId);
-            return View(recipe);
+
+            return View(viewModel);
         }
 
         // GET: Recipes/Edit/5
@@ -81,14 +104,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var recipe = await _context.Recipes.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var recipe = await _recipeService.GetByIdAsync(id.Value, companyId.Value);
             if (recipe == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", recipe.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", recipe.CreatedByAppUserId);
-            return View(recipe);
+
+            return View(new RecipeEditViewModel { Recipe = recipe });
         }
 
         // POST: Recipes/Edit/5
@@ -96,8 +124,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Name,Description,ImageUrl,DefaultServings,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] Recipe recipe)
+        public async Task<IActionResult> Edit(Guid id, RecipeEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Recipe == null)
+            {
+                return BadRequest();
+            }
+
+            var recipe = viewModel.Recipe;
             if (id != recipe.Id)
             {
                 return NotFound();
@@ -105,27 +145,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _recipeService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(recipe);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!RecipeExists(recipe.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                recipe.CompanyId = companyId.Value;
+                recipe.CreatedByAppUserId = existing.CreatedByAppUserId;
+                recipe.CreatedAt = existing.CreatedAt;
+                recipe.DeletedAt = existing.DeletedAt;
+                recipe.UpdatedAt = DateTime.UtcNow;
+
+                await _recipeService.UpdateAsync(recipe, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", recipe.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", recipe.CreatedByAppUserId);
-            return View(recipe);
+
+            return View(viewModel);
         }
 
         // GET: Recipes/Delete/5
@@ -136,10 +172,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var recipe = await _context.Recipes
-                .Include(r => r.Company)
-                .Include(r => r.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var recipe = await _recipeService.GetByIdAsync(id.Value, companyId.Value);
             if (recipe == null)
             {
                 return NotFound();
@@ -153,19 +192,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var recipe = await _context.Recipes.FindAsync(id);
-            if (recipe != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.Recipes.Remove(recipe);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _recipeService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool RecipeExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.Recipes.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Menu;
 using App.Domain.Menu;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApp.ViewModels.DietaryCategories;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class DietaryCategoriesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IDietaryCategoryService _dietaryCategoryService;
 
-        public DietaryCategoriesController(AppDbContext context)
+        public DietaryCategoriesController(IDietaryCategoryService dietaryCategoryService)
         {
-            _context = context;
+            _dietaryCategoryService = dietaryCategoryService;
         }
 
         // GET: DietaryCategories
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.DietaryCategories.Include(d => d.Company).Include(d => d.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _dietaryCategoryService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: DietaryCategories/Details/5
@@ -34,10 +37,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var dietaryCategory = await _context.DietaryCategories
-                .Include(d => d.Company)
-                .Include(d => d.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var dietaryCategory = await _dietaryCategoryService.GetByIdAsync(id.Value, companyId.Value);
             if (dietaryCategory == null)
             {
                 return NotFound();
@@ -49,9 +55,10 @@ namespace WebApp.Controllers
         // GET: DietaryCategories/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new DietaryCategoryEditViewModel
+            {
+                DietaryCategory = new DietaryCategory { IsActive = true }
+            });
         }
 
         // POST: DietaryCategories/Create
@@ -59,18 +66,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Code,Name,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] DietaryCategory dietaryCategory)
+        public async Task<IActionResult> Create(DietaryCategoryEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.DietaryCategory == null)
+            {
+                return BadRequest();
+            }
+
+            var dietaryCategory = viewModel.DietaryCategory;
             if (ModelState.IsValid)
             {
-                dietaryCategory.Id = Guid.NewGuid();
-                _context.Add(dietaryCategory);
-                await _context.SaveChangesAsync();
+                dietaryCategory.CreatedAt = DateTime.UtcNow;
+                dietaryCategory.UpdatedAt = null;
+                dietaryCategory.DeletedAt = null;
+                dietaryCategory.CompanyId = companyId.Value;
+                dietaryCategory.CreatedByAppUserId = userId.Value;
+
+                await _dietaryCategoryService.AddAsync(dietaryCategory, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", dietaryCategory.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", dietaryCategory.CreatedByAppUserId);
-            return View(dietaryCategory);
+
+            return View(viewModel);
         }
 
         // GET: DietaryCategories/Edit/5
@@ -81,14 +104,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var dietaryCategory = await _context.DietaryCategories.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var dietaryCategory = await _dietaryCategoryService.GetByIdAsync(id.Value, companyId.Value);
             if (dietaryCategory == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", dietaryCategory.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", dietaryCategory.CreatedByAppUserId);
-            return View(dietaryCategory);
+
+            return View(new DietaryCategoryEditViewModel { DietaryCategory = dietaryCategory });
         }
 
         // POST: DietaryCategories/Edit/5
@@ -96,8 +124,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Code,Name,IsActive,CreatedAt,UpdatedAt,DeletedAt,CompanyId,CreatedByAppUserId,Id")] DietaryCategory dietaryCategory)
+        public async Task<IActionResult> Edit(Guid id, DietaryCategoryEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.DietaryCategory == null)
+            {
+                return BadRequest();
+            }
+
+            var dietaryCategory = viewModel.DietaryCategory;
             if (id != dietaryCategory.Id)
             {
                 return NotFound();
@@ -105,27 +145,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _dietaryCategoryService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(dietaryCategory);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!DietaryCategoryExists(dietaryCategory.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                dietaryCategory.CompanyId = companyId.Value;
+                dietaryCategory.CreatedByAppUserId = existing.CreatedByAppUserId;
+                dietaryCategory.CreatedAt = existing.CreatedAt;
+                dietaryCategory.DeletedAt = existing.DeletedAt;
+                dietaryCategory.UpdatedAt = DateTime.UtcNow;
+
+                await _dietaryCategoryService.UpdateAsync(dietaryCategory, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", dietaryCategory.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", dietaryCategory.CreatedByAppUserId);
-            return View(dietaryCategory);
+
+            return View(viewModel);
         }
 
         // GET: DietaryCategories/Delete/5
@@ -136,10 +172,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var dietaryCategory = await _context.DietaryCategories
-                .Include(d => d.Company)
-                .Include(d => d.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var dietaryCategory = await _dietaryCategoryService.GetByIdAsync(id.Value, companyId.Value);
             if (dietaryCategory == null)
             {
                 return NotFound();
@@ -153,19 +192,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var dietaryCategory = await _context.DietaryCategories.FindAsync(id);
-            if (dietaryCategory != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.DietaryCategories.Remove(dietaryCategory);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _dietaryCategoryService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool DietaryCategoryExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.DietaryCategories.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

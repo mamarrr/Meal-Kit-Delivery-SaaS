@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using App.Contracts.BLL.Core;
 using App.Domain.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using WebApp.ViewModels.CompanySettings;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class CompanySettingsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICompanySettingsService _companySettingsService;
 
-        public CompanySettingsController(AppDbContext context)
+        public CompanySettingsController(ICompanySettingsService companySettingsService)
         {
-            _context = context;
+            _companySettingsService = companySettingsService;
         }
 
         // GET: CompanySettings
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.CompanySettings.Include(c => c.Company).Include(c => c.UpdatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _companySettingsService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: CompanySettings/Details/5
@@ -34,10 +37,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companySettings = await _context.CompanySettings
-                .Include(c => c.Company)
-                .Include(c => c.UpdatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companySettings = await _companySettingsService.GetByIdAsync(id.Value, companyId.Value);
             if (companySettings == null)
             {
                 return NotFound();
@@ -49,9 +55,10 @@ namespace WebApp.Controllers
         // GET: CompanySettings/Create
         public IActionResult Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["UpdatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new CompanySettingsEditViewModel
+            {
+                CompanySettings = new CompanySettings()
+            });
         }
 
         // POST: CompanySettings/Create
@@ -59,18 +66,32 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("DefaultNoRepeatWeeks,SelectionDeadlineDaysBeforeDelivery,AllowAutoSelection,AllowPauseSubscription,AllowSkipWeek,MinimumSubscriptionWeeks,MaxDeliveryAttempts,AllowRedeliveryAfterFailure,ComplaintEscalationThreshold,ComplaintEscalationDaysWindow,AutoPrioritizeFreshestStock,AutoAssignEarliestSlot,UpdatedAt,CompanyId,UpdatedByAppUserId,Id")] CompanySettings companySettings)
+        public async Task<IActionResult> Create(CompanySettingsEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.CompanySettings == null)
+            {
+                return BadRequest();
+            }
+
+            var companySettings = viewModel.CompanySettings;
             if (ModelState.IsValid)
             {
-                companySettings.Id = Guid.NewGuid();
-                _context.Add(companySettings);
-                await _context.SaveChangesAsync();
+                companySettings.CompanyId = companyId.Value;
+                companySettings.UpdatedByAppUserId = userId.Value;
+                companySettings.UpdatedAt = DateTime.UtcNow;
+
+                await _companySettingsService.AddAsync(companySettings, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companySettings.CompanyId);
-            ViewData["UpdatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companySettings.UpdatedByAppUserId);
-            return View(companySettings);
+
+            return View(viewModel);
         }
 
         // GET: CompanySettings/Edit/5
@@ -81,14 +102,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companySettings = await _context.CompanySettings.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companySettings = await _companySettingsService.GetByIdAsync(id.Value, companyId.Value);
             if (companySettings == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companySettings.CompanyId);
-            ViewData["UpdatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companySettings.UpdatedByAppUserId);
-            return View(companySettings);
+
+            return View(new CompanySettingsEditViewModel { CompanySettings = companySettings });
         }
 
         // POST: CompanySettings/Edit/5
@@ -96,8 +122,21 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("DefaultNoRepeatWeeks,SelectionDeadlineDaysBeforeDelivery,AllowAutoSelection,AllowPauseSubscription,AllowSkipWeek,MinimumSubscriptionWeeks,MaxDeliveryAttempts,AllowRedeliveryAfterFailure,ComplaintEscalationThreshold,ComplaintEscalationDaysWindow,AutoPrioritizeFreshestStock,AutoAssignEarliestSlot,UpdatedAt,CompanyId,UpdatedByAppUserId,Id")] CompanySettings companySettings)
+        public async Task<IActionResult> Edit(Guid id, CompanySettingsEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.CompanySettings == null)
+            {
+                return BadRequest();
+            }
+
+            var companySettings = viewModel.CompanySettings;
             if (id != companySettings.Id)
             {
                 return NotFound();
@@ -105,27 +144,21 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _companySettingsService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(companySettings);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CompanySettingsExists(companySettings.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                companySettings.CompanyId = companyId.Value;
+                companySettings.UpdatedByAppUserId = userId.Value;
+                companySettings.UpdatedAt = DateTime.UtcNow;
+
+                await _companySettingsService.UpdateAsync(companySettings, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", companySettings.CompanyId);
-            ViewData["UpdatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", companySettings.UpdatedByAppUserId);
-            return View(companySettings);
+
+            return View(viewModel);
         }
 
         // GET: CompanySettings/Delete/5
@@ -136,10 +169,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var companySettings = await _context.CompanySettings
-                .Include(c => c.Company)
-                .Include(c => c.UpdatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var companySettings = await _companySettingsService.GetByIdAsync(id.Value, companyId.Value);
             if (companySettings == null)
             {
                 return NotFound();
@@ -153,19 +189,36 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var companySettings = await _context.CompanySettings.FindAsync(id);
-            if (companySettings != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.CompanySettings.Remove(companySettings);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _companySettingsService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CompanySettingsExists(Guid id)
+        private Guid? GetCurrentCompanyId()
         {
-            return _context.CompanySettings.Any(e => e.Id == id);
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

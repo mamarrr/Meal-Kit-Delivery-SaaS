@@ -1,29 +1,41 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Subscription;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using Microsoft.AspNetCore.Authorization;
 using App.Domain.Subscription;
+using System.Linq;
+using System.Security.Claims;
+using WebApp.ViewModels.PlatformSubscriptions;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "user")]
     public class PlatformSubscriptionsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IPlatformSubscriptionService _platformSubscriptionService;
+        private readonly IPlatformSubscriptionTierService _platformSubscriptionTierService;
+        private readonly IPlatformSubscriptionStatusService _platformSubscriptionStatusService;
 
-        public PlatformSubscriptionsController(AppDbContext context)
+        public PlatformSubscriptionsController(
+            IPlatformSubscriptionService platformSubscriptionService,
+            IPlatformSubscriptionTierService platformSubscriptionTierService,
+            IPlatformSubscriptionStatusService platformSubscriptionStatusService)
         {
-            _context = context;
+            _platformSubscriptionService = platformSubscriptionService;
+            _platformSubscriptionTierService = platformSubscriptionTierService;
+            _platformSubscriptionStatusService = platformSubscriptionStatusService;
         }
 
         // GET: PlatformSubscriptions
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.PlatformSubscriptions.Include(p => p.Company).Include(p => p.CreatedByAppUser).Include(p => p.PlatformSubscriptionStatus).Include(p => p.PlatformSubscriptionTier);
-            return View(await appDbContext.ToListAsync());
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _platformSubscriptionService.GetAllByCompanyIdAsync(companyId.Value));
         }
 
         // GET: PlatformSubscriptions/Details/5
@@ -34,12 +46,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscription = await _context.PlatformSubscriptions
-                .Include(p => p.Company)
-                .Include(p => p.CreatedByAppUser)
-                .Include(p => p.PlatformSubscriptionStatus)
-                .Include(p => p.PlatformSubscriptionTier)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var platformSubscription = await _platformSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
             if (platformSubscription == null)
             {
                 return NotFound();
@@ -49,13 +62,9 @@ namespace WebApp.Controllers
         }
 
         // GET: PlatformSubscriptions/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail");
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            ViewData["PlatformSubscriptionStatusId"] = new SelectList(_context.PlatformSubscriptionStatuses, "Id", "Code");
-            ViewData["PlatformSubscriptionTierId"] = new SelectList(_context.PlatformSubscriptionTiers, "Id", "Code");
-            return View();
+            return View(await BuildEditViewModelAsync(new PlatformSubscription()));
         }
 
         // POST: PlatformSubscriptions/Create
@@ -63,20 +72,34 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ValidFrom,ValidTo,CreatedAt,UpdatedAt,DeletedAt,CompanyId,PlatformSubscriptionTierId,PlatformSubscriptionStatusId,CreatedByAppUserId,Id")] PlatformSubscription platformSubscription)
+        public async Task<IActionResult> Create(PlatformSubscriptionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            var userId = GetCurrentUserId();
+            if (companyId == null || userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.PlatformSubscription == null)
+            {
+                return BadRequest();
+            }
+
+            var platformSubscription = viewModel.PlatformSubscription;
             if (ModelState.IsValid)
             {
-                platformSubscription.Id = Guid.NewGuid();
-                _context.Add(platformSubscription);
-                await _context.SaveChangesAsync();
+                platformSubscription.CompanyId = companyId.Value;
+                platformSubscription.CreatedByAppUserId = userId.Value;
+                platformSubscription.CreatedAt = DateTime.UtcNow;
+                platformSubscription.UpdatedAt = null;
+                platformSubscription.DeletedAt = null;
+
+                await _platformSubscriptionService.AddAsync(platformSubscription, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", platformSubscription.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscription.CreatedByAppUserId);
-            ViewData["PlatformSubscriptionStatusId"] = new SelectList(_context.PlatformSubscriptionStatuses, "Id", "Code", platformSubscription.PlatformSubscriptionStatusId);
-            ViewData["PlatformSubscriptionTierId"] = new SelectList(_context.PlatformSubscriptionTiers, "Id", "Code", platformSubscription.PlatformSubscriptionTierId);
-            return View(platformSubscription);
+
+            return View(await BuildEditViewModelAsync(platformSubscription));
         }
 
         // GET: PlatformSubscriptions/Edit/5
@@ -87,16 +110,19 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscription = await _context.PlatformSubscriptions.FindAsync(id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var platformSubscription = await _platformSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
             if (platformSubscription == null)
             {
                 return NotFound();
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", platformSubscription.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscription.CreatedByAppUserId);
-            ViewData["PlatformSubscriptionStatusId"] = new SelectList(_context.PlatformSubscriptionStatuses, "Id", "Code", platformSubscription.PlatformSubscriptionStatusId);
-            ViewData["PlatformSubscriptionTierId"] = new SelectList(_context.PlatformSubscriptionTiers, "Id", "Code", platformSubscription.PlatformSubscriptionTierId);
-            return View(platformSubscription);
+
+            return View(await BuildEditViewModelAsync(platformSubscription));
         }
 
         // POST: PlatformSubscriptions/Edit/5
@@ -104,8 +130,20 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("ValidFrom,ValidTo,CreatedAt,UpdatedAt,DeletedAt,CompanyId,PlatformSubscriptionTierId,PlatformSubscriptionStatusId,CreatedByAppUserId,Id")] PlatformSubscription platformSubscription)
+        public async Task<IActionResult> Edit(Guid id, PlatformSubscriptionEditViewModel viewModel)
         {
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.PlatformSubscription == null)
+            {
+                return BadRequest();
+            }
+
+            var platformSubscription = viewModel.PlatformSubscription;
             if (id != platformSubscription.Id)
             {
                 return NotFound();
@@ -113,29 +151,23 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _platformSubscriptionService.GetByIdAsync(id, companyId.Value);
+                if (existing == null)
                 {
-                    _context.Update(platformSubscription);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PlatformSubscriptionExists(platformSubscription.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                platformSubscription.CompanyId = companyId.Value;
+                platformSubscription.CreatedByAppUserId = existing.CreatedByAppUserId;
+                platformSubscription.CreatedAt = existing.CreatedAt;
+                platformSubscription.DeletedAt = existing.DeletedAt;
+                platformSubscription.UpdatedAt = DateTime.UtcNow;
+
+                await _platformSubscriptionService.UpdateAsync(platformSubscription, companyId.Value);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CompanyId"] = new SelectList(_context.Companies, "Id", "ContactEmail", platformSubscription.CompanyId);
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", platformSubscription.CreatedByAppUserId);
-            ViewData["PlatformSubscriptionStatusId"] = new SelectList(_context.PlatformSubscriptionStatuses, "Id", "Code", platformSubscription.PlatformSubscriptionStatusId);
-            ViewData["PlatformSubscriptionTierId"] = new SelectList(_context.PlatformSubscriptionTiers, "Id", "Code", platformSubscription.PlatformSubscriptionTierId);
-            return View(platformSubscription);
+
+            return View(await BuildEditViewModelAsync(platformSubscription));
         }
 
         // GET: PlatformSubscriptions/Delete/5
@@ -146,12 +178,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var platformSubscription = await _context.PlatformSubscriptions
-                .Include(p => p.Company)
-                .Include(p => p.CreatedByAppUser)
-                .Include(p => p.PlatformSubscriptionStatus)
-                .Include(p => p.PlatformSubscriptionTier)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
+            {
+                return Forbid();
+            }
+
+            var platformSubscription = await _platformSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
             if (platformSubscription == null)
             {
                 return NotFound();
@@ -165,19 +198,53 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var platformSubscription = await _context.PlatformSubscriptions.FindAsync(id);
-            if (platformSubscription != null)
+            var companyId = GetCurrentCompanyId();
+            if (companyId == null)
             {
-                _context.PlatformSubscriptions.Remove(platformSubscription);
+                return Forbid();
             }
 
-            await _context.SaveChangesAsync();
+            await _platformSubscriptionService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PlatformSubscriptionExists(Guid id)
+        private async Task<PlatformSubscriptionEditViewModel> BuildEditViewModelAsync(PlatformSubscription platformSubscription)
         {
-            return _context.PlatformSubscriptions.Any(e => e.Id == id);
+            var tiers = await _platformSubscriptionTierService.GetAllAsync();
+            var statuses = await _platformSubscriptionStatusService.GetAllAsync();
+
+            return new PlatformSubscriptionEditViewModel
+            {
+                PlatformSubscription = platformSubscription,
+                PlatformSubscriptionTierOptions = tiers
+                    .Select(t => new SelectListItem(t.Name, t.Id.ToString(), t.Id == platformSubscription.PlatformSubscriptionTierId))
+                    .ToList(),
+                PlatformSubscriptionStatusOptions = statuses
+                    .Select(s => new SelectListItem(s.Label, s.Id.ToString(), s.Id == platformSubscription.PlatformSubscriptionStatusId))
+                    .ToList()
+            };
+        }
+
+        private Guid? GetCurrentCompanyId()
+        {
+            var companyIdRaw = User.FindFirst("company_id")?.Value
+                               ?? User.FindFirst("tenant_id")?.Value
+                               ?? User.FindFirst("companyId")?.Value;
+
+            return Guid.TryParse(companyIdRaw, out var companyId)
+                ? companyId
+                : null;
+        }
+
+        private Guid? GetCurrentUserId()
+        {
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }

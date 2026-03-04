@@ -1,4 +1,4 @@
-@model App.Domain.Subscription.PlatformSubscription
+@model WebApp.ViewModels.PlatformSubscriptions.PlatformSubscriptionEditViewModel
 
 @{
     ViewData["Title"] = "Create";
@@ -13,45 +13,22 @@
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
-                <label asp-for="ValidFrom" class="control-label"></label>
-                <input asp-for="ValidFrom" class="form-control" />
-                <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                <label asp-for="PlatformSubscription.ValidFrom" class="control-label"></label>
+                <input asp-for="PlatformSubscription.ValidFrom" class="form-control" />
+                <span asp-validation-for="PlatformSubscription.ValidFrom" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="ValidTo" class="control-label"></label>
-                <input asp-for="ValidTo" class="form-control" />
-                <span asp-validation-for="ValidTo" class="text-danger"></span>
+                <label asp-for="PlatformSubscription.ValidTo" class="control-label"></label>
+                <input asp-for="PlatformSubscription.ValidTo" class="form-control" />
+                <span asp-validation-for="PlatformSubscription.ValidTo" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                <label asp-for="PlatformSubscription.PlatformSubscriptionTierId" class="control-label"></label>
+                <select asp-for="PlatformSubscription.PlatformSubscriptionTierId" class="form-control" asp-items="Model.PlatformSubscriptionTierOptions"></select>
             </div>
             <div class="form-group">
-                <label asp-for="UpdatedAt" class="control-label"></label>
-                <input asp-for="UpdatedAt" class="form-control" />
-                <span asp-validation-for="UpdatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DeletedAt" class="control-label"></label>
-                <input asp-for="DeletedAt" class="form-control" />
-                <span asp-validation-for="DeletedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyId" class="control-label"></label>
-                <select asp-for="CompanyId" class ="form-control" asp-items="ViewBag.CompanyId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="PlatformSubscriptionTierId" class="control-label"></label>
-                <select asp-for="PlatformSubscriptionTierId" class ="form-control" asp-items="ViewBag.PlatformSubscriptionTierId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="PlatformSubscriptionStatusId" class="control-label"></label>
-                <select asp-for="PlatformSubscriptionStatusId" class ="form-control" asp-items="ViewBag.PlatformSubscriptionStatusId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedByAppUserId" class="control-label"></label>
-                <select asp-for="CreatedByAppUserId" class ="form-control" asp-items="ViewBag.CreatedByAppUserId"></select>
+                <label asp-for="PlatformSubscription.PlatformSubscriptionStatusId" class="control-label"></label>
+                <select asp-for="PlatformSubscription.PlatformSubscriptionStatusId" class="form-control" asp-items="Model.PlatformSubscriptionStatusOptions"></select>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

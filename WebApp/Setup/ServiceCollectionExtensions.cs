@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBllServices(this IServiceCollection services)
     {
         services.AddScoped<ICompanyService, CompanyService>();
+        services.AddScoped<ICompanyRoleService, CompanyRoleService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ICompanyAppUserService, CompanyAppUserService>();
         services.AddScoped<ICompanySettingsService, CompanySettingsService>();
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoxService, BoxService>();
         services.AddScoped<IMealSubscriptionService, MealSubscriptionService>();
         services.AddScoped<IPlatformSubscriptionService, PlatformSubscriptionService>();
+        services.AddScoped<IPlatformSubscriptionStatusService, PlatformSubscriptionStatusService>();
         services.AddScoped<IPlatformSubscriptionTierService, PlatformSubscriptionTierService>();
 
         services.AddScoped<IAppUserService, AppUserService>();

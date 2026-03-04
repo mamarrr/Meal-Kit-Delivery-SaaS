@@ -1,29 +1,26 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using App.Contracts.BLL.Core;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using App.DAL.EF;
+using Microsoft.AspNetCore.Authorization;
 using App.Domain.Core;
+using System.Security.Claims;
+using WebApp.ViewModels.Companies;
 
 namespace WebApp.Controllers
 {
+    [Authorize(Roles = "admin")]
     public class CompaniesController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICompanyService _companyService;
 
-        public CompaniesController(AppDbContext context)
+        public CompaniesController(ICompanyService companyService)
         {
-            _context = context;
+            _companyService = companyService;
         }
 
         // GET: Companies
         public async Task<IActionResult> Index()
         {
-            var appDbContext = _context.Companies.Include(c => c.CreatedByAppUser);
-            return View(await appDbContext.ToListAsync());
+            return View(await _companyService.GetAllAsync());
         }
 
         // GET: Companies/Details/5
@@ -34,9 +31,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var company = await _context.Companies
-                .Include(c => c.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var company = await _companyService.GetByIdAsync(id.Value);
             if (company == null)
             {
                 return NotFound();
@@ -48,8 +43,10 @@ namespace WebApp.Controllers
         // GET: Companies/Create
         public IActionResult Create()
         {
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName");
-            return View();
+            return View(new CompanyEditViewModel
+            {
+                Company = new Company()
+            });
         }
 
         // POST: Companies/Create
@@ -57,17 +54,32 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Slug,RegistrationNumber,ContactEmail,ContactPhone,WebSiteUrl,CreatedAt,UpdatedAt,DeletedAt,DeActivatedAt,CreatedByAppUserId,Id")] Company company)
+        public async Task<IActionResult> Create(CompanyEditViewModel viewModel)
         {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Forbid();
+            }
+
+            if (viewModel.Company == null)
+            {
+                return BadRequest();
+            }
+
+            var company = viewModel.Company;
             if (ModelState.IsValid)
             {
-                company.Id = Guid.NewGuid();
-                _context.Add(company);
-                await _context.SaveChangesAsync();
+                company.CreatedByAppUserId = userId.Value;
+                company.CreatedAt = DateTime.UtcNow;
+                company.UpdatedAt = null;
+                company.DeletedAt = null;
+
+                await _companyService.AddAsync(company);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", company.CreatedByAppUserId);
-            return View(company);
+
+            return View(viewModel);
         }
 
         // GET: Companies/Edit/5
@@ -78,13 +90,13 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var company = await _context.Companies.FindAsync(id);
+            var company = await _companyService.GetByIdAsync(id.Value);
             if (company == null)
             {
                 return NotFound();
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", company.CreatedByAppUserId);
-            return View(company);
+
+            return View(new CompanyEditViewModel { Company = company });
         }
 
         // POST: Companies/Edit/5
@@ -92,8 +104,14 @@ namespace WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Name,Slug,RegistrationNumber,ContactEmail,ContactPhone,WebSiteUrl,CreatedAt,UpdatedAt,DeletedAt,DeActivatedAt,CreatedByAppUserId,Id")] Company company)
+        public async Task<IActionResult> Edit(Guid id, CompanyEditViewModel viewModel)
         {
+            if (viewModel.Company == null)
+            {
+                return BadRequest();
+            }
+
+            var company = viewModel.Company;
             if (id != company.Id)
             {
                 return NotFound();
@@ -101,26 +119,22 @@ namespace WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var existing = await _companyService.GetByIdAsync(id);
+                if (existing == null)
                 {
-                    _context.Update(company);
-                    await _context.SaveChangesAsync();
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!CompanyExists(company.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                company.CreatedByAppUserId = existing.CreatedByAppUserId;
+                company.CreatedAt = existing.CreatedAt;
+                company.DeletedAt = existing.DeletedAt;
+                company.UpdatedAt = DateTime.UtcNow;
+
+                await _companyService.UpdateAsync(company);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["CreatedByAppUserId"] = new SelectList(_context.Users, "Id", "FirstName", company.CreatedByAppUserId);
-            return View(company);
+
+            return View(viewModel);
         }
 
         // GET: Companies/Delete/5
@@ -131,9 +145,7 @@ namespace WebApp.Controllers
                 return NotFound();
             }
 
-            var company = await _context.Companies
-                .Include(c => c.CreatedByAppUser)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var company = await _companyService.GetByIdAsync(id.Value);
             if (company == null)
             {
                 return NotFound();
@@ -147,19 +159,19 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var company = await _context.Companies.FindAsync(id);
-            if (company != null)
-            {
-                _context.Companies.Remove(company);
-            }
-
-            await _context.SaveChangesAsync();
+            await _companyService.RemoveAsync(id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CompanyExists(Guid id)
+        private Guid? GetCurrentUserId()
         {
-            return _context.Companies.Any(e => e.Id == id);
+            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                            ?? User.FindFirst("sub")?.Value
+                            ?? User.FindFirst("user_id")?.Value;
+
+            return Guid.TryParse(userIdRaw, out var userId)
+                ? userId
+                : null;
         }
     }
 }
