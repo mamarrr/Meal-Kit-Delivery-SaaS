@@ -30,74 +30,8 @@
 
     var sidebarItems = new List<AppShellNavigationViewModel>
     {
-        new() { Title = "Home", Controller = "Landing", Action = "Entry", Slug = activeContext == "company" ? operationalSlug : null }
+        new() { Title = "Entry", Controller = "Landing", Action = "Entry", Slug = activeContext == "company" ? operationalSlug : null }
     };
-
-    if (hasCustomerAccess && activeContext == "customer")
-    {
-        sidebarItems.AddRange(
-        new List<AppShellNavigationViewModel>
-        {
-            new() { Title = "Discover Plans", Controller = "MealPlans", Action = "Index" },
-            new() { Title = "My Subscriptions", Controller = "MealSubscriptions", Action = "Index" },
-            new() { Title = "Dietary Preferences", Controller = "CustomerPreferences", Action = "Index" },
-            new() { Title = "Ingredient Exclusions", Controller = "CustomerExclusions", Action = "Index" },
-            new() { Title = "Weekly Menus", Controller = "WeeklyMenus", Action = "Index" },
-            new() { Title = "Meal Selections", Controller = "MealSelections", Action = "Index" },
-            new() { Title = "My Deliveries", Controller = "Deliveries", Action = "Index" },
-            new() { Title = "Quality Complaints", Controller = "QualityComplaints", Action = "Index" }
-        }.Select(x =>
-        {
-            x.Slug = operationalSlug;
-            return x;
-        }));
-    }
-
-    if (hasCompanyAccess && activeContext == "company")
-    {
-        sidebarItems.AddRange(
-        new List<AppShellNavigationViewModel>
-        {
-            new() { Title = "Company Profile", Controller = "CompanySettings", Action = "Profile" },
-            new() { Title = "Operational Settings", Controller = "CompanySettings", Action = "Index" },
-            new() { Title = "Box Sizes", Controller = "Boxes", Action = "Index" },
-            new() { Title = "Pricing", Controller = "BoxPrices", Action = "Index" },
-            new() { Title = "Dietary Categories", Controller = "DietaryCategories", Action = "Index" },
-            new() { Title = "Recipe Pool", Controller = "Recipes", Action = "Index" },
-            new() { Title = "Weekly Menus", Controller = "WeeklyMenus", Action = "Index" },
-            new() { Title = "Selection Deadlines", Controller = "WeeklyMenus", Action = "Deadlines" },
-            new() { Title = "Delivery Zones", Controller = "DeliveryZones", Action = "Index" },
-            new() { Title = "Delivery Windows", Controller = "DeliveryWindows", Action = "Index" },
-            new() { Title = "Delivery Tracking", Controller = "Deliveries", Action = "Index" },
-            new() { Title = "Complaints", Controller = "QualityComplaints", Action = "Index" },
-            new() { Title = "Users & Roles", Controller = "CompanyUsers", Action = "Index" },
-            new() { Title = "Subscription", Controller = "PlatformSubscriptions", Action = "Index" }
-        }.Select(x =>
-        {
-            x.Slug = operationalSlug;
-            return x;
-        }));
-    }
-
-    if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemBilling") || User.IsInRole("SystemSupport"))
-    {
-        sidebarItems.AddRange(
-        new List<AppShellNavigationViewModel>
-        {
-            new() { Title = "Companies", Controller = "Companies", Action = "Index" },
-            new() { Title = "System Settings", Controller = "SystemSettings", Action = "Index" },
-            new() { Title = "Analytics", Controller = "Analytics", Action = "Index" },
-            new() { Title = "Impersonation", Controller = "SupportImpersonation", Action = "Index" },
-            new() { Title = "Subscription Plans", Controller = "PlatformSubscriptionTiers", Action = "Index" },
-            new() { Title = "Billing & Invoices", Controller = "Invoices", Action = "Index" },
-            new() { Title = "Support Tickets", Controller = "SupportTickets", Action = "Index" },
-            new() { Title = "Support Access", Controller = "SupportAccess", Action = "Index" }
-        }.Select(x =>
-        {
-            x.Slug = operationalSlug;
-            return x;
-        }));
-    }
 
 <div class="app-shell">
     <partial name="_SidebarNavigation" model="sidebarItems" />

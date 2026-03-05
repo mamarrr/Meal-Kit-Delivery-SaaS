@@ -64,53 +64,9 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
             defaultSlug ?? "<null>",
             string.Join(",", User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value)));
 
-        if (User.IsInRole("SystemAdmin"))
-        {
-            return defaultSlug == null
-                ? RedirectToAction("Index", "Companies")
-                : RedirectToAction("Index", "Companies", new { slug = defaultSlug });
-        }
-
-        if (User.IsInRole("SystemBilling"))
-        {
-            return defaultSlug == null
-                ? RedirectToAction("Index", "PlatformSubscriptionTiers")
-                : RedirectToAction("Index", "PlatformSubscriptionTiers", new { slug = defaultSlug });
-        }
-
-        if (User.IsInRole("SystemSupport"))
-        {
-            return defaultSlug == null
-                ? RedirectToAction("Index", "SupportTickets")
-                : RedirectToAction("Index", "SupportTickets", new { slug = defaultSlug });
-        }
-
-        var hasCompanyAccess = User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee");
-
-        if (User.IsInRole("Customer") && (activeContext == "customer" || !hasCompanyAccess))
-        {
-            logger.LogInformation("Entry decision: routing to customer subscriptions (hasCompanyAccess={HasCompanyAccess})", hasCompanyAccess);
-            return defaultSlug == null
-                ? RedirectToAction("Index", "MealSubscriptions")
-                : RedirectToAction("Index", "MealSubscriptions", new { slug = defaultSlug });
-        }
-
-        if (hasCompanyAccess)
-        {
-            logger.LogInformation("Entry decision: routing to company profile");
-            return defaultSlug == null
-                ? RedirectToAction("Profile", "CompanySettings")
-                : RedirectToAction("Profile", "CompanySettings", new { slug = defaultSlug });
-        }
-
-        if (User.IsInRole("Customer"))
-        {
-            logger.LogInformation("Entry decision: fallback routing to customer subscriptions");
-            return RedirectToAction("Index", "MealSubscriptions");
-        }
-
-        logger.LogWarning("Entry decision: no recognized role claims for user {User}, routing to /Home/Index to avoid /entry loop", User.Identity?.Name ?? "unknown");
-        return RedirectToAction("Index", "Home", new { area = "Root" });
+        ViewData["ActiveContext"] = activeContext ?? "company";
+        ViewData["DefaultSlug"] = defaultSlug;
+        return View();
     }
 
     [HttpPost("/landing/signup")]
