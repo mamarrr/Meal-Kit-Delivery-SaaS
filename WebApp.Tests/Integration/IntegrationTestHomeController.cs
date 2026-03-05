@@ -26,12 +26,17 @@ public class IntegrationTestHomeController : IClassFixture<CustomWebApplicationF
     public async Task Get_Index_IsSuccessful()
     {
         // Arrange
-            
+             
         // Act
         var response = await _client.GetAsync("/");
         
         // Assert
         response.EnsureSuccessStatusCode();
+
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Launch Your Meal Delivery Company", html);
+        Assert.Contains("Log in", html);
+        Assert.Contains("Register new company", html);
     }
 
 }

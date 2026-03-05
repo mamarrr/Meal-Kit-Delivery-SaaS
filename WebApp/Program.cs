@@ -1,6 +1,7 @@
 using App.BLL;
 using App.DAL.EF;
 using WebApp.Helpers;
+using WebApp.Services;
 using WebApp.Setup;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,7 @@ builder.Services.AddBllServices();
 builder.Services.AddAppIdentity();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<AppNameService>();
+builder.Services.AddScoped<TenantOnboardingService>();
 builder.Services.AddAppControllers();
 builder.Services.AddForwardedHeaders();
 builder.Services.AddAppCors();

@@ -80,6 +80,59 @@ body {
     backdrop-filter: blur(6px);
 }
 
+.app-shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    padding: 1rem;
+}
+
+.app-sidebar .nav-link {
+    color: #1f2937;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link:focus {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.app-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.app-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.app-content {
+    padding: 1rem;
+}
+
+.landing-page .landing-hero {
+    background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+}
+
 .page-header-shell {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -119,6 +172,15 @@ body {
 }
 
 @media (max-width: 992px) {
+    .app-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .app-sidebar {
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
     .page-header-shell {
         padding: 0.875rem 1rem;
     }

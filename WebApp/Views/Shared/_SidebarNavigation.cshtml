@@ -1,0 +1,15 @@
+@using WebApp.ViewModels.Shared
+@model IReadOnlyCollection<AppShellNavigationViewModel>
+
+<aside class="app-sidebar" aria-label="Primary navigation">
+    <nav>
+        <ul class="nav flex-column gap-1">
+            @foreach (var item in Model)
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="@item.Controller" asp-action="@item.Action">@item.Title</a>
+                </li>
+            }
+        </ul>
+    </nav>
+</aside>

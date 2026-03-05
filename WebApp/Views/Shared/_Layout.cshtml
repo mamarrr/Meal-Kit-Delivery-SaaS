@@ -1,4 +1,5 @@
 ﻿@using System.Threading
+@using WebApp.ViewModels.Shared
 @using WebApp.Helpers
 @inject AppNameService AppNameService;
 <!DOCTYPE html>
@@ -6,7 +7,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>@ViewData["Title"] - Robot</title>
+    <title>@ViewData["Title"] - @AppNameService.AppName</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
@@ -15,122 +16,89 @@
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
-<header class="site-header">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4" aria-label="Global navigation">
-        <div class="container">
-            <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Home" asp-action="Index">@AppNameService.AppName</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                    aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="navbar-collapse collapse justify-content-between">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">@App.Resources.Views.Shared._Layout.Home</a>
-                    </li>
-                    @if (User.IsInRole("Customer"))
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Customer View
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-controller="MealPlans" asp-action="Index">Discover Plans</a></li>
-                                <li><a class="dropdown-item" asp-controller="MealSubscriptions" asp-action="Index">My Subscriptions</a></li>
-                                <li><a class="dropdown-item" asp-controller="CustomerPreferences" asp-action="Index">Dietary Preferences</a></li>
-                                <li><a class="dropdown-item" asp-controller="CustomerExclusions" asp-action="Index">Ingredient Exclusions</a></li>
-                                <li><a class="dropdown-item" asp-controller="WeeklyMenus" asp-action="Index">Weekly Menus</a></li>
-                                <li><a class="dropdown-item" asp-controller="MealSelections" asp-action="Index">Meal Selections</a></li>
-                                <li><a class="dropdown-item" asp-controller="Deliveries" asp-action="Index">My Deliveries</a></li>
-                                <li><a class="dropdown-item" asp-controller="QualityComplaints" asp-action="Index">Quality Complaints</a></li>
-                            </ul>
-                        </li>
-                    }
-                    @if (User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Company View
-                            </a>
-                             <ul class="dropdown-menu">
-                                 <li><a class="dropdown-item" asp-controller="CompanySettings" asp-action="Profile">Company Profile</a></li>
-                                 <li><a class="dropdown-item" asp-controller="CompanySettings" asp-action="Index">Operational Settings</a></li>
-                                 <li><a class="dropdown-item" asp-controller="Boxes" asp-action="Index">Box Sizes</a></li>
-                                 <li><a class="dropdown-item" asp-controller="BoxPrices" asp-action="Index">Pricing</a></li>
-                                 <li><a class="dropdown-item" asp-controller="DietaryCategories" asp-action="Index">Dietary Categories</a></li>
-                                 <li><a class="dropdown-item" asp-controller="Recipes" asp-action="Index">Recipe Pool</a></li>
-                                 <li><a class="dropdown-item" asp-controller="WeeklyMenus" asp-action="Index">Weekly Menus</a></li>
-                                 <li><a class="dropdown-item" asp-controller="WeeklyMenus" asp-action="Deadlines">Selection Deadlines</a></li>
-                                 <li><a class="dropdown-item" asp-controller="DeliveryZones" asp-action="Index">Delivery Zones</a></li>
-                                <li><a class="dropdown-item" asp-controller="DeliveryWindows" asp-action="Index">Delivery Windows</a></li>
-                                <li><a class="dropdown-item" asp-controller="Deliveries" asp-action="Index">Delivery Tracking</a></li>
-                                <li><a class="dropdown-item" asp-controller="QualityComplaints" asp-action="Index">Complaints</a></li>
-                                <li><a class="dropdown-item" asp-controller="CompanyUsers" asp-action="Index">Users &amp; Roles</a></li>
-                                <li><a class="dropdown-item" asp-controller="PlatformSubscriptions" asp-action="Index">Subscription</a></li>
-                            </ul>
-                        </li>
-                    }
-                    @if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemBilling") || User.IsInRole("SystemSupport"))
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                System
-                            </a>
-                            <ul class="dropdown-menu">
-                                @if (User.IsInRole("SystemAdmin"))
-                                {
-                                    <li><a class="dropdown-item" asp-controller="Companies" asp-action="Index">Companies</a></li>
-                                    <li><a class="dropdown-item" asp-controller="SystemSettings" asp-action="Index">System Settings</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Analytics" asp-action="Index">Analytics</a></li>
-                                    <li><a class="dropdown-item" asp-controller="SupportImpersonation" asp-action="Index">Impersonation</a></li>
-                                }
-                                 @if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemBilling"))
-                                 {
-                                     <li><a class="dropdown-item" asp-controller="PlatformSubscriptionTiers" asp-action="Index">Subscription Plans</a></li>
-                                     <li><a class="dropdown-item" asp-controller="Invoices" asp-action="Index">Billing &amp; Invoices</a></li>
-                                 }
-                                @if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemSupport"))
-                                {
-                                    <li><a class="dropdown-item" asp-controller="SupportTickets" asp-action="Index">Support Tickets</a></li>
-                                    <li><a class="dropdown-item" asp-controller="SupportAccess" asp-action="Index">Support Access</a></li>
-                                }
-                            </ul>
-                        </li>
-                    }
-                    @if (User.IsInRole("root"))
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button"
-                               data-bs-toggle="dropdown" aria-expanded="false">
-                                Root
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-area="Root" asp-controller="Users" asp-action="Index">Users</a>
-                                </li>
-                            </ul>
-                        </li>
-                    }
-                </ul>
-                <ul class="navbar-nav align-items-lg-center gap-lg-1">
-                    <partial name="_LanguageSelection"/>
-                    <partial name="_LoginPartial"/>
+@{
+    var sidebarItems = new List<AppShellNavigationViewModel>
+    {
+        new() { Title = "Home", Controller = "Landing", Action = "Entry" }
+    };
+
+    if (User.IsInRole("Customer"))
+    {
+        sidebarItems.AddRange(
+        [
+            new() { Title = "Discover Plans", Controller = "MealPlans", Action = "Index" },
+            new() { Title = "My Subscriptions", Controller = "MealSubscriptions", Action = "Index" },
+            new() { Title = "Dietary Preferences", Controller = "CustomerPreferences", Action = "Index" },
+            new() { Title = "Ingredient Exclusions", Controller = "CustomerExclusions", Action = "Index" },
+            new() { Title = "Weekly Menus", Controller = "WeeklyMenus", Action = "Index" },
+            new() { Title = "Meal Selections", Controller = "MealSelections", Action = "Index" },
+            new() { Title = "My Deliveries", Controller = "Deliveries", Action = "Index" },
+            new() { Title = "Quality Complaints", Controller = "QualityComplaints", Action = "Index" }
+        ]);
+    }
+
+    if (User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
+    {
+        sidebarItems.AddRange(
+        [
+            new() { Title = "Company Profile", Controller = "CompanySettings", Action = "Profile" },
+            new() { Title = "Operational Settings", Controller = "CompanySettings", Action = "Index" },
+            new() { Title = "Box Sizes", Controller = "Boxes", Action = "Index" },
+            new() { Title = "Pricing", Controller = "BoxPrices", Action = "Index" },
+            new() { Title = "Dietary Categories", Controller = "DietaryCategories", Action = "Index" },
+            new() { Title = "Recipe Pool", Controller = "Recipes", Action = "Index" },
+            new() { Title = "Weekly Menus", Controller = "WeeklyMenus", Action = "Index" },
+            new() { Title = "Selection Deadlines", Controller = "WeeklyMenus", Action = "Deadlines" },
+            new() { Title = "Delivery Zones", Controller = "DeliveryZones", Action = "Index" },
+            new() { Title = "Delivery Windows", Controller = "DeliveryWindows", Action = "Index" },
+            new() { Title = "Delivery Tracking", Controller = "Deliveries", Action = "Index" },
+            new() { Title = "Complaints", Controller = "QualityComplaints", Action = "Index" },
+            new() { Title = "Users & Roles", Controller = "CompanyUsers", Action = "Index" },
+            new() { Title = "Subscription", Controller = "PlatformSubscriptions", Action = "Index" }
+        ]);
+    }
+
+    if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemBilling") || User.IsInRole("SystemSupport"))
+    {
+        sidebarItems.AddRange(
+        [
+            new() { Title = "Companies", Controller = "Companies", Action = "Index" },
+            new() { Title = "System Settings", Controller = "SystemSettings", Action = "Index" },
+            new() { Title = "Analytics", Controller = "Analytics", Action = "Index" },
+            new() { Title = "Impersonation", Controller = "SupportImpersonation", Action = "Index" },
+            new() { Title = "Subscription Plans", Controller = "PlatformSubscriptionTiers", Action = "Index" },
+            new() { Title = "Billing & Invoices", Controller = "Invoices", Action = "Index" },
+            new() { Title = "Support Tickets", Controller = "SupportTickets", Action = "Index" },
+            new() { Title = "Support Access", Controller = "SupportAccess", Action = "Index" }
+        ]);
+    }
+}
+
+<div class="app-shell">
+    <partial name="_SidebarNavigation" model="sidebarItems" />
+
+    <div class="app-main">
+        <header class="app-topbar">
+            <div class="app-topbar-brand">
+                <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Landing" asp-action="Index">@AppNameService.AppName</a>
+            </div>
+            <div class="app-topbar-actions">
+                <ul class="navbar-nav">
+                    <partial name="_LoginPartial" />
                 </ul>
             </div>
-        </div>
-    </nav>
-</header>
-<div class="container pb-4">
-    <main id="main-content" role="main" class="pb-3">
-        @RenderBody()
-    </main>
+        </header>
+
+        <main id="main-content" role="main" class="app-content">
+            @RenderBody()
+        </main>
+    </div>
 </div>
 
 <footer class="border-top footer text-muted py-3 mt-auto">
     <div class="container">
         @AppNameService.AppName - <a asp-area="" asp-controller="Home" asp-action="Privacy">@App.Resources.Views.Shared._Layout.Privacy</a> | 
-        <a href="/swagger">Api</a> | 
-        @Thread.CurrentThread.CurrentCulture.Name
+        <a href="/swagger">Api</a>
     </div>
 </footer>
 <script src="~/lib/jquery/dist/jquery.min.js"></script>

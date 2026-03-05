@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Welcome";
+}
+
+<div class="landing-page">
+    <section class="landing-hero card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 p-lg-5">
+            <h1 class="display-6 fw-semibold mb-3">Launch Your Meal Delivery Company</h1>
+            <p class="lead text-muted mb-4">
+                Create a new company workspace with a new account, or sign in if you already have an account.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" asp-controller="Landing" asp-action="CompanySignup">Register new company</a>
+                <a class="btn btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="/entry">Log in</a>
+            </div>
+        </div>
+    </section>
+</div>

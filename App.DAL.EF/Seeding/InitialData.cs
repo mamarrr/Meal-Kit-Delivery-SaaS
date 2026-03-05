@@ -13,15 +13,52 @@ public static class InitialData
             ("admin", null),
             ("user", null),
             ("root", null),
-            ("SystemAdmin", null)
+            ("SystemAdmin", null),
+            ("SystemSupport", null),
+            ("SystemBilling", null),
+            ("CompanyOwner", null),
+            ("CompanyAdmin", null),
+            ("CompanyManager", null),
+            ("CompanyEmployee", null),
         ];
 
     public static readonly (string name, string password, Guid? id, string[] roles)[]
         Users =
         [
-            ("Admin@email.com", "Admin123!", null, ["admin", "root", "user", "SystemAdmin"]),
-            ("akaver@akaver.com", "Kala.Maja.101", null, ["admin", "root", "user"]),
-            ("andres.kaver@taltech.ee", "Kala.Maja.101", null, ["admin", "root", "user"]),
+            ("root@root.com", "Kala.Maja.101", null, ["admin", "root", "user", "SystemAdmin"]),
+
+            // 2 users for every system role
+            ("sysadmin1@platform.local", "Kala.Maja.101", null, ["user", "SystemAdmin"]),
+            ("sysadmin2@platform.local", "Kala.Maja.101", null, ["user", "SystemAdmin"]),
+            ("syssupport1@platform.local", "Kala.Maja.101", null, ["user", "SystemSupport"]),
+            ("syssupport2@platform.local", "Kala.Maja.101", null, ["user", "SystemSupport"]),
+            ("sysbilling1@platform.local", "Kala.Maja.101", null, ["user", "SystemBilling"]),
+            ("sysbilling2@platform.local", "Kala.Maja.101", null, ["user", "SystemBilling"]),
+
+            // Company 1 users: 1 owner, 2 admins, 2 managers, 2 employees
+            ("owner@northbites.local", "Kala.Maja.101", null, ["user", "CompanyOwner"]),
+            ("admin1@northbites.local", "Kala.Maja.101", null, ["user", "CompanyAdmin"]),
+            ("admin2@northbites.local", "Kala.Maja.101", null, ["user", "CompanyAdmin"]),
+            ("manager1@northbites.local", "Kala.Maja.101", null, ["user", "CompanyManager"]),
+            ("manager2@northbites.local", "Kala.Maja.101", null, ["user", "CompanyManager"]),
+            ("employee1@northbites.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"]),
+            ("employee2@northbites.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"]),
+
+            // Company 2 users: 1 owner, 2 admins, 2 managers, 2 employees
+            ("owner@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyOwner"]),
+            ("admin1@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyAdmin"]),
+            ("admin2@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyAdmin"]),
+            ("manager1@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyManager"]),
+            ("manager2@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyManager"]),
+            ("employee1@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"]),
+            ("employee2@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"])
+        ];
+
+    public static readonly (string name, string slug, string registrationNumber, string contactEmail, string contactPhone, string webSiteUrl)[]
+        Companies =
+        [
+            ("North Bites", "north-bites", "EE10000001", "info@northbites.local", "+3725000001", "https://northbites.local"),
+            ("South Spoon", "south-spoon", "EE10000002", "info@southspoon.local", "+3725000002", "https://southspoon.local")
         ];
     
     // Lookup table seed data
