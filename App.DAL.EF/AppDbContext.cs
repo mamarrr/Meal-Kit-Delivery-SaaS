@@ -35,6 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<RecipeDietaryCategory> RecipeDietaryCategories { get; set; }
     public DbSet<WeeklyMenu> WeeklyMenus { get; set; }
     public DbSet<WeeklyMenuRecipe> WeeklyMenuRecipes { get; set; }
+    public DbSet<WeeklyMenuRuleConfig> WeeklyMenuRuleConfigs { get; set; }
     public DbSet<MealSelection> MealSelections { get; set; }
     public DbSet<CustomerPreference> CustomerPreferences { get; set; }
     public DbSet<CustomerExclusion> CustomerExclusions { get; set; }
@@ -85,6 +86,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<CompanySettings>(entity =>
         {
             entity.HasIndex(e => e.CompanyId).IsUnique();
+        });
+
+        builder.Entity<Ingredient>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.Name }).IsUnique();
+            entity.HasIndex(e => new { e.CompanyId, e.ExclusionKey });
+        });
+
+        builder.Entity<NutritionalInfo>(entity =>
+        {
+            entity.HasIndex(e => e.RecipeId).IsUnique();
         });
 
         builder.Entity<SystemSetting>(entity =>

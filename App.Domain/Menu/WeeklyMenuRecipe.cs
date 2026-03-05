@@ -5,6 +5,7 @@ namespace App.Domain.Menu;
 
 public class WeeklyMenuRecipe : BaseEntity
 {
+    public Guid? DietaryCategoryId { get; set; }
     public int? DisplayOrder { get; set; }
     public bool IsFeatured { get; set; }
     
@@ -17,6 +18,7 @@ public class WeeklyMenuRecipe : BaseEntity
     public Guid CreatedByAppUserId { get; set; }
     
     // Navigation Properties
+    public DietaryCategory? DietaryCategory { get; set; }
     public Recipe? Recipe { get; set; }
     public WeeklyMenu? WeeklyMenu { get; set; }
     public AppUser? CreatedByAppUser { get; set; }

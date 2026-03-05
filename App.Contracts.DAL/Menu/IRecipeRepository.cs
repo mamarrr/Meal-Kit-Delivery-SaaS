@@ -14,6 +14,16 @@ public interface IRecipeRepository : IRepository<Recipe>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of recipes belonging to the company.</returns>
     Task<ICollection<Recipe>> GetAllByCompanyIdAsync(Guid companyId);
+    Task<Recipe?> GetByIdWithDetailsAsync(Guid recipeId, Guid companyId);
+    Task<ICollection<Recipe>> GetAllByCompanyIdWithDetailsAsync(Guid companyId);
+    Task<ICollection<RecipeIngredient>> GetRecipeIngredientsAsync(Guid recipeId);
+    Task<ICollection<RecipeDietaryCategory>> GetRecipeDietaryCategoriesAsync(Guid recipeId);
+    Task AddRecipeIngredientsAsync(ICollection<RecipeIngredient> entities);
+    Task AddRecipeDietaryCategoriesAsync(ICollection<RecipeDietaryCategory> entities);
+    Task RemoveRecipeIngredientsAsync(ICollection<RecipeIngredient> entities);
+    Task RemoveRecipeDietaryCategoriesAsync(ICollection<RecipeDietaryCategory> entities);
+    Task<int> CountExistingIngredientIdsAsync(Guid companyId, ICollection<Guid> ingredientIds);
+    Task<int> CountExistingDietaryCategoryIdsAsync(Guid companyId, ICollection<Guid> dietaryCategoryIds);
 
     /// <summary>
     /// Counts active (non-deleted) recipes for a company.

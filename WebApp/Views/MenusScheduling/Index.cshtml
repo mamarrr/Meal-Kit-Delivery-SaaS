@@ -1,0 +1,176 @@
+@model WebApp.ViewModels.Menu.MenusSchedulingIndexViewModel
+@{
+    ViewData["Title"] = "Menus & Scheduling";
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-2">Menus &amp; Scheduling</h1>
+        <p class="text-muted mb-0">Plan weekly menus, configure constraints, assign recipes, and preview auto-selection outcomes.</p>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form asp-controller="MenusScheduling" asp-action="Index" asp-route-slug="@Model.CompanySlug" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="weekStartDate">Week</label>
+                <input class="form-control" type="date" id="weekStartDate" name="weekStartDate" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-8 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Load week</button>
+                <span class="align-self-center text-muted">Week starts Monday.</span>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Menu configuration</h2>
+                <form asp-controller="MenusScheduling" asp-action="SaveConfig" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="WeekStartDate" />
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RuleConfigForm.RecipesPerCategory">Recipes/category</label>
+                        <input class="form-control" asp-for="RuleConfigForm.RecipesPerCategory" type="number" min="1" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RuleConfigForm.NoRepeatWeeks">No-repeat weeks</label>
+                        <input class="form-control" asp-for="RuleConfigForm.NoRepeatWeeks" type="number" min="0" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RuleConfigForm.SelectionDeadlineDaysBeforeWeekStart">Deadline days before start</label>
+                        <input class="form-control" asp-for="RuleConfigForm.SelectionDeadlineDaysBeforeWeekStart" type="number" min="0" />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Save configuration</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Recipe assignment</h2>
+                <form asp-controller="MenusScheduling" asp-action="AssignRecipe" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="WeekStartDate" />
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="AssignmentForm.RecipeId">Recipe</label>
+                        <select class="form-select" asp-for="AssignmentForm.RecipeId" asp-items="Model.RecipeOptions"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="AssignmentForm.DietaryCategoryId">Category</label>
+                        <select class="form-select" asp-for="AssignmentForm.DietaryCategoryId" asp-items="Model.CategoryOptions">
+                            <option value="">Uncategorized</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Assign recipe</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Weekly assignments</h2>
+        @if (Model.Assignments.Count == 0)
+        {
+            <p class="text-muted mb-0">No assignments yet for this week.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Recipe</th>
+                        <th>Category</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Assignments)
+                    {
+                        <tr>
+                            <td>@(item.DisplayOrder ?? 0)</td>
+                            <td>@item.RecipeName</td>
+                            <td>@item.DietaryCategoryName</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">Auto-selection simulation</h2>
+            <form asp-controller="MenusScheduling" asp-action="Simulate" asp-route-slug="@Model.CompanySlug" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="WeekStartDate" />
+                <button type="submit" class="btn btn-outline-secondary">Run simulation</button>
+            </form>
+        </div>
+
+        @if (Model.Simulation == null)
+        {
+            <p class="text-muted mb-0">Run simulation to preview category picks and exclusion reasons.</p>
+        }
+        else
+        {
+            <div class="row g-3 mb-3">
+                @foreach (var category in Model.Simulation.Categories)
+                {
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <h3 class="h6 mb-2">@category.DietaryCategoryName</h3>
+                            <div class="small text-muted mb-2">Selected: @category.SelectedCount / Required: @category.RequiredCount</div>
+                            @if (category.SelectedRecipes.Count == 0)
+                            {
+                                <div class="text-muted small">No recipes selected.</div>
+                            }
+                            else
+                            {
+                                <ul class="mb-0 ps-3">
+                                    @foreach (var recipe in category.SelectedRecipes)
+                                    {
+                                        <li>@recipe.RecipeName</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <h3 class="h6">Exclusions</h3>
+            @if (Model.Simulation.Exclusions.Count == 0)
+            {
+                <p class="text-muted mb-0">No exclusions.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in Model.Simulation.Exclusions)
+                    {
+                        <li class="list-group-item px-0">
+                            <strong>@item.RecipeName</strong>
+                            <div class="small text-muted">@item.Reason</div>
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </div>
+</section>

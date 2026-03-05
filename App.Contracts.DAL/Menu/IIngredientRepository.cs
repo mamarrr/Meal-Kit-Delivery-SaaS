@@ -14,4 +14,7 @@ public interface IIngredientRepository : IRepository<Ingredient>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of ingredients belonging to the company.</returns>
     Task<ICollection<Ingredient>> GetAllByCompanyIdAsync(Guid companyId);
+
+    Task<Ingredient?> GetByNameAsync(Guid companyId, string name);
+    Task<ICollection<Ingredient>> GetByIdsAsync(Guid companyId, ICollection<Guid> ids);
 }

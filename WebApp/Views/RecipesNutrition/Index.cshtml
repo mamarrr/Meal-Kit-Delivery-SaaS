@@ -1,0 +1,307 @@
+@model WebApp.ViewModels.Menu.RecipesNutritionIndexViewModel
+@{
+    ViewData["Title"] = "Recipes & Nutrition";
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-2">Recipes &amp; Nutrition</h1>
+        <p class="text-muted mb-0">Manage recipes, nutrition per serving, dietary categories, and ingredient exclusion mapping.</p>
+    </div>
+</section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="search">Search</label>
+                <input class="form-control" id="search" name="search" value="@Model.Search" placeholder="Recipe name" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="dietaryCategoryId">Dietary category</label>
+                <select class="form-select" id="dietaryCategoryId" name="dietaryCategoryId" asp-items="Model.DietaryCategoryOptions">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="ingredientId">Ingredient tag</label>
+                <select class="form-select" id="ingredientId" name="ingredientId" asp-items="Model.IngredientOptions">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="col-md-2 form-check mt-4">
+                <input class="form-check-input" type="checkbox" id="activeOnly" name="activeOnly" value="true" checked="@Model.ActiveOnly" />
+                <label class="form-check-label" for="activeOnly">Active only</label>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Apply filters</button>
+                <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">Reset</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Recipes list</h2>
+                @if (Model.Recipes.Count == 0)
+                {
+                    <p class="text-muted mb-0">No recipes found for current filters.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var recipe in Model.Recipes)
+                        {
+                            <a class="list-group-item list-group-item-action @(Model.SelectedRecipeId == recipe.RecipeId ? "active" : string.Empty)"
+                               asp-controller="RecipesNutrition"
+                               asp-action="Index"
+                               asp-route-slug="@Model.CompanySlug"
+                               asp-route-search="@Model.Search"
+                               asp-route-dietaryCategoryId="@Model.FilterDietaryCategoryId"
+                               asp-route-ingredientId="@Model.FilterIngredientId"
+                               asp-route-activeOnly="@Model.ActiveOnly"
+                               asp-route-selectedRecipeId="@recipe.RecipeId">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@recipe.Name</strong>
+                                    <span class="badge text-bg-light">@(recipe.IsActive ? "Active" : "Inactive")</span>
+                                </div>
+                                <div class="small text-muted">Dietary: @(recipe.DietaryCategories.Count == 0 ? "-" : string.Join(", ", recipe.DietaryCategories))</div>
+                                <div class="small text-muted">Tags: @(recipe.Tags.Count == 0 ? "-" : string.Join(", ", recipe.Tags))</div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Recipe editor</h2>
+                <form asp-controller="RecipesNutrition" asp-action="SaveRecipe" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Search" />
+                    <input type="hidden" asp-for="FilterDietaryCategoryId" />
+                    <input type="hidden" asp-for="FilterIngredientId" />
+                    <input type="hidden" asp-for="ActiveOnly" />
+                    <input type="hidden" asp-for="SelectedRecipeId" />
+                    <input type="hidden" asp-for="EditingIngredientId" />
+                    <input type="hidden" asp-for="EditingDietaryCategoryId" />
+                    <input type="hidden" asp-for="RecipeForm.RecipeId" />
+
+                    <div class="col-md-8">
+                        <label class="form-label" asp-for="RecipeForm.Name">Name</label>
+                        <input class="form-control" asp-for="RecipeForm.Name" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.DefaultServings">Default servings</label>
+                        <input class="form-control" asp-for="RecipeForm.DefaultServings" type="number" min="1" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="RecipeForm.Description">Description</label>
+                        <textarea class="form-control" asp-for="RecipeForm.Description" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="RecipeForm.SelectedIngredientIds">Ingredient tags</label>
+                        <select class="form-select" asp-for="RecipeForm.SelectedIngredientIds" asp-items="Model.IngredientOptions" multiple size="6"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="RecipeForm.SelectedDietaryCategoryIds">Dietary categories</label>
+                        <select class="form-select" asp-for="RecipeForm.SelectedDietaryCategoryIds" asp-items="Model.DietaryCategoryOptions" multiple size="6"></select>
+                    </div>
+
+                    <div class="col-12"><h3 class="h6 mb-0">Nutrition per serving</h3></div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.CaloriesKcal">Calories</label>
+                        <input class="form-control" asp-for="RecipeForm.CaloriesKcal" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.ProteinG">Protein (g)</label>
+                        <input class="form-control" asp-for="RecipeForm.ProteinG" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.CarbsG">Carbs (g)</label>
+                        <input class="form-control" asp-for="RecipeForm.CarbsG" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.FatG">Fat (g)</label>
+                        <input class="form-control" asp-for="RecipeForm.FatG" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.FiberG">Fiber (g)</label>
+                        <input class="form-control" asp-for="RecipeForm.FiberG" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="RecipeForm.SodiumMg">Sodium (mg)</label>
+                        <input class="form-control" asp-for="RecipeForm.SodiumMg" type="number" min="0" step="0.01" />
+                    </div>
+
+                    <div class="col-12 form-check">
+                        <input class="form-check-input" asp-for="RecipeForm.IsActive" />
+                        <label class="form-check-label" asp-for="RecipeForm.IsActive">Active recipe</label>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save recipe</button>
+                        <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">New recipe</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Ingredients catalog &amp; exclusions mapping</h2>
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="list-group list-group-flush">
+                    @foreach (var item in Model.IngredientCatalog)
+                    {
+                        <a class="list-group-item list-group-item-action @(Model.EditingIngredientId == item.IngredientId ? "active" : string.Empty)"
+                           asp-controller="RecipesNutrition"
+                           asp-action="Index"
+                           asp-route-slug="@Model.CompanySlug"
+                           asp-route-search="@Model.Search"
+                           asp-route-dietaryCategoryId="@Model.FilterDietaryCategoryId"
+                           asp-route-ingredientId="@Model.FilterIngredientId"
+                           asp-route-activeOnly="@Model.ActiveOnly"
+                           asp-route-selectedRecipeId="@Model.SelectedRecipeId"
+                           asp-route-editingIngredientId="@item.IngredientId">
+                            <div class="d-flex justify-content-between">
+                                <strong>@item.Name</strong>
+                                <span class="badge text-bg-light">@(item.IsExclusionTag ? "Exclusion" : "Informational")</span>
+                            </div>
+                            <div class="small text-muted">Key: @(string.IsNullOrWhiteSpace(item.ExclusionKey) ? "-" : item.ExclusionKey)</div>
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <form asp-controller="RecipesNutrition" asp-action="SaveIngredient" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Search" />
+                    <input type="hidden" asp-for="FilterDietaryCategoryId" />
+                    <input type="hidden" asp-for="FilterIngredientId" />
+                    <input type="hidden" asp-for="ActiveOnly" />
+                    <input type="hidden" asp-for="SelectedRecipeId" />
+                    <input type="hidden" asp-for="EditingDietaryCategoryId" />
+                    <input type="hidden" asp-for="IngredientForm.IngredientId" />
+
+                    <div class="col-md-8">
+                        <label class="form-label" asp-for="IngredientForm.Name">Ingredient/tag name</label>
+                        <input class="form-control" asp-for="IngredientForm.Name" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="IngredientForm.ExclusionKey">Exclusion key</label>
+                        <input class="form-control" asp-for="IngredientForm.ExclusionKey" placeholder="e.g. cilantro" />
+                    </div>
+                    <div class="col-md-6 form-check">
+                        <input class="form-check-input" asp-for="IngredientForm.IsAllergen" />
+                        <label class="form-check-label" asp-for="IngredientForm.IsAllergen">Is allergen tag</label>
+                    </div>
+                    <div class="col-md-6 form-check">
+                        <input class="form-check-input" asp-for="IngredientForm.IsExclusionTag" />
+                        <label class="form-check-label" asp-for="IngredientForm.IsExclusionTag">Participates in exclusions</label>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary">Save ingredient</button>
+                        <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">Reset form</a>
+                    </div>
+                </form>
+
+                @if (Model.EditingIngredientId.HasValue)
+                {
+                    <form asp-controller="RecipesNutrition" asp-action="DeleteIngredient" asp-route-slug="@Model.CompanySlug" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ingredientId" value="@Model.EditingIngredientId" />
+                        <input type="hidden" name="search" value="@Model.Search" />
+                        <input type="hidden" name="filterDietaryCategoryId" value="@Model.FilterDietaryCategoryId" />
+                        <input type="hidden" name="filterIngredientId" value="@Model.FilterIngredientId" />
+                        <input type="hidden" name="activeOnly" value="@Model.ActiveOnly" />
+                        <input type="hidden" name="selectedRecipeId" value="@Model.SelectedRecipeId" />
+                        <input type="hidden" name="editingDietaryCategoryId" value="@Model.EditingDietaryCategoryId" />
+                        <button type="submit" class="btn btn-outline-danger">Delete ingredient</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Dietary categories management</h2>
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="list-group list-group-flush">
+                    @foreach (var item in Model.DietaryCategoryCatalog)
+                    {
+                        <a class="list-group-item list-group-item-action @(Model.EditingDietaryCategoryId == item.DietaryCategoryId ? "active" : string.Empty)"
+                           asp-controller="RecipesNutrition"
+                           asp-action="Index"
+                           asp-route-slug="@Model.CompanySlug"
+                           asp-route-search="@Model.Search"
+                           asp-route-dietaryCategoryId="@Model.FilterDietaryCategoryId"
+                           asp-route-ingredientId="@Model.FilterIngredientId"
+                           asp-route-activeOnly="@Model.ActiveOnly"
+                           asp-route-selectedRecipeId="@Model.SelectedRecipeId"
+                           asp-route-editingIngredientId="@Model.EditingIngredientId"
+                           asp-route-editingDietaryCategoryId="@item.DietaryCategoryId">
+                            <div class="d-flex justify-content-between">
+                                <strong>@item.Name</strong>
+                                <span class="badge text-bg-light">@(item.IsActive ? "Active" : "Inactive")</span>
+                            </div>
+                            <div class="small text-muted">Code: @item.Code</div>
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <form asp-controller="RecipesNutrition" asp-action="SaveDietaryCategory" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Search" />
+                    <input type="hidden" asp-for="FilterDietaryCategoryId" />
+                    <input type="hidden" asp-for="FilterIngredientId" />
+                    <input type="hidden" asp-for="ActiveOnly" />
+                    <input type="hidden" asp-for="SelectedRecipeId" />
+                    <input type="hidden" asp-for="EditingIngredientId" />
+                    <input type="hidden" asp-for="DietaryCategoryForm.DietaryCategoryId" />
+
+                    <div class="col-md-5">
+                        <label class="form-label" asp-for="DietaryCategoryForm.Code">Code</label>
+                        <input class="form-control" asp-for="DietaryCategoryForm.Code" placeholder="e.g. vegan" required />
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label" asp-for="DietaryCategoryForm.Name">Name</label>
+                        <input class="form-control" asp-for="DietaryCategoryForm.Name" placeholder="e.g. Vegan" required />
+                    </div>
+                    <div class="col-12 form-check">
+                        <input class="form-check-input" asp-for="DietaryCategoryForm.IsActive" />
+                        <label class="form-check-label" asp-for="DietaryCategoryForm.IsActive">Active category</label>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-primary">Save dietary category</button>
+                        <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">Reset form</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

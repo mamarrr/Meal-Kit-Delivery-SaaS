@@ -59,6 +59,38 @@
         });
     }
 
+    if ((User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
+        && !string.IsNullOrWhiteSpace(operationalSlug)
+        && string.Equals(activeContext, ActiveUserSelectionHelper.CompanyContext, StringComparison.OrdinalIgnoreCase))
+    {
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Recipes & Nutrition",
+            Controller = "RecipesNutrition",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Menus & Scheduling",
+            Controller = "MenusScheduling",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Subscribers & Accounts",
+            Controller = "Subscribers",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
+    }
+
 <div class="app-shell">
     <partial name="_SidebarNavigation" model="sidebarItems" />
 

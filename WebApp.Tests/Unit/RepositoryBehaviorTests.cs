@@ -2,12 +2,16 @@ using App.DAL.EF;
 using App.DAL.EF.Repositories.Core;
 using App.DAL.EF.Repositories.Delivery;
 using App.DAL.EF.Repositories.Identity;
+using App.DAL.EF.Repositories.Menu;
 using App.DAL.EF.Repositories.Subscription;
 using App.BLL.Delivery;
+using App.BLL.Menu;
 using App.BLL.Subscription;
+using App.Contracts.BLL.Menu;
 using App.Domain.Core;
 using App.Domain.Delivery;
 using App.Domain.Identity;
+using App.Domain.Menu;
 using App.Domain.Subscription;
 using Microsoft.EntityFrameworkCore;
 
@@ -380,5 +384,271 @@ public class RepositoryBehaviorTests
 
         Assert.NotNull(visibleInOwnerScope);
         Assert.Null(hiddenInOtherScope);
+    }
+
+    [Fact]
+    public async Task CustomerRepository_GetSubscriberListAsync_FiltersByTenantAndStatus()
+    {
+        await using var ctx = CreateContext();
+        var repository = new CustomerRepository(ctx);
+
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+
+        var customerA = new Customer
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            Email = "alpha@example.com",
+            FirstName = "Alpha",
+            LastName = "One",
+            IsActive = true,
+            AddressLine = "Street 1",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE"
+        };
+
+        var customerB = new Customer
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            Email = "beta@example.com",
+            FirstName = "Beta",
+            LastName = "Two",
+            IsActive = true,
+            AddressLine = "Street 2",
+            City = "Tartu",
+            PostalCode = "51004",
+            Country = "EE"
+        };
+
+        repository.Add(customerA);
+        repository.Add(customerB);
+
+        var boxA = new Box
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CreatedByAppUserId = Guid.NewGuid(),
+            MealsCount = 3,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.Boxes.Add(boxA);
+
+        var boxB = new Box
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            CreatedByAppUserId = Guid.NewGuid(),
+            MealsCount = 4,
+            PeopleCount = 2,
+            DisplayName = "Premium",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.Boxes.Add(boxB);
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            CustomerId = customerB.Id,
+            BoxId = boxB.Id,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-2),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await repository.GetSubscriberListAsync(companyA, null, "inactive", null, null);
+
+        Assert.Single(result);
+        Assert.Equal(customerA.Id, result.First().CustomerId);
+        Assert.Equal("Inactive", result.First().Status);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuRepository_GetRuleConfigByCompanyIdAsync_RespectsTenantScope()
+    {
+        await using var ctx = CreateContext();
+        var repository = new WeeklyMenuRepository(ctx);
+
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+
+        repository.AddRuleConfig(new App.Domain.Menu.WeeklyMenuRuleConfig
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            RecipesPerCategory = 2,
+            NoRepeatWeeks = 8,
+            SelectionDeadlineDaysBeforeWeekStart = 2,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        repository.AddRuleConfig(new App.Domain.Menu.WeeklyMenuRuleConfig
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            RecipesPerCategory = 3,
+            NoRepeatWeeks = 6,
+            SelectionDeadlineDaysBeforeWeekStart = 1,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var configA = await repository.GetRuleConfigByCompanyIdAsync(companyA);
+
+        Assert.NotNull(configA);
+        Assert.Equal(companyA, configA!.CompanyId);
+        Assert.Equal(2, configA.RecipesPerCategory);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_AssignRecipeToWeekAsync_RejectsNoRepeatViolation()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository);
+
+        var companyId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+        var prevWeek = weekStart.AddDays(-7);
+
+        ctx.Recipes.Add(new App.Domain.Menu.Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = userId,
+            Name = "Recipe A",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var oldMenu = new App.Domain.Menu.WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            CreatedByAppUserId = userId,
+            WeekStartDate = prevWeek,
+            SelectionDeadlineAt = prevWeek.AddDays(-2),
+            TotalRecipes = 1,
+            IsPublished = false,
+            PublishedAt = prevWeek,
+            CreatedAt = DateTime.UtcNow,
+            WeeklyMenuRecipes = new List<App.Domain.Menu.WeeklyMenuRecipe>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = recipeId,
+                    CreatedByAppUserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                }
+            }
+        };
+
+        ctx.WeeklyMenus.Add(oldMenu);
+
+        weeklyMenuRepository.AddRuleConfig(new App.Domain.Menu.WeeklyMenuRuleConfig
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            RecipesPerCategory = 2,
+            NoRepeatWeeks = 8,
+            SelectionDeadlineDaysBeforeWeekStart = 2,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.AssignRecipeToWeekAsync(companyId, new WeeklyMenuAssignmentCreateDto
+        {
+            WeekStartDate = weekStart,
+            RecipeId = recipeId,
+            CreatedByAppUserId = userId
+        });
+
+        Assert.False(result.Success);
+        Assert.Contains("no-repeat", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task IngredientService_UpsertCatalogItemAsync_EnforcesUniqueNamePerTenant()
+    {
+        await using var ctx = CreateContext();
+        var repository = new IngredientRepository(ctx);
+        var service = new IngredientService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+        {
+            Name = "cilantro",
+            IsExclusionTag = true,
+            ExclusionKey = "cilantro"
+        });
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+            {
+                Name = "cilantro",
+                IsExclusionTag = true,
+                ExclusionKey = "cilantro"
+            }));
+    }
+
+    [Fact]
+    public async Task RecipeService_UpsertRecipeEditorAsync_RejectsOutOfScopeIngredientIds()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+        var service = new RecipeService(repository);
+
+        var companyId = Guid.NewGuid();
+        var otherCompany = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var outOfScopeIngredient = new Ingredient
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = otherCompany,
+            CreatedByAppUserId = actorId,
+            Name = "pork",
+            CreatedAt = DateTime.UtcNow,
+            IsExclusionTag = true
+        };
+        ctx.Ingredients.Add(outOfScopeIngredient);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await service.UpsertRecipeEditorAsync(companyId, actorId, new RecipeEditorUpsertDto
+            {
+                Name = "Recipe X",
+                DefaultServings = 2,
+                IsActive = true,
+                IngredientIds = [outOfScopeIngredient.Id],
+                Nutrition = new RecipeNutritionDto
+                {
+                    CaloriesKcal = 450,
+                    ProteinG = 30,
+                    CarbsG = 40,
+                    FatG = 15,
+                    FiberG = 6,
+                    SodiumMg = 500
+                }
+            }));
     }
 }

@@ -1,0 +1,206 @@
+@model WebApp.ViewModels.Subscribers.SubscribersIndexViewModel
+@{
+    ViewData["Title"] = "Subscribers & Accounts";
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-2">Subscribers &amp; Accounts</h1>
+        <p class="text-muted mb-0">Search and filter subscribers, then inspect account details, preferences/exclusions, ratings, and lifecycle history.</p>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form asp-controller="Subscribers" asp-action="Index" asp-route-slug="@Model.CompanySlug" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="search">Search</label>
+                <input class="form-control" id="search" name="search" value="@Model.Search" placeholder="Name or email" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="status">Status</label>
+                <select class="form-select" id="status" name="status" asp-items="Model.StatusOptions"></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="tier">Tier</label>
+                <select class="form-select" id="tier" name="tier" asp-items="Model.TierOptions"></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="deliveryZoneId">Zone</label>
+                <select class="form-select" id="deliveryZoneId" name="deliveryZoneId" asp-items="Model.DeliveryZoneOptions"></select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Apply filters</button>
+                <a class="btn btn-outline-secondary" asp-controller="Subscribers" asp-action="Index" asp-route-slug="@Model.CompanySlug">Reset</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Subscribers list</h2>
+                @if (Model.Subscribers.Count == 0)
+                {
+                    <p class="text-muted mb-0">No subscribers found for this filter set.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var subscriber in Model.Subscribers)
+                        {
+                            <a class="list-group-item list-group-item-action @(Model.SelectedSubscriberId == subscriber.CustomerId ? "active" : string.Empty)"
+                               asp-controller="Subscribers"
+                               asp-action="Index"
+                               asp-route-slug="@Model.CompanySlug"
+                               asp-route-search="@Model.Search"
+                               asp-route-status="@Model.Status"
+                               asp-route-tier="@Model.Tier"
+                               asp-route-deliveryZoneId="@Model.DeliveryZoneId"
+                               asp-route-selectedSubscriberId="@subscriber.CustomerId">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@subscriber.FullName</strong>
+                                    <span class="badge text-bg-light">@subscriber.Status</span>
+                                </div>
+                                <div class="small">@subscriber.Email</div>
+                                <div class="small text-muted">Tier: @subscriber.Tier | Zone: @(string.IsNullOrWhiteSpace(subscriber.DeliveryZoneName) ? "-" : subscriber.DeliveryZoneName)</div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Subscriber details</h2>
+                @if (Model.SelectedSubscriber == null)
+                {
+                    <p class="text-muted mb-0">Select a subscriber from the list to view details.</p>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <h3 class="h6 mb-1">@Model.SelectedSubscriber.FullName</h3>
+                        <div class="small">@Model.SelectedSubscriber.Email</div>
+                        <div class="small">@Model.SelectedSubscriber.PhoneNumber</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h4 class="h6">Address</h4>
+                                <div>@Model.SelectedSubscriber.AddressLine</div>
+                                <div>@Model.SelectedSubscriber.City, @Model.SelectedSubscriber.PostalCode</div>
+                                <div>@Model.SelectedSubscriber.Country</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h4 class="h6">Plan &amp; delivery</h4>
+                                <div>Plan/box: @Model.SelectedSubscriber.PlanBox</div>
+                                <div>Delivery zone: @(string.IsNullOrWhiteSpace(Model.SelectedSubscriber.DeliveryZoneName) ? "-" : Model.SelectedSubscriber.DeliveryZoneName)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h4 class="h6">Preferences</h4>
+                                @if (Model.SelectedSubscriber.Preferences.Count == 0)
+                                {
+                                    <div class="text-muted small">No preferences recorded.</div>
+                                }
+                                else
+                                {
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var item in Model.SelectedSubscriber.Preferences)
+                                        {
+                                            <li>@item</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h4 class="h6">Exclusions</h4>
+                                @if (Model.SelectedSubscriber.Exclusions.Count == 0)
+                                {
+                                    <div class="text-muted small">No exclusions recorded.</div>
+                                }
+                                else
+                                {
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var item in Model.SelectedSubscriber.Exclusions)
+                                        {
+                                            <li>@item</li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4 class="h6">Ratings history</h4>
+                        @if (Model.SelectedSubscriber.RatingsHistory.Count == 0)
+                        {
+                            <div class="text-muted small">No ratings history available.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Recipe</th>
+                                            <th>Score</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.SelectedSubscriber.RatingsHistory)
+                                        {
+                                            <tr>
+                                                <td>@item.RatedAt.ToString("yyyy-MM-dd")</td>
+                                                <td>@item.RecipeName</td>
+                                                <td>@item.Score</td>
+                                                <td>@item.Notes</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+
+                    <div>
+                        <h4 class="h6">Pauses, skips, cancellations</h4>
+                        @if (Model.SelectedSubscriber.LifecycleHistory.Count == 0)
+                        {
+                            <div class="text-muted small">No lifecycle events available.</div>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var item in Model.SelectedSubscriber.LifecycleHistory)
+                                {
+                                    <li class="list-group-item px-0">
+                                        <strong>@item.EventType</strong> - @item.Status
+                                        <div class="small text-muted">@item.OccurredAt.ToString("yyyy-MM-dd") | @item.Details</div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>

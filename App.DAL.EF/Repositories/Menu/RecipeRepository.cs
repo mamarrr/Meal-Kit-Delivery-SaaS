@@ -25,6 +25,98 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
             .ToListAsync();
     }
 
+    public async Task<Recipe?> GetByIdWithDetailsAsync(Guid recipeId, Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Include(r => r.NutritionalInfo)
+            .Include(r => r.RecipeIngredients)
+            .Include(r => r.RecipeDietaryCategories)
+            .FirstOrDefaultAsync(r => r.Id == recipeId && r.CompanyId == companyId);
+    }
+
+    public async Task<ICollection<Recipe>> GetAllByCompanyIdWithDetailsAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Include(r => r.NutritionalInfo)
+            .Include(r => r.RecipeIngredients!)
+                .ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeDietaryCategories!)
+                .ThenInclude(rd => rd.DietaryCategory)
+            .Where(r => r.CompanyId == companyId && r.DeletedAt == null)
+            .OrderBy(r => r.Name)
+            .ToListAsync();
+    }
+
+    public async Task<ICollection<RecipeIngredient>> GetRecipeIngredientsAsync(Guid recipeId)
+    {
+        return await RepositoryDbContext.RecipeIngredients
+            .Where(x => x.RecipeId == recipeId && x.DeletedAt == null)
+            .ToListAsync();
+    }
+
+    public async Task<ICollection<RecipeDietaryCategory>> GetRecipeDietaryCategoriesAsync(Guid recipeId)
+    {
+        return await RepositoryDbContext.RecipeDietaryCategories
+            .Where(x => x.RecipeId == recipeId && x.DeletedAt == null)
+            .ToListAsync();
+    }
+
+    public async Task AddRecipeIngredientsAsync(ICollection<RecipeIngredient> entities)
+    {
+        await RepositoryDbContext.RecipeIngredients.AddRangeAsync(entities);
+    }
+
+    public async Task AddRecipeDietaryCategoriesAsync(ICollection<RecipeDietaryCategory> entities)
+    {
+        await RepositoryDbContext.RecipeDietaryCategories.AddRangeAsync(entities);
+    }
+
+    public async Task<int> CountExistingIngredientIdsAsync(Guid companyId, ICollection<Guid> ingredientIds)
+    {
+        if (ingredientIds.Count == 0)
+        {
+            return 0;
+        }
+
+        return await RepositoryDbContext.Ingredients
+            .Where(x => x.CompanyId == companyId && x.DeletedAt == null && ingredientIds.Contains(x.Id))
+            .CountAsync();
+    }
+
+    public async Task<int> CountExistingDietaryCategoryIdsAsync(Guid companyId, ICollection<Guid> dietaryCategoryIds)
+    {
+        if (dietaryCategoryIds.Count == 0)
+        {
+            return 0;
+        }
+
+        return await RepositoryDbContext.DietaryCategories
+            .Where(x => x.CompanyId == companyId && x.DeletedAt == null && dietaryCategoryIds.Contains(x.Id))
+            .CountAsync();
+    }
+
+    public Task RemoveRecipeIngredientsAsync(ICollection<RecipeIngredient> entities)
+    {
+        foreach (var entity in entities)
+        {
+            entity.DeletedAt = DateTime.UtcNow;
+            RepositoryDbContext.RecipeIngredients.Update(entity);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveRecipeDietaryCategoriesAsync(ICollection<RecipeDietaryCategory> entities)
+    {
+        foreach (var entity in entities)
+        {
+            entity.DeletedAt = DateTime.UtcNow;
+            RepositoryDbContext.RecipeDietaryCategories.Update(entity);
+        }
+
+        return Task.CompletedTask;
+    }
+
     /// <inheritdoc />
     public async Task<int> CountActiveByCompanyIdAsync(Guid companyId)
     {

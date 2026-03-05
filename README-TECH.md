@@ -64,3 +64,31 @@ dotnet aspnet-codegenerator controller -name GpsLocationsController     -m GpsLo
 - Service-level create/update paths must preserve tenant ownership by assigning and/or validating `CompanyId` in tenant scope operations.
 - For detached/no-tracking update flows, continue to use explicit repository `Update()` calls before saving changes.
 
+## Menus & Scheduling module notes
+
+- Route: `/{slug}/menus-scheduling` for company-scoped operations.
+- Navigation: available in company context sidebar for CompanyOwner, CompanyAdmin, CompanyManager, and CompanyEmployee.
+- Core capabilities:
+  - Weekly planning view by week start date.
+  - Rule configuration (`recipes/category`, `no-repeat weeks`, `deadline days before week start`).
+  - Recipe assignment with validation against category quota and no-repeat window.
+  - Auto-selection simulation (dry-run) with exclusion diagnostics.
+- Persistence updates:
+  - New `WeeklyMenuRuleConfig` tenant entity.
+  - `WeeklyMenuRecipe` now supports optional `DietaryCategoryId` to represent category-scoped assignments.
+  - Migration: `20260305132703_MenusSchedulingRules`.
+
+## Recipes & Nutrition module notes
+
+- Route: `/{slug}/recipes-nutrition` for company-scoped operations.
+- Navigation: available in company context sidebar for CompanyOwner, CompanyAdmin, CompanyManager, and CompanyEmployee.
+- Core capabilities:
+  - Recipes list with filters (search, dietary category, ingredient tag, active-only).
+  - Recipe editor for ingredients, dietary categories, and nutrition per serving.
+  - Nutrition fields: calories, protein, carbs, fat, fiber, sodium.
+  - Ingredient catalog management with exclusion mapping metadata (for example `cilantro` as an exclusion tag).
+- Persistence updates:
+  - `Ingredient` includes `NormalizedName`, `IsAllergen`, `IsExclusionTag`, and `ExclusionKey`.
+  - Uniqueness/index updates for ingredient name and exclusion key per company.
+  - Migration: `20260305134656_RecipesNutritionCatalog`.
+

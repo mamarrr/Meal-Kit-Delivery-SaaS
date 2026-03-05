@@ -936,8 +936,20 @@ namespace App.DAL.EF.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ExclusionKey")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsAllergen")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsExclusionTag")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedName")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -945,9 +957,12 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
-
                     b.HasIndex("CreatedByAppUserId");
+
+                    b.HasIndex("CompanyId", "ExclusionKey");
+
+                    b.HasIndex("CompanyId", "Name")
+                        .IsUnique();
 
                     b.ToTable("Ingredients");
                 });
@@ -1213,6 +1228,9 @@ namespace App.DAL.EF.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("DietaryCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<int?>("DisplayOrder")
                         .HasColumnType("integer");
 
@@ -1229,11 +1247,44 @@ namespace App.DAL.EF.Migrations
 
                     b.HasIndex("CreatedByAppUserId");
 
+                    b.HasIndex("DietaryCategoryId");
+
                     b.HasIndex("RecipeId");
 
                     b.HasIndex("WeeklyMenuId");
 
                     b.ToTable("WeeklyMenuRecipes");
+                });
+
+            modelBuilder.Entity("App.Domain.Menu.WeeklyMenuRuleConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("NoRepeatWeeks")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RecipesPerCategory")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SelectionDeadlineDaysBeforeWeekStart")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("WeeklyMenuRuleConfigs");
                 });
 
             modelBuilder.Entity("App.Domain.Subscription.Box", b =>
@@ -2351,6 +2402,11 @@ namespace App.DAL.EF.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("App.Domain.Menu.DietaryCategory", "DietaryCategory")
+                        .WithMany()
+                        .HasForeignKey("DietaryCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("App.Domain.Menu.Recipe", "Recipe")
                         .WithMany("WeeklyMenuRecipes")
                         .HasForeignKey("RecipeId")
@@ -2365,9 +2421,22 @@ namespace App.DAL.EF.Migrations
 
                     b.Navigation("CreatedByAppUser");
 
+                    b.Navigation("DietaryCategory");
+
                     b.Navigation("Recipe");
 
                     b.Navigation("WeeklyMenu");
+                });
+
+            modelBuilder.Entity("App.Domain.Menu.WeeklyMenuRuleConfig", b =>
+                {
+                    b.HasOne("App.Domain.Core.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("App.Domain.Subscription.Box", b =>

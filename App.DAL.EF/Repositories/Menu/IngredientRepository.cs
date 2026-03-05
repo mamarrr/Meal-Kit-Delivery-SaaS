@@ -21,4 +21,22 @@ public class IngredientRepository : BaseRepository<Ingredient, AppDbContext>, II
             .Where(i => i.CompanyId == companyId)
             .ToListAsync();
     }
+
+    public async Task<Ingredient?> GetByNameAsync(Guid companyId, string name)
+    {
+        return await RepositoryDbSet
+            .FirstOrDefaultAsync(i => i.CompanyId == companyId && i.Name == name);
+    }
+
+    public async Task<ICollection<Ingredient>> GetByIdsAsync(Guid companyId, ICollection<Guid> ids)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await RepositoryDbSet
+            .Where(i => i.CompanyId == companyId && ids.Contains(i.Id))
+            .ToListAsync();
+    }
 }

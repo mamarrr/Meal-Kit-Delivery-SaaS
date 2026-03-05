@@ -6,6 +6,10 @@ namespace App.Domain.Menu;
 public class Ingredient : BaseEntity, ITenantProvider
 {
     public string Name { get; set; } = default!;
+    public string? NormalizedName { get; set; }
+    public bool IsAllergen { get; set; }
+    public bool IsExclusionTag { get; set; }
+    public string? ExclusionKey { get; set; }
     
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
