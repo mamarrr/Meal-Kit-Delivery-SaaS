@@ -15,9 +15,7 @@ public class MenusSchedulingIndexViewModel
     public WeeklyMenuRuleConfigUpdateDto RuleConfigForm { get; set; } = new();
     public WeeklyMenuAssignmentCreateDto AssignmentForm { get; set; } = new();
 
-    public List<SelectListItem> CategoryOptions { get; set; } = new();
     public List<SelectListItem> RecipeOptions { get; set; } = new();
 
     public List<WeeklyMenuAssignmentDto> Assignments { get; set; } = new();
-    public WeeklyMenuSimulationResultDto? Simulation { get; set; }
 }

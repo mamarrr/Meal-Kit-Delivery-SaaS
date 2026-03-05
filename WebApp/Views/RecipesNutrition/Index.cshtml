@@ -6,7 +6,7 @@
 <section class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
         <h1 class="h4 mb-2">Recipes &amp; Nutrition</h1>
-        <p class="text-muted mb-0">Manage recipes, nutrition per serving, dietary categories, and ingredient exclusion mapping.</p>
+        <p class="text-muted mb-0">Manage recipes, nutrition per serving, dietary categories, and ingredient tags.</p>
     </div>
 </section>
 
@@ -114,12 +114,54 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label" asp-for="RecipeForm.SelectedIngredientIds">Ingredient tags</label>
-                        <select class="form-select" asp-for="RecipeForm.SelectedIngredientIds" asp-items="Model.IngredientOptions" multiple size="6"></select>
+                        <label class="form-label">Ingredient tags</label>
+                        <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+                            @if (Model.IngredientCatalog.Count == 0)
+                            {
+                                <div class="text-muted small">No ingredient tags available.</div>
+                            }
+                            else
+                            {
+                                foreach (var ingredient in Model.IngredientCatalog)
+                                {
+                                    var isChecked = Model.RecipeForm.SelectedIngredientIds.Contains(ingredient.IngredientId);
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="RecipeForm.SelectedIngredientIds"
+                                               value="@ingredient.IngredientId"
+                                               id="ingredient-@ingredient.IngredientId"
+                                               checked="@isChecked" />
+                                        <label class="form-check-label" for="ingredient-@ingredient.IngredientId">@ingredient.Name</label>
+                                    </div>
+                                }
+                            }
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label" asp-for="RecipeForm.SelectedDietaryCategoryIds">Dietary categories</label>
-                        <select class="form-select" asp-for="RecipeForm.SelectedDietaryCategoryIds" asp-items="Model.DietaryCategoryOptions" multiple size="6"></select>
+                        <label class="form-label">Dietary categories</label>
+                        <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+                            @if (Model.DietaryCategoryCatalog.Count == 0)
+                            {
+                                <div class="text-muted small">No dietary categories available.</div>
+                            }
+                            else
+                            {
+                                foreach (var category in Model.DietaryCategoryCatalog)
+                                {
+                                    var isChecked = Model.RecipeForm.SelectedDietaryCategoryIds.Contains(category.DietaryCategoryId);
+                                    <div class="form-check">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               name="RecipeForm.SelectedDietaryCategoryIds"
+                                               value="@category.DietaryCategoryId"
+                                               id="dietary-@category.DietaryCategoryId"
+                                               checked="@isChecked" />
+                                        <label class="form-check-label" for="dietary-@category.DietaryCategoryId">@category.Name</label>
+                                    </div>
+                                }
+                            }
+                        </div>
                     </div>
 
                     <div class="col-12"><h3 class="h6 mb-0">Nutrition per serving</h3></div>
@@ -157,6 +199,21 @@
                         <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">New recipe</a>
                     </div>
                 </form>
+
+                @if (Model.RecipeForm.RecipeId.HasValue)
+                {
+                    <form asp-controller="RecipesNutrition" asp-action="DeleteRecipe" asp-route-slug="@Model.CompanySlug" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="recipeId" value="@Model.RecipeForm.RecipeId" />
+                        <input type="hidden" name="search" value="@Model.Search" />
+                        <input type="hidden" name="filterDietaryCategoryId" value="@Model.FilterDietaryCategoryId" />
+                        <input type="hidden" name="filterIngredientId" value="@Model.FilterIngredientId" />
+                        <input type="hidden" name="activeOnly" value="@Model.ActiveOnly" />
+                        <input type="hidden" name="editingIngredientId" value="@Model.EditingIngredientId" />
+                        <input type="hidden" name="editingDietaryCategoryId" value="@Model.EditingDietaryCategoryId" />
+                        <button type="submit" class="btn btn-outline-danger">Delete recipe</button>
+                    </form>
+                }
             </div>
         </section>
     </div>
@@ -182,7 +239,7 @@
                            asp-route-editingIngredientId="@item.IngredientId">
                             <div class="d-flex justify-content-between">
                                 <strong>@item.Name</strong>
-                                <span class="badge text-bg-light">@(item.IsExclusionTag ? "Exclusion" : "Informational")</span>
+                                <span class="badge text-bg-light">Exclusion</span>
                             </div>
                             <div class="small text-muted">Key: @(string.IsNullOrWhiteSpace(item.ExclusionKey) ? "-" : item.ExclusionKey)</div>
                         </a>
@@ -200,21 +257,13 @@
                     <input type="hidden" asp-for="EditingDietaryCategoryId" />
                     <input type="hidden" asp-for="IngredientForm.IngredientId" />
 
-                    <div class="col-md-8">
+                    <div class="col-12">
                         <label class="form-label" asp-for="IngredientForm.Name">Ingredient/tag name</label>
                         <input class="form-control" asp-for="IngredientForm.Name" required />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label" asp-for="IngredientForm.ExclusionKey">Exclusion key</label>
-                        <input class="form-control" asp-for="IngredientForm.ExclusionKey" placeholder="e.g. cilantro" />
                     </div>
                     <div class="col-md-6 form-check">
                         <input class="form-check-input" asp-for="IngredientForm.IsAllergen" />
                         <label class="form-check-label" asp-for="IngredientForm.IsAllergen">Is allergen tag</label>
-                    </div>
-                    <div class="col-md-6 form-check">
-                        <input class="form-check-input" asp-for="IngredientForm.IsExclusionTag" />
-                        <label class="form-check-label" asp-for="IngredientForm.IsExclusionTag">Participates in exclusions</label>
                     </div>
                     <div class="col-12 d-flex gap-2">
                         <button type="submit" class="btn btn-outline-primary">Save ingredient</button>
@@ -280,11 +329,7 @@
                     <input type="hidden" asp-for="EditingIngredientId" />
                     <input type="hidden" asp-for="DietaryCategoryForm.DietaryCategoryId" />
 
-                    <div class="col-md-5">
-                        <label class="form-label" asp-for="DietaryCategoryForm.Code">Code</label>
-                        <input class="form-control" asp-for="DietaryCategoryForm.Code" placeholder="e.g. vegan" required />
-                    </div>
-                    <div class="col-md-7">
+                    <div class="col-12">
                         <label class="form-label" asp-for="DietaryCategoryForm.Name">Name</label>
                         <input class="form-control" asp-for="DietaryCategoryForm.Name" placeholder="e.g. Vegan" required />
                     </div>
@@ -297,6 +342,21 @@
                         <a class="btn btn-outline-secondary" asp-controller="RecipesNutrition" asp-action="Index" asp-route-slug="@Model.CompanySlug">Reset form</a>
                     </div>
                 </form>
+
+                @if (Model.EditingDietaryCategoryId.HasValue)
+                {
+                    <form asp-controller="RecipesNutrition" asp-action="DeleteDietaryCategory" asp-route-slug="@Model.CompanySlug" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="dietaryCategoryId" value="@Model.EditingDietaryCategoryId" />
+                        <input type="hidden" name="search" value="@Model.Search" />
+                        <input type="hidden" name="filterDietaryCategoryId" value="@Model.FilterDietaryCategoryId" />
+                        <input type="hidden" name="filterIngredientId" value="@Model.FilterIngredientId" />
+                        <input type="hidden" name="activeOnly" value="@Model.ActiveOnly" />
+                        <input type="hidden" name="selectedRecipeId" value="@Model.SelectedRecipeId" />
+                        <input type="hidden" name="editingIngredientId" value="@Model.EditingIngredientId" />
+                        <button type="submit" class="btn btn-outline-danger">Delete dietary category</button>
+                    </form>
+                }
             </div>
         </div>
     </div>

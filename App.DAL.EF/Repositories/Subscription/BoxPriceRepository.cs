@@ -43,4 +43,20 @@ public class BoxPriceRepository : BaseRepository<BoxPrice, AppDbContext>, IBoxPr
                       && (bp.ValidTo == null || bp.ValidTo >= now))
             .ToListAsync();
     }
+
+    public async Task<ICollection<BoxPrice>> GetAllByCompanyIdWithDetailsAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Include(x => x.Box)
+            .Where(x => x.CompanyId == companyId)
+            .ToListAsync();
+    }
+
+    public async Task<BoxPrice?> GetByBoxAndPricingNameAsync(Guid boxId, string pricingName, Guid companyId)
+    {
+        return await RepositoryDbSet
+            .FirstOrDefaultAsync(x => x.BoxId == boxId
+                                      && x.PricingName == pricingName
+                                      && x.CompanyId == companyId);
+    }
 }

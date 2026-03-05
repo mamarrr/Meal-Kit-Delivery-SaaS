@@ -29,8 +29,10 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
     {
         return await RepositoryDbSet
             .Include(r => r.NutritionalInfo)
-            .Include(r => r.RecipeIngredients)
-            .Include(r => r.RecipeDietaryCategories)
+            .Include(r => r.RecipeIngredients!)
+                .ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeDietaryCategories!)
+                .ThenInclude(rd => rd.DietaryCategory)
             .FirstOrDefaultAsync(r => r.Id == recipeId && r.CompanyId == companyId);
     }
 
@@ -100,7 +102,20 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
         foreach (var entity in entities)
         {
             entity.DeletedAt = DateTime.UtcNow;
-            RepositoryDbContext.RecipeIngredients.Update(entity);
+            var tracked = RepositoryDbContext.RecipeIngredients.Local
+                .FirstOrDefault(x => x.Id == entity.Id);
+
+            if (tracked != null)
+            {
+                if (!ReferenceEquals(tracked, entity))
+                {
+                    RepositoryDbContext.Entry(tracked).CurrentValues.SetValues(entity);
+                }
+            }
+            else
+            {
+                RepositoryDbContext.RecipeIngredients.Update(entity);
+            }
         }
 
         return Task.CompletedTask;
@@ -111,7 +126,20 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
         foreach (var entity in entities)
         {
             entity.DeletedAt = DateTime.UtcNow;
-            RepositoryDbContext.RecipeDietaryCategories.Update(entity);
+            var tracked = RepositoryDbContext.RecipeDietaryCategories.Local
+                .FirstOrDefault(x => x.Id == entity.Id);
+
+            if (tracked != null)
+            {
+                if (!ReferenceEquals(tracked, entity))
+                {
+                    RepositoryDbContext.Entry(tracked).CurrentValues.SetValues(entity);
+                }
+            }
+            else
+            {
+                RepositoryDbContext.RecipeDietaryCategories.Update(entity);
+            }
         }
 
         return Task.CompletedTask;
@@ -141,6 +169,19 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
     /// <inheritdoc />
     public NutritionalInfo UpdateNutritionalInfo(NutritionalInfo nutritionalInfo)
     {
+        var tracked = RepositoryDbContext.NutritionalInfos.Local
+            .FirstOrDefault(x => x.Id == nutritionalInfo.Id);
+
+        if (tracked != null)
+        {
+            if (!ReferenceEquals(tracked, nutritionalInfo))
+            {
+                RepositoryDbContext.Entry(tracked).CurrentValues.SetValues(nutritionalInfo);
+            }
+
+            return tracked;
+        }
+
         return RepositoryDbContext.NutritionalInfos.Update(nutritionalInfo).Entity;
     }
 }

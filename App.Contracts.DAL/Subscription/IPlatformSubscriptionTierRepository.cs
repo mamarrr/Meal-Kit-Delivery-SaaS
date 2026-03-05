@@ -8,5 +8,5 @@ namespace App.Contracts.DAL.Subscription;
 /// </summary>
 public interface IPlatformSubscriptionTierRepository : IRepository<PlatformSubscriptionTier>
 {
-    // PlatformSubscriptionTier is not tenant-scoped, so no CompanyId filtering needed
+    Task<ICollection<PlatformSubscriptionTier>> GetActiveAsync();
 }

@@ -39,5 +39,6 @@ public interface IRecipeService : ITenantEntityService<Recipe>
     Task<ICollection<RecipeListItemDto>> GetRecipeListAsync(Guid companyId, RecipeListFilterDto? filter = null);
     Task<RecipeEditorDto?> GetRecipeEditorAsync(Guid companyId, Guid recipeId);
     Task<RecipeEditorDto> UpsertRecipeEditorAsync(Guid companyId, Guid actorId, RecipeEditorUpsertDto dto);
+    Task RemoveRecipeAsync(Guid companyId, Guid recipeId);
 }
 

@@ -124,8 +124,7 @@ public class RecipesNutritionController(
                 IngredientId = model.IngredientForm.IngredientId,
                 Name = model.IngredientForm.Name,
                 IsAllergen = model.IngredientForm.IsAllergen,
-                IsExclusionTag = model.IngredientForm.IsExclusionTag,
-                ExclusionKey = model.IngredientForm.ExclusionKey
+                IsExclusionTag = true
             });
 
             await dbContext.SaveChangesAsync();
@@ -188,7 +187,7 @@ public class RecipesNutritionController(
             var saved = await dietaryCategoryService.UpsertCatalogItemAsync(companyId, actorId, new DietaryCategoryCatalogUpsertDto
             {
                 DietaryCategoryId = model.DietaryCategoryForm.DietaryCategoryId,
-                Code = model.DietaryCategoryForm.Code,
+                Code = model.DietaryCategoryForm.Name,
                 Name = model.DietaryCategoryForm.Name,
                 IsActive = model.DietaryCategoryForm.IsActive
             });
@@ -201,6 +200,88 @@ public class RecipesNutritionController(
         {
             var vm = await BuildViewModelAsync(companyId, slug, model.Search, model.FilterDietaryCategoryId, model.FilterIngredientId, model.ActiveOnly, model.SelectedRecipeId, model.EditingIngredientId, model.EditingDietaryCategoryId);
             vm.DietaryCategoryForm = model.DietaryCategoryForm;
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View("Index", vm);
+        }
+    }
+
+    [HttpPost("/{slug}/recipes-nutrition/dietary-category/delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteDietaryCategory(
+        string slug,
+        Guid dietaryCategoryId,
+        string? search,
+        Guid? filterDietaryCategoryId,
+        Guid? filterIngredientId,
+        bool activeOnly = true,
+        Guid? selectedRecipeId = null,
+        Guid? editingIngredientId = null)
+    {
+        if (!TryGetCompanyContext(slug, out var companyId))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            await dietaryCategoryService.RemoveCatalogItemAsync(companyId, dietaryCategoryId);
+            await dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Dietary category deleted.";
+            return RedirectToAction(nameof(Index), new
+            {
+                slug,
+                search,
+                dietaryCategoryId = filterDietaryCategoryId,
+                ingredientId = filterIngredientId,
+                activeOnly,
+                selectedRecipeId,
+                editingIngredientId
+            });
+        }
+        catch (Exception ex)
+        {
+            var vm = await BuildViewModelAsync(companyId, slug, search, filterDietaryCategoryId, filterIngredientId, activeOnly, selectedRecipeId, editingIngredientId, null);
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View("Index", vm);
+        }
+    }
+
+    [HttpPost("/{slug}/recipes-nutrition/recipe/delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteRecipe(
+        string slug,
+        Guid recipeId,
+        string? search,
+        Guid? filterDietaryCategoryId,
+        Guid? filterIngredientId,
+        bool activeOnly = true,
+        Guid? editingIngredientId = null,
+        Guid? editingDietaryCategoryId = null)
+    {
+        if (!TryGetCompanyContext(slug, out var companyId))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            await recipeService.RemoveRecipeAsync(companyId, recipeId);
+            await dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Recipe deleted.";
+            return RedirectToAction(nameof(Index), new
+            {
+                slug,
+                search,
+                dietaryCategoryId = filterDietaryCategoryId,
+                ingredientId = filterIngredientId,
+                activeOnly,
+                editingIngredientId,
+                editingDietaryCategoryId
+            });
+        }
+        catch (Exception ex)
+        {
+            var vm = await BuildViewModelAsync(companyId, slug, search, filterDietaryCategoryId, filterIngredientId, activeOnly, recipeId, editingIngredientId, editingDietaryCategoryId);
             ModelState.AddModelError(string.Empty, ex.Message);
             return View("Index", vm);
         }
@@ -297,16 +378,13 @@ public class RecipesNutritionController(
                 {
                     IngredientId = editingIngredient.IngredientId,
                     Name = editingIngredient.Name,
-                    IsAllergen = editingIngredient.IsAllergen,
-                    IsExclusionTag = editingIngredient.IsExclusionTag,
-                    ExclusionKey = editingIngredient.ExclusionKey
+                    IsAllergen = editingIngredient.IsAllergen
                 },
             DietaryCategoryForm = editingDietaryCategory == null
                 ? new DietaryCategoryCatalogFormViewModel()
                 : new DietaryCategoryCatalogFormViewModel
                 {
                     DietaryCategoryId = editingDietaryCategory.DietaryCategoryId,
-                    Code = editingDietaryCategory.Code,
                     Name = editingDietaryCategory.Name,
                     IsActive = editingDietaryCategory.IsActive
                 }

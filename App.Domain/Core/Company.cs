@@ -35,6 +35,7 @@ public class Company : BaseEntity
     public ICollection<QualityComplaint>? QualityComplaints { get; set; }
     public ICollection<CompanyAppUser>? CompanyAppUsers { get; set; }
     public ICollection<BoxPrice>? BoxPrices { get; set; }
+    public ICollection<BoxDietaryCategory>? BoxDietaryCategories { get; set; }
     public ICollection<App.Domain.Delivery.Delivery>? Deliveries { get; set; }
     public ICollection<TenantSupportAccess>? TenantSupportAccesses { get; set; }
     public ICollection<SupportTicket>? SupportTickets { get; set; }

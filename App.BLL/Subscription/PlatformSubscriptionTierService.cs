@@ -9,5 +9,10 @@ public class PlatformSubscriptionTierService : BaseService<PlatformSubscriptionT
     public PlatformSubscriptionTierService(IPlatformSubscriptionTierRepository repository) : base(repository)
     {
     }
+
+    public async Task<ICollection<PlatformSubscriptionTier>> GetActiveAsync()
+    {
+        return await Repository.GetActiveAsync();
+    }
 }
 

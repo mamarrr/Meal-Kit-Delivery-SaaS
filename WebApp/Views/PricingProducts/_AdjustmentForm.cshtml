@@ -1,0 +1,31 @@
+@model (WebApp.ViewModels.Subscription.PricingProductsIndexViewModel Vm, string AdjustmentType, string ButtonText)
+
+<form asp-controller="PricingProducts" asp-action="SaveAdjustment" asp-route-slug="@Model.Vm.CompanySlug" method="post" class="row g-3 mb-3">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="AdjustmentForm.AdjustmentType" value="@Model.AdjustmentType" />
+    <input type="hidden" name="AdjustmentForm.AdjustmentId" value="" />
+    <div class="col-md-5">
+        <label class="form-label" for="label-@Model.AdjustmentType">Label</label>
+        <input class="form-control" id="label-@Model.AdjustmentType" name="AdjustmentForm.Label" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="amount-@Model.AdjustmentType">Amount</label>
+        <input class="form-control" id="amount-@Model.AdjustmentType" name="AdjustmentForm.Amount" type="number" step="0.01" min="0" />
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check">
+            <input class="form-check-input" id="percent-@Model.AdjustmentType" name="AdjustmentForm.IsPercentage" type="checkbox" value="true" />
+            <input type="hidden" name="AdjustmentForm.IsPercentage" value="false" />
+            <label class="form-check-label" for="percent-@Model.AdjustmentType">Percentage</label>
+        </div>
+    </div>
+    <div class="col-12 form-check ms-1">
+        <input class="form-check-input" id="active-@Model.AdjustmentType" name="AdjustmentForm.IsActive" type="checkbox" checked="checked" value="true" />
+        <input type="hidden" name="AdjustmentForm.IsActive" value="false" />
+        <label class="form-check-label" for="active-@Model.AdjustmentType">Active</label>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary" type="submit">@Model.ButtonText</button>
+    </div>
+</form>
+

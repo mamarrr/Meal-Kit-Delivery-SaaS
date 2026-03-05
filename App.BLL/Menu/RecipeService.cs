@@ -1,13 +1,18 @@
 using App.Contracts.BLL.Menu;
 using App.Contracts.DAL.Menu;
 using App.Domain.Menu;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace App.BLL.Menu;
 
 public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IRecipeService
 {
-    public RecipeService(IRecipeRepository repository) : base(repository)
+    private readonly ILogger<RecipeService> _logger;
+
+    public RecipeService(IRecipeRepository repository, ILogger<RecipeService>? logger = null) : base(repository)
     {
+        _logger = logger ?? NullLogger<RecipeService>.Instance;
     }
 
     protected override async Task<ICollection<Recipe>> GetAllByCompanyIdCoreAsync(Guid companyId)
@@ -93,13 +98,19 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
             if (filter.DietaryCategoryId.HasValue)
             {
                 query = query.Where(x => (x.RecipeDietaryCategories ?? [])
-                    .Any(rd => rd.DeletedAt == null && rd.DietaryCategoryId == filter.DietaryCategoryId.Value));
+                    .Any(rd => rd.DeletedAt == null
+                               && rd.DietaryCategoryId == filter.DietaryCategoryId.Value
+                               && rd.DietaryCategory != null
+                               && rd.DietaryCategory.DeletedAt == null));
             }
 
             if (filter.IngredientId.HasValue)
             {
                 query = query.Where(x => (x.RecipeIngredients ?? [])
-                    .Any(ri => ri.DeletedAt == null && ri.IngredientId == filter.IngredientId.Value));
+                    .Any(ri => ri.DeletedAt == null
+                               && ri.IngredientId == filter.IngredientId.Value
+                               && ri.Ingredient != null
+                               && ri.Ingredient.DeletedAt == null));
             }
         }
 
@@ -134,8 +145,12 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
             throw new ArgumentException("Default servings must be at least 1.");
         }
 
-        var distinctIngredientIds = dto.IngredientIds.Distinct().ToList();
-        var distinctDietaryCategoryIds = dto.DietaryCategoryIds.Distinct().ToList();
+        var distinctIngredientIds = (dto.IngredientIds ?? Array.Empty<Guid>())
+            .Distinct()
+            .ToList();
+        var distinctDietaryCategoryIds = (dto.DietaryCategoryIds ?? Array.Empty<Guid>())
+            .Distinct()
+            .ToList();
 
         var existingIngredientCount = await Repository.CountExistingIngredientIdsAsync(companyId, distinctIngredientIds);
         if (existingIngredientCount != distinctIngredientIds.Count)
@@ -221,6 +236,19 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
         return MapToEditor(updated);
     }
 
+    public async Task RemoveRecipeAsync(Guid companyId, Guid recipeId)
+    {
+        var recipe = await Repository.GetByIdAsync(recipeId);
+        if (recipe == null || recipe.CompanyId != companyId || recipe.DeletedAt != null)
+        {
+            throw new KeyNotFoundException($"Recipe {recipeId} was not found in company scope {companyId}.");
+        }
+
+        recipe.DeletedAt = DateTime.UtcNow;
+        recipe.UpdatedAt = DateTime.UtcNow;
+        await UpdateAsync(recipe, companyId);
+    }
+
     private static RecipeListItemDto MapToListItem(Recipe recipe)
     {
         return new RecipeListItemDto
@@ -229,14 +257,14 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
             Name = recipe.Name,
             IsActive = recipe.IsActive,
             DietaryCategories = (recipe.RecipeDietaryCategories ?? [])
-                .Where(x => x.DeletedAt == null)
+                .Where(x => x.DeletedAt == null && x.DietaryCategory != null && x.DietaryCategory.DeletedAt == null)
                 .Select(x => x.DietaryCategory?.Name ?? string.Empty)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(x => x)
                 .ToList(),
             Tags = (recipe.RecipeIngredients ?? [])
-                .Where(x => x.DeletedAt == null)
+                .Where(x => x.DeletedAt == null && x.Ingredient != null && x.Ingredient.DeletedAt == null)
                 .Select(x => x.Ingredient?.Name ?? string.Empty)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -292,13 +320,30 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
     private async Task ReplaceIngredientsAsync(Guid recipeId, Guid actorId, IReadOnlyCollection<Guid> ingredientIds)
     {
         var existing = await Repository.GetRecipeIngredientsAsync(recipeId);
-        if (existing.Count > 0)
+        var selected = ingredientIds.Distinct().ToHashSet();
+
+        var toRemove = existing
+            .Where(x => !selected.Contains(x.IngredientId))
+            .ToList();
+
+        _logger.LogInformation(
+            "ReplaceIngredients: recipeId={RecipeId}, selectedIngredientIds={SelectedIngredientIds}, existingRelationCount={ExistingRelationCount}, toRemoveRelationIds={ToRemoveRelationIds}",
+            recipeId,
+            string.Join(",", selected.OrderBy(x => x)),
+            existing.Count,
+            string.Join(",", toRemove.Select(x => x.Id).OrderBy(x => x)));
+
+        if (toRemove.Count > 0)
         {
-            await Repository.RemoveRecipeIngredientsAsync(existing);
+            await Repository.RemoveRecipeIngredientsAsync(toRemove);
         }
 
-        var items = ingredientIds
-            .Distinct()
+        var existingIds = existing
+            .Select(x => x.IngredientId)
+            .ToHashSet();
+
+        var items = selected
+            .Where(x => !existingIds.Contains(x))
             .Select(x => new RecipeIngredient
             {
                 Id = Guid.NewGuid(),
@@ -309,6 +354,12 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
             })
             .ToList();
 
+        _logger.LogInformation(
+            "ReplaceIngredients add: recipeId={RecipeId}, existingIngredientIds={ExistingIngredientIds}, newIngredientIds={NewIngredientIds}",
+            recipeId,
+            string.Join(",", existingIds.OrderBy(x => x)),
+            string.Join(",", items.Select(x => x.IngredientId).OrderBy(x => x)));
+
         if (items.Count > 0)
         {
             await Repository.AddRecipeIngredientsAsync(items);
@@ -318,13 +369,30 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
     private async Task ReplaceDietaryCategoriesAsync(Guid recipeId, Guid actorId, IReadOnlyCollection<Guid> dietaryCategoryIds)
     {
         var existing = await Repository.GetRecipeDietaryCategoriesAsync(recipeId);
-        if (existing.Count > 0)
+        var selected = dietaryCategoryIds.Distinct().ToHashSet();
+
+        var toRemove = existing
+            .Where(x => !selected.Contains(x.DietaryCategoryId))
+            .ToList();
+
+        _logger.LogInformation(
+            "ReplaceDietaryCategories: recipeId={RecipeId}, selectedCategoryIds={SelectedCategoryIds}, existingRelationCount={ExistingRelationCount}, toRemoveRelationIds={ToRemoveRelationIds}",
+            recipeId,
+            string.Join(",", selected.OrderBy(x => x)),
+            existing.Count,
+            string.Join(",", toRemove.Select(x => x.Id).OrderBy(x => x)));
+
+        if (toRemove.Count > 0)
         {
-            await Repository.RemoveRecipeDietaryCategoriesAsync(existing);
+            await Repository.RemoveRecipeDietaryCategoriesAsync(toRemove);
         }
 
-        var items = dietaryCategoryIds
-            .Distinct()
+        var existingIds = existing
+            .Select(x => x.DietaryCategoryId)
+            .ToHashSet();
+
+        var items = selected
+            .Where(x => !existingIds.Contains(x))
             .Select(x => new RecipeDietaryCategory
             {
                 Id = Guid.NewGuid(),
@@ -334,6 +402,12 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
                 CreatedAt = DateTime.UtcNow
             })
             .ToList();
+
+        _logger.LogInformation(
+            "ReplaceDietaryCategories add: recipeId={RecipeId}, existingCategoryIds={ExistingCategoryIds}, newCategoryIds={NewCategoryIds}",
+            recipeId,
+            string.Join(",", existingIds.OrderBy(x => x)),
+            string.Join(",", items.Select(x => x.DietaryCategoryId).OrderBy(x => x)));
 
         if (items.Count > 0)
         {

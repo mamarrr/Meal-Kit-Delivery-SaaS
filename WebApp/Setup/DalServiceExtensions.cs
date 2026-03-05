@@ -46,6 +46,8 @@ public static class DalServiceExtensions
         // Subscription domain repositories
         services.AddScoped<IBoxRepository, BoxRepository>();
         services.AddScoped<IBoxPriceRepository, BoxPriceRepository>();
+        services.AddScoped<IBoxDietaryCategoryRepository, BoxDietaryCategoryRepository>();
+        services.AddScoped<IPricingAdjustmentRepository, PricingAdjustmentRepository>();
         services.AddScoped<IMealSubscriptionRepository, MealSubscriptionRepository>();
         services.AddScoped<IPlatformSubscriptionRepository, PlatformSubscriptionRepository>();
         services.AddScoped<IPlatformSubscriptionStatusRepository, PlatformSubscriptionStatusRepository>();

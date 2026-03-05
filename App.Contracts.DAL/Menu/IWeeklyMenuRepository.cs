@@ -21,7 +21,10 @@ public interface IWeeklyMenuRepository : IRepository<WeeklyMenu>
 
     Task<ICollection<WeeklyMenuRecipe>> GetWeeklyAssignmentsAsync(Guid companyId, DateTime weekStartDate);
     WeeklyMenuRecipe AddWeeklyAssignment(WeeklyMenuRecipe assignment);
+    Task<WeeklyMenuRecipe?> GetWeeklyAssignmentByIdAsync(Guid companyId, Guid weeklyMenuRecipeId);
+    WeeklyMenuRecipe UpdateWeeklyAssignment(WeeklyMenuRecipe assignment);
     Task<bool> HasRecipeAssignedInPreviousWeeksAsync(Guid companyId, Guid recipeId, DateTime weekStartDate, int noRepeatWeeks);
+    Task<RecipeAssignmentContextDto?> GetRecipeAssignmentContextAsync(Guid companyId, Guid recipeId);
 
     Task<ICollection<RecipeSimulationCandidate>> GetSimulationCandidatesAsync(Guid companyId, DateTime weekStartDate);
 }
@@ -32,4 +35,10 @@ public sealed class RecipeSimulationCandidate
     public string RecipeName { get; init; } = string.Empty;
     public Guid? DietaryCategoryId { get; init; }
     public string DietaryCategoryName { get; init; } = string.Empty;
+}
+
+public sealed class RecipeAssignmentContextDto
+{
+    public Guid RecipeId { get; init; }
+    public Guid? DietaryCategoryId { get; init; }
 }

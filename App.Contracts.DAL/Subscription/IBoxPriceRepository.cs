@@ -29,4 +29,14 @@ public interface IBoxPriceRepository : IRepository<BoxPrice>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of active box prices.</returns>
     Task<ICollection<BoxPrice>> GetActiveByBoxIdAsync(Guid boxId, Guid companyId);
+
+    /// <summary>
+    /// Gets all box prices for company including box details.
+    /// </summary>
+    Task<ICollection<BoxPrice>> GetAllByCompanyIdWithDetailsAsync(Guid companyId);
+
+    /// <summary>
+    /// Gets a single box price by box+pricing name key within company scope.
+    /// </summary>
+    Task<BoxPrice?> GetByBoxAndPricingNameAsync(Guid boxId, string pricingName, Guid companyId);
 }

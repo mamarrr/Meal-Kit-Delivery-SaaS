@@ -1,0 +1,204 @@
+@model WebApp.ViewModels.Subscription.PricingProductsIndexViewModel
+@{
+    ViewData["Title"] = "Pricing & Products";
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-2">Pricing &amp; Products</h1>
+        <p class="text-muted mb-0">Manage box combinations, company pricing configurations, delivery fees, and discounts for the active company workspace.</p>
+    </div>
+</section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Box sizes</h2>
+                <form asp-controller="PricingProducts" asp-action="SaveBox" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="BoxForm.BoxId" />
+                    <div class="col-12">
+                        <label class="form-label" asp-for="BoxForm.Name">Name</label>
+                        <input class="form-control" asp-for="BoxForm.Name" placeholder="e.g. Family balance box" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="BoxForm.MealsCount">Meals</label>
+                        <select class="form-select" asp-for="BoxForm.MealsCount">
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="BoxForm.PeopleCount">People</label>
+                        <select class="form-select" asp-for="BoxForm.PeopleCount">
+                            <option value="2">2</option>
+                            <option value="4">4</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="BoxForm.AllowedDietaryCategoryIds">Allowed dietary categories (optional)</label>
+                        <select class="form-select" asp-for="BoxForm.AllowedDietaryCategoryIds" multiple size="5">
+                            @foreach (var category in Model.DietaryCategories)
+                            {
+                                <option value="@category.DietaryCategoryId">@category.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 form-check ms-1">
+                        <input class="form-check-input" asp-for="BoxForm.IsActive" />
+                        <label class="form-check-label" asp-for="BoxForm.IsActive">Active</label>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Save box</button>
+                    </div>
+                </form>
+
+                <hr />
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>Box</th>
+                            <th>Allowed categories</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var box in Model.Boxes)
+                        {
+                            <tr>
+                                <td>@box.Name</td>
+                                <td>
+                                    @if (box.AllowedDietaryCategoryIds.Count == 0)
+                                    {
+                                        <span class="text-muted">All</span>
+                                    }
+                                    else
+                                    {
+                                        var names = Model.DietaryCategories
+                                            .Where(x => box.AllowedDietaryCategoryIds.Contains(x.DietaryCategoryId))
+                                            .Select(x => x.Name)
+                                            .OrderBy(x => x)
+                                            .ToList();
+                                        @string.Join(", ", names)
+                                    }
+                                </td>
+                                <td>@(box.IsActive ? "Active" : "Inactive")</td>
+                                <td class="text-end">
+                                    @if (box.IsActive)
+                                    {
+                                        <form asp-controller="PricingProducts" asp-action="DeactivateBox" asp-route-slug="@Model.CompanySlug" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="boxId" value="@box.BoxId" />
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Deactivate</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Pricing configurations</h2>
+                <form asp-controller="PricingProducts" asp-action="SavePrice" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3 mb-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="PriceForm.BoxPriceId" />
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="PriceForm.BoxId">Box</label>
+                        <select class="form-select" asp-for="PriceForm.BoxId">
+                            <option value="">Select box</option>
+                            @foreach (var box in Model.Boxes.Where(x => x.IsActive))
+                            {
+                                <option value="@box.BoxId">@box.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="PriceForm.PricingName">Pricing name</label>
+                        <input class="form-control" asp-for="PriceForm.PricingName" placeholder="e.g. Corporate Q2 2026" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="PriceForm.PriceAmount">Price</label>
+                        <input class="form-control" asp-for="PriceForm.PriceAmount" type="number" step="0.01" min="0" />
+                    </div>
+                    <div class="col-12 form-check ms-1">
+                        <input class="form-check-input" asp-for="PriceForm.IsActive" />
+                        <label class="form-check-label" asp-for="PriceForm.IsActive">Active</label>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Save pricing</button>
+                    </div>
+                </form>
+
+                @foreach (var config in Model.PricingConfigurations)
+                {
+                    <h3 class="h6 mt-3">@config.PricingName</h3>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Box</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var row in config.BoxPrices)
+                            {
+                                <tr>
+                                    <td>@row.BoxLabel</td>
+                                    <td>@(row.PriceAmount.HasValue ? row.PriceAmount.Value.ToString("0.00") : "-")</td>
+                                    <td>@(row.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Delivery fees</h2>
+                <partial name="_AdjustmentForm" model='(Model, App.Contracts.BLL.Subscription.PricingConstants.DeliveryFeeType, "Save delivery fee")' />
+                <partial name="_AdjustmentList" model="(Model, Model.DeliveryFees)" />
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Discounts</h2>
+                <partial name="_AdjustmentForm" model='(Model, App.Contracts.BLL.Subscription.PricingConstants.DiscountType, "Save discount")' />
+                <partial name="_AdjustmentList" model="(Model, Model.Discounts)" />
+            </div>
+        </section>
+    </div>
+</div>
+
+

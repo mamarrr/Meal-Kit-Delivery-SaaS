@@ -1,4 +1,5 @@
 using App.Domain.Identity;
+using App.Domain.Menu;
 using Base.Contracts.Domain;
 
 namespace App.Domain.Subscription;
@@ -23,5 +24,6 @@ public class Box : BaseEntity, ITenantProvider
     public Company? Company { get; set; }
     public ICollection<MealSubscription>? MealSubscriptions { get; set; }
     public ICollection<BoxPrice>? BoxPrices { get; set; }
+    public ICollection<BoxDietaryCategory>? BoxDietaryCategories { get; set; }
     public ICollection<App.Domain.Delivery.Delivery>? Deliveries { get; set; }
 }

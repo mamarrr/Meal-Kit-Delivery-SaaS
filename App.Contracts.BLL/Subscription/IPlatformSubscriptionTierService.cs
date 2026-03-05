@@ -4,5 +4,6 @@ namespace App.Contracts.BLL.Subscription;
 
 public interface IPlatformSubscriptionTierService : IBaseEntityService<PlatformSubscriptionTier>
 {
+    Task<ICollection<PlatformSubscriptionTier>> GetActiveAsync();
 }
 

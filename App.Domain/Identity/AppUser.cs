@@ -32,6 +32,8 @@ public class AppUser : IdentityUser<Guid>, IBaseEntity
     public ICollection<WeeklyMenuRecipe>? WeeklyMenuRecipesCreated { get; set; }
     public ICollection<DeliveryWindow>? DeliveryWindowsCreated { get; set; }
     public ICollection<BoxPrice>? BoxPricesCreated { get; set; }
+    public ICollection<BoxDietaryCategory>? BoxDietaryCategoriesCreated { get; set; }
+    public ICollection<PricingAdjustment>? PricingAdjustmentsCreated { get; set; }
     public ICollection<App.Domain.Delivery.Delivery>? DeliveriesCreated { get; set; }
     public ICollection<DeliveryAttempt>? DeliveryAttemptsCreated { get; set; }
     public ICollection<App.Domain.Support.SystemSetting>? SystemSettingsUpdated { get; set; }

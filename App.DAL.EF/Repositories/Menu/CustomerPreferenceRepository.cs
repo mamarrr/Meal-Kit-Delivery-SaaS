@@ -35,7 +35,10 @@ public class CustomerPreferenceRepository : BaseRepository<CustomerPreference, A
 
     public async Task<bool> IsDietaryCategoryInCompanyAsync(Guid dietaryCategoryId, Guid companyId)
     {
-        return await RepositoryDbContext.DietaryCategories.AnyAsync(dc => dc.Id == dietaryCategoryId && dc.CompanyId == companyId);
+        return await RepositoryDbContext.DietaryCategories
+            .AnyAsync(dc => dc.Id == dietaryCategoryId
+                            && dc.CompanyId == companyId
+                            && dc.DeletedAt == null);
     }
 }
 

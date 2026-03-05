@@ -12,7 +12,6 @@ namespace WebApp.Controllers;
 public class MenusSchedulingController(
     IWeeklyMenuService weeklyMenuService,
     IRecipeService recipeService,
-    IDietaryCategoryService dietaryCategoryService,
     App.DAL.EF.AppDbContext dbContext,
     ILogger<MenusSchedulingController> logger) : Controller
 {
@@ -54,19 +53,17 @@ public class MenusSchedulingController(
         }
 
         logger.LogInformation(
-            "MenusScheduling/AssignRecipe start: slug={Slug}, companyId={CompanyId}, week={Week}, recipeId={RecipeId}, categoryId={CategoryId}",
+            "MenusScheduling/AssignRecipe start: slug={Slug}, companyId={CompanyId}, week={Week}, recipeId={RecipeId}",
             slug,
             companyId,
             model.WeekStartDate,
-            model.AssignmentForm.RecipeId,
-            model.AssignmentForm.DietaryCategoryId);
+            model.AssignmentForm.RecipeId);
 
         var actorId = GetCurrentUserId();
         var request = new WeeklyMenuAssignmentCreateDto
         {
             WeekStartDate = NormalizeWeekStart(model.WeekStartDate),
             RecipeId = model.AssignmentForm.RecipeId,
-            DietaryCategoryId = model.AssignmentForm.DietaryCategoryId,
             CreatedByAppUserId = actorId
         };
 
@@ -93,28 +90,33 @@ public class MenusSchedulingController(
         return RedirectToAction(nameof(Index), new { slug, weekStartDate = request.WeekStartDate.ToString("yyyy-MM-dd") });
     }
 
-    [HttpPost("/{slug}/menus-scheduling/simulate")]
+    [HttpPost("/{slug}/menus-scheduling/assignment/remove")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Simulate(string slug, MenusSchedulingIndexViewModel model)
+    public async Task<IActionResult> RemoveAssignment(string slug, Guid weeklyMenuRecipeId, DateTime weekStartDate)
     {
         if (!TryGetCompanyContext(slug, out var companyId))
         {
             return Forbid();
         }
 
-        var week = NormalizeWeekStart(model.WeekStartDate);
-        var viewModel = await BuildViewModelAsync(companyId, slug, week);
-        viewModel.Simulation = await weeklyMenuService.SimulateAutoSelectionAsync(companyId, new WeeklyMenuSimulationRequestDto
-        {
-            WeekStartDate = week
-        });
+        var normalizedWeekStart = NormalizeWeekStart(weekStartDate);
+        var result = await weeklyMenuService.RemoveWeeklyAssignmentAsync(companyId, weeklyMenuRecipeId);
+        await dbContext.SaveChangesAsync();
 
-        return View(nameof(Index), viewModel);
+        if (!result.Success)
+        {
+            TempData["ErrorMessage"] = result.Message;
+        }
+        else
+        {
+            TempData["SuccessMessage"] = result.Message;
+        }
+
+        return RedirectToAction(nameof(Index), new { slug, weekStartDate = normalizedWeekStart.ToString("yyyy-MM-dd") });
     }
 
     private async Task<MenusSchedulingIndexViewModel> BuildViewModelAsync(Guid companyId, string slug, DateTime weekStartDate)
     {
-        var categories = await dietaryCategoryService.GetAllByCompanyIdAsync(companyId);
         var recipes = await recipeService.GetAllByCompanyIdAsync(companyId);
         var config = await weeklyMenuService.GetRuleConfigAsync(companyId);
         var assignments = await weeklyMenuService.GetWeeklyAssignmentsAsync(companyId, weekStartDate);
@@ -135,10 +137,6 @@ public class MenusSchedulingController(
             {
                 WeekStartDate = weekStartDate
             },
-            CategoryOptions = categories
-                .OrderBy(x => x.Name)
-                .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
-                .ToList(),
             RecipeOptions = recipes
                 .Where(x => x.IsActive && x.DeletedAt == null)
                 .OrderBy(x => x.Name)

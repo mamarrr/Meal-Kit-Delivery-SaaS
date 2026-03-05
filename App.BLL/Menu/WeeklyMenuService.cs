@@ -91,7 +91,19 @@ public class WeeklyMenuService : BaseTenantService<WeeklyMenu, IWeeklyMenuReposi
         var config = await GetRuleConfigAsync(companyId);
         var weeklyAssignments = await Repository.GetWeeklyAssignmentsAsync(companyId, weekStart);
 
-        var categoryCount = weeklyAssignments.Count(x => x.DietaryCategoryId == dto.DietaryCategoryId);
+        var recipeContext = await Repository.GetRecipeAssignmentContextAsync(companyId, dto.RecipeId);
+        if (recipeContext == null)
+        {
+            return new WeeklyMenuAssignmentResultDto
+            {
+                Success = false,
+                Message = "Selected recipe was not found in company scope or is inactive."
+            };
+        }
+
+        var resolvedCategoryId = recipeContext.DietaryCategoryId;
+
+        var categoryCount = weeklyAssignments.Count(x => x.DietaryCategoryId == resolvedCategoryId);
         if (categoryCount >= config.RecipesPerCategory)
         {
             return new WeeklyMenuAssignmentResultDto
@@ -150,7 +162,7 @@ public class WeeklyMenuService : BaseTenantService<WeeklyMenu, IWeeklyMenuReposi
             Id = Guid.NewGuid(),
             WeeklyMenuId = weeklyMenu.Id,
             RecipeId = dto.RecipeId,
-            DietaryCategoryId = dto.DietaryCategoryId,
+            DietaryCategoryId = resolvedCategoryId,
             DisplayOrder = weeklyAssignments.Count + 1,
             IsFeatured = false,
             CreatedByAppUserId = dto.CreatedByAppUserId,
@@ -166,14 +178,50 @@ public class WeeklyMenuService : BaseTenantService<WeeklyMenu, IWeeklyMenuReposi
             Repository.Update(weeklyMenu);
         }
 
-        var latestAssignments = await GetWeeklyAssignmentsAsync(companyId, weekStart);
-        var created = latestAssignments.FirstOrDefault(x => x.RecipeId == dto.RecipeId && x.DietaryCategoryId == dto.DietaryCategoryId);
-
         return new WeeklyMenuAssignmentResultDto
         {
             Success = true,
             Message = "Recipe assignment created.",
-            Assignment = created
+            Assignment = new WeeklyMenuAssignmentDto
+            {
+                WeeklyMenuRecipeId = assignment.Id,
+                RecipeId = assignment.RecipeId,
+                DietaryCategoryId = assignment.DietaryCategoryId,
+                DisplayOrder = assignment.DisplayOrder
+            }
+        };
+    }
+
+    public async Task<WeeklyMenuAssignmentResultDto> RemoveWeeklyAssignmentAsync(Guid companyId, Guid weeklyMenuRecipeId)
+    {
+        var assignment = await Repository.GetWeeklyAssignmentByIdAsync(companyId, weeklyMenuRecipeId);
+        if (assignment == null)
+        {
+            return new WeeklyMenuAssignmentResultDto
+            {
+                Success = false,
+                Message = "Weekly assignment was not found in company scope."
+            };
+        }
+
+        assignment.DeletedAt = DateTime.UtcNow;
+        Repository.UpdateWeeklyAssignment(assignment);
+
+        if (assignment.WeeklyMenuId != Guid.Empty)
+        {
+            var weeklyMenu = await Repository.GetByIdAsync(assignment.WeeklyMenuId);
+            if (weeklyMenu != null && weeklyMenu.CompanyId == companyId)
+            {
+                weeklyMenu.TotalRecipes = Math.Max(0, weeklyMenu.TotalRecipes - 1);
+                weeklyMenu.UpdatedAt = DateTime.UtcNow;
+                Repository.Update(weeklyMenu);
+            }
+        }
+
+        return new WeeklyMenuAssignmentResultDto
+        {
+            Success = true,
+            Message = "Recipe assignment removed."
         };
     }
 

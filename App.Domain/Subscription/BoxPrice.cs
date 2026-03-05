@@ -5,6 +5,7 @@ namespace App.Domain.Subscription;
 
 public class BoxPrice : BaseEntity, ITenantProvider
 {
+    public string PricingName { get; set; } = default!;
     public decimal PriceAmount { get; set; }
     public DateTime? ValidFrom { get; set; }
     public DateTime? ValidTo { get; set; }

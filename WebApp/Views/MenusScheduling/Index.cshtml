@@ -6,9 +6,19 @@
 <section class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
         <h1 class="h4 mb-2">Menus &amp; Scheduling</h1>
-        <p class="text-muted mb-0">Plan weekly menus, configure constraints, assign recipes, and preview auto-selection outcomes.</p>
+        <p class="text-muted mb-0">Plan weekly menus, configure constraints, and assign recipes.</p>
     </div>
 </section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
 
 <section class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
@@ -59,15 +69,12 @@
                 <form asp-controller="MenusScheduling" asp-action="AssignRecipe" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="WeekStartDate" />
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <label class="form-label" asp-for="AssignmentForm.RecipeId">Recipe</label>
                         <select class="form-select" asp-for="AssignmentForm.RecipeId" asp-items="Model.RecipeOptions"></select>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label" asp-for="AssignmentForm.DietaryCategoryId">Category</label>
-                        <select class="form-select" asp-for="AssignmentForm.DietaryCategoryId" asp-items="Model.CategoryOptions">
-                            <option value="">Uncategorized</option>
-                        </select>
+                    <div class="col-12">
+                        <p class="text-muted mb-0">Category is assigned automatically from the selected recipe.</p>
                     </div>
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">Assign recipe</button>
@@ -94,6 +101,7 @@
                         <th>#</th>
                         <th>Recipe</th>
                         <th>Category</th>
+                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -103,6 +111,14 @@
                             <td>@(item.DisplayOrder ?? 0)</td>
                             <td>@item.RecipeName</td>
                             <td>@item.DietaryCategoryName</td>
+                            <td class="text-end">
+                                <form asp-controller="MenusScheduling" asp-action="RemoveAssignment" asp-route-slug="@Model.CompanySlug" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="weeklyMenuRecipeId" value="@item.WeeklyMenuRecipeId" />
+                                    <input type="hidden" name="weekStartDate" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                </form>
+                            </td>
                         </tr>
                     }
                     </tbody>
@@ -112,65 +128,3 @@
     </div>
 </section>
 
-<section class="card border-0 shadow-sm">
-    <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h5 mb-0">Auto-selection simulation</h2>
-            <form asp-controller="MenusScheduling" asp-action="Simulate" asp-route-slug="@Model.CompanySlug" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" asp-for="WeekStartDate" />
-                <button type="submit" class="btn btn-outline-secondary">Run simulation</button>
-            </form>
-        </div>
-
-        @if (Model.Simulation == null)
-        {
-            <p class="text-muted mb-0">Run simulation to preview category picks and exclusion reasons.</p>
-        }
-        else
-        {
-            <div class="row g-3 mb-3">
-                @foreach (var category in Model.Simulation.Categories)
-                {
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <h3 class="h6 mb-2">@category.DietaryCategoryName</h3>
-                            <div class="small text-muted mb-2">Selected: @category.SelectedCount / Required: @category.RequiredCount</div>
-                            @if (category.SelectedRecipes.Count == 0)
-                            {
-                                <div class="text-muted small">No recipes selected.</div>
-                            }
-                            else
-                            {
-                                <ul class="mb-0 ps-3">
-                                    @foreach (var recipe in category.SelectedRecipes)
-                                    {
-                                        <li>@recipe.RecipeName</li>
-                                    }
-                                </ul>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <h3 class="h6">Exclusions</h3>
-            @if (Model.Simulation.Exclusions.Count == 0)
-            {
-                <p class="text-muted mb-0">No exclusions.</p>
-            }
-            else
-            {
-                <ul class="list-group list-group-flush">
-                    @foreach (var item in Model.Simulation.Exclusions)
-                    {
-                        <li class="list-group-item px-0">
-                            <strong>@item.RecipeName</strong>
-                            <div class="small text-muted">@item.Reason</div>
-                        </li>
-                    }
-                </ul>
-            }
-        }
-    </div>
-</section>

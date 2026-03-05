@@ -1323,11 +1323,48 @@ namespace App.DAL.EF.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyId");
+                    b.HasIndex("CreatedByAppUserId");
+
+                    b.HasIndex("CompanyId", "MealsCount", "PeopleCount");
+
+                    b.ToTable("Boxes");
+                });
+
+            modelBuilder.Entity("App.Domain.Subscription.BoxDietaryCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BoxId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByAppUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DietaryCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoxId");
 
                     b.HasIndex("CreatedByAppUserId");
 
-                    b.ToTable("Boxes");
+                    b.HasIndex("DietaryCategoryId");
+
+                    b.HasIndex("CompanyId", "BoxId", "DietaryCategoryId", "DeletedAt");
+
+                    b.ToTable("BoxDietaryCategories");
                 });
 
             modelBuilder.Entity("App.Domain.Subscription.BoxPrice", b =>
@@ -1357,6 +1394,10 @@ namespace App.DAL.EF.Migrations
                     b.Property<decimal>("PriceAmount")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("PricingName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1370,9 +1411,9 @@ namespace App.DAL.EF.Migrations
 
                     b.HasIndex("BoxId");
 
-                    b.HasIndex("CompanyId");
-
                     b.HasIndex("CreatedByAppUserId");
+
+                    b.HasIndex("CompanyId", "BoxId", "PricingName");
 
                     b.ToTable("BoxPrices");
                 });
@@ -1536,6 +1577,53 @@ namespace App.DAL.EF.Migrations
                     b.HasIndex("CreatedByAppUserId");
 
                     b.ToTable("PlatformSubscriptionTiers");
+                });
+
+            modelBuilder.Entity("App.Domain.Subscription.PricingAdjustment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdjustmentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByAppUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPercentage")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByAppUserId");
+
+                    b.HasIndex("CompanyId", "AdjustmentType", "IsActive");
+
+                    b.ToTable("PricingAdjustments");
                 });
 
             modelBuilder.Entity("App.Domain.Support.SupportImpersonationSession", b =>
@@ -2458,6 +2546,41 @@ namespace App.DAL.EF.Migrations
                     b.Navigation("CreatedByAppUser");
                 });
 
+            modelBuilder.Entity("App.Domain.Subscription.BoxDietaryCategory", b =>
+                {
+                    b.HasOne("App.Domain.Subscription.Box", "Box")
+                        .WithMany("BoxDietaryCategories")
+                        .HasForeignKey("BoxId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("App.Domain.Core.Company", "Company")
+                        .WithMany("BoxDietaryCategories")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("App.Domain.Identity.AppUser", "CreatedByAppUser")
+                        .WithMany("BoxDietaryCategoriesCreated")
+                        .HasForeignKey("CreatedByAppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("App.Domain.Menu.DietaryCategory", "DietaryCategory")
+                        .WithMany()
+                        .HasForeignKey("DietaryCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Box");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("CreatedByAppUser");
+
+                    b.Navigation("DietaryCategory");
+                });
+
             modelBuilder.Entity("App.Domain.Subscription.BoxPrice", b =>
                 {
                     b.HasOne("App.Domain.Subscription.Box", "Box")
@@ -2545,6 +2668,25 @@ namespace App.DAL.EF.Migrations
                         .WithMany("PlatformSubscriptionTiersCreated")
                         .HasForeignKey("CreatedByAppUserId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByAppUser");
+                });
+
+            modelBuilder.Entity("App.Domain.Subscription.PricingAdjustment", b =>
+                {
+                    b.HasOne("App.Domain.Core.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("App.Domain.Identity.AppUser", "CreatedByAppUser")
+                        .WithMany("PricingAdjustmentsCreated")
+                        .HasForeignKey("CreatedByAppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Company");
 
                     b.Navigation("CreatedByAppUser");
                 });
@@ -2699,6 +2841,8 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.Core.Company", b =>
                 {
+                    b.Navigation("BoxDietaryCategories");
+
                     b.Navigation("BoxPrices");
 
                     b.Navigation("Boxes");
@@ -2795,6 +2939,8 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.Identity.AppUser", b =>
                 {
+                    b.Navigation("BoxDietaryCategoriesCreated");
+
                     b.Navigation("BoxPricesCreated");
 
                     b.Navigation("BoxesCreated");
@@ -2822,6 +2968,8 @@ namespace App.DAL.EF.Migrations
                     b.Navigation("PlatformSubscriptionTiersCreated");
 
                     b.Navigation("PlatformSubscriptionsCreated");
+
+                    b.Navigation("PricingAdjustmentsCreated");
 
                     b.Navigation("RecipeDietaryCategoriesCreated");
 
@@ -2895,6 +3043,8 @@ namespace App.DAL.EF.Migrations
 
             modelBuilder.Entity("App.Domain.Subscription.Box", b =>
                 {
+                    b.Navigation("BoxDietaryCategories");
+
                     b.Navigation("BoxPrices");
 
                     b.Navigation("Deliveries");

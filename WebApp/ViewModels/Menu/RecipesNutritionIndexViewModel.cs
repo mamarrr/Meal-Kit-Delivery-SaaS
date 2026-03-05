@@ -52,14 +52,11 @@ public class IngredientCatalogFormViewModel
     public Guid? IngredientId { get; set; }
     public string Name { get; set; } = string.Empty;
     public bool IsAllergen { get; set; }
-    public bool IsExclusionTag { get; set; } = true;
-    public string? ExclusionKey { get; set; }
 }
 
 public class DietaryCategoryCatalogFormViewModel
 {
     public Guid? DietaryCategoryId { get; set; }
-    public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 }

@@ -42,9 +42,7 @@ public class IngredientService : BaseTenantService<Ingredient, IIngredientReposi
         }
 
         var normalizedName = NormalizeName(dto.Name);
-        var exclusionKey = string.IsNullOrWhiteSpace(dto.ExclusionKey)
-            ? null
-            : NormalizeName(dto.ExclusionKey);
+        var exclusionKey = normalizedName;
 
         if (dto.IngredientId.HasValue)
         {
@@ -63,7 +61,7 @@ public class IngredientService : BaseTenantService<Ingredient, IIngredientReposi
             existing.Name = dto.Name.Trim();
             existing.NormalizedName = normalizedName;
             existing.IsAllergen = dto.IsAllergen;
-            existing.IsExclusionTag = dto.IsExclusionTag;
+            existing.IsExclusionTag = true;
             existing.ExclusionKey = exclusionKey;
             existing.UpdatedAt = DateTime.UtcNow;
 
@@ -77,6 +75,20 @@ public class IngredientService : BaseTenantService<Ingredient, IIngredientReposi
             throw new InvalidOperationException("Ingredient name must be unique within company scope.");
         }
 
+        if (alreadyExists != null)
+        {
+            alreadyExists.DeletedAt = null;
+            alreadyExists.Name = dto.Name.Trim();
+            alreadyExists.NormalizedName = normalizedName;
+            alreadyExists.IsAllergen = dto.IsAllergen;
+            alreadyExists.IsExclusionTag = true;
+            alreadyExists.ExclusionKey = exclusionKey;
+            alreadyExists.UpdatedAt = DateTime.UtcNow;
+
+            var reactivated = await UpdateAsync(alreadyExists, companyId);
+            return ToCatalogItem(reactivated);
+        }
+
         var created = await AddAsync(new Ingredient
         {
             Id = Guid.NewGuid(),
@@ -86,7 +98,7 @@ public class IngredientService : BaseTenantService<Ingredient, IIngredientReposi
             Name = dto.Name.Trim(),
             NormalizedName = normalizedName,
             IsAllergen = dto.IsAllergen,
-            IsExclusionTag = dto.IsExclusionTag,
+            IsExclusionTag = true,
             ExclusionKey = exclusionKey
         }, companyId);
 

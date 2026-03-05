@@ -43,6 +43,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     // Subscription/box entities
     public DbSet<Box> Boxes { get; set; }
     public DbSet<BoxPrice> BoxPrices { get; set; }
+    public DbSet<BoxDietaryCategory> BoxDietaryCategories { get; set; }
+    public DbSet<PricingAdjustment> PricingAdjustments { get; set; }
     public DbSet<MealSubscription> MealSubscriptions { get; set; }
     public DbSet<PlatformSubscription> PlatformSubscriptions { get; set; }
     public DbSet<PlatformSubscriptionTier> PlatformSubscriptionTiers { get; set; }
@@ -97,6 +99,41 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         builder.Entity<NutritionalInfo>(entity =>
         {
             entity.HasIndex(e => e.RecipeId).IsUnique();
+        });
+
+        builder.Entity<Box>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.MealsCount, e.PeopleCount });
+        });
+
+        builder.Entity<BoxPrice>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.BoxId, e.PricingName });
+        });
+
+        builder.Entity<BoxDietaryCategory>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.BoxId, e.DietaryCategoryId, e.DeletedAt });
+
+            entity.HasOne(e => e.Box)
+                .WithMany(b => b.BoxDietaryCategories)
+                .HasForeignKey(e => e.BoxId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DietaryCategory)
+                .WithMany()
+                .HasForeignKey(e => e.DietaryCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<PricingAdjustment>(entity =>
+        {
+            entity.HasIndex(e => new { e.CompanyId, e.AdjustmentType, e.IsActive });
+
+            entity.HasOne(e => e.CreatedByAppUser)
+                .WithMany(u => u.PricingAdjustmentsCreated)
+                .HasForeignKey(e => e.CreatedByAppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<SystemSetting>(entity =>

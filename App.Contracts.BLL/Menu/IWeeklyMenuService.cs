@@ -9,6 +9,7 @@ public interface IWeeklyMenuService : ITenantEntityService<WeeklyMenu>
 
     Task<ICollection<WeeklyMenuAssignmentDto>> GetWeeklyAssignmentsAsync(Guid companyId, DateTime weekStartDate);
     Task<WeeklyMenuAssignmentResultDto> AssignRecipeToWeekAsync(Guid companyId, WeeklyMenuAssignmentCreateDto dto);
+    Task<WeeklyMenuAssignmentResultDto> RemoveWeeklyAssignmentAsync(Guid companyId, Guid weeklyMenuRecipeId);
 
     Task<WeeklyMenuSimulationResultDto> SimulateAutoSelectionAsync(Guid companyId, WeeklyMenuSimulationRequestDto dto);
 }

@@ -356,6 +356,66 @@ public class RepositoryBehaviorTests
     }
 
     [Fact]
+    public async Task PricingAdjustmentRepository_GetAllByTypeAsync_FiltersByTenantAndType()
+    {
+        await using var ctx = CreateContext();
+        var repository = new PricingAdjustmentRepository(ctx);
+
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+
+        repository.Add(new PricingAdjustment
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CreatedByAppUserId = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            AdjustmentType = "delivery_fee",
+            Label = "Primary delivery",
+            Amount = 4.99m,
+            IsPercentage = false,
+            IsActive = true
+        });
+
+        repository.Add(new PricingAdjustment
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CreatedByAppUserId = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            AdjustmentType = "discount",
+            Label = "Welcome discount",
+            Amount = 10m,
+            IsPercentage = true,
+            IsActive = true
+        });
+
+        repository.Add(new PricingAdjustment
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            CreatedByAppUserId = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow,
+            AdjustmentType = "delivery_fee",
+            Label = "Other tenant fee",
+            Amount = 3.99m,
+            IsPercentage = false,
+            IsActive = true
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await repository.GetAllByTypeAsync(companyA, "delivery_fee");
+
+        Assert.Single(result);
+        Assert.All(result, x =>
+        {
+            Assert.Equal(companyA, x.CompanyId);
+            Assert.Equal("delivery_fee", x.AdjustmentType);
+        });
+    }
+
+    [Fact]
     public async Task MealSubscriptionService_GetByIdAsync_RespectsTenantScope()
     {
         await using var ctx = CreateContext();
@@ -611,6 +671,48 @@ public class RepositoryBehaviorTests
     }
 
     [Fact]
+    public async Task IngredientService_UpsertCatalogItemAsync_ReactivatesSoftDeletedIngredientWithSameName()
+    {
+        await using var ctx = CreateContext();
+        var repository = new IngredientRepository(ctx);
+        var service = new IngredientService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var created = await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+        {
+            Name = "Ingredient1",
+            IsAllergen = false,
+            IsExclusionTag = true
+        });
+        await ctx.SaveChangesAsync();
+
+        await service.RemoveCatalogItemAsync(companyId, created.IngredientId);
+        await ctx.SaveChangesAsync();
+
+        var recreated = await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+        {
+            Name = "Ingredient1",
+            IsAllergen = true,
+            IsExclusionTag = false
+        });
+        await ctx.SaveChangesAsync();
+
+        Assert.Equal(created.IngredientId, recreated.IngredientId);
+        Assert.True(recreated.IsAllergen);
+        Assert.True(recreated.IsExclusionTag);
+        Assert.Equal("ingredient1", recreated.ExclusionKey);
+
+        var storedRows = await ctx.Ingredients
+            .Where(x => x.CompanyId == companyId && x.NormalizedName == "ingredient1")
+            .ToListAsync();
+
+        Assert.Single(storedRows);
+        Assert.Null(storedRows[0].DeletedAt);
+    }
+
+    [Fact]
     public async Task RecipeService_UpsertRecipeEditorAsync_RejectsOutOfScopeIngredientIds()
     {
         await using var ctx = CreateContext();
@@ -650,5 +752,621 @@ public class RepositoryBehaviorTests
                     SodiumMg = 500
                 }
             }));
+    }
+
+    [Fact]
+    public async Task DietaryCategoryService_RemoveCatalogItemAsync_SoftDeletesCategory()
+    {
+        await using var ctx = CreateContext();
+        var repository = new DietaryCategoryRepository(ctx);
+        var service = new DietaryCategoryService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var created = await service.UpsertCatalogItemAsync(companyId, actorId, new DietaryCategoryCatalogUpsertDto
+        {
+            Code = "vegan",
+            Name = "Vegan",
+            IsActive = true
+        });
+        await ctx.SaveChangesAsync();
+
+        await service.RemoveCatalogItemAsync(companyId, created.DietaryCategoryId);
+        await ctx.SaveChangesAsync();
+
+        var stored = await repository.GetByIdAsync(created.DietaryCategoryId);
+        Assert.NotNull(stored);
+        Assert.NotNull(stored!.DeletedAt);
+    }
+
+    [Fact]
+    public async Task RecipeService_RemoveRecipeAsync_SoftDeletesRecipe()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+        var service = new RecipeService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var recipe = new Recipe
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Soft delete recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.Recipes.Add(recipe);
+        await ctx.SaveChangesAsync();
+
+        await service.RemoveRecipeAsync(companyId, recipe.Id);
+        await ctx.SaveChangesAsync();
+
+        var stored = await repository.GetByIdAsync(recipe.Id);
+        Assert.NotNull(stored);
+        Assert.NotNull(stored!.DeletedAt);
+    }
+
+    [Fact]
+    public async Task RecipeRepository_UpdateNutritionalInfo_UsesTrackedInstanceWhenPresent()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var nutritionId = Guid.NewGuid();
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Tracked nutrition recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.NutritionalInfos.Add(new NutritionalInfo
+        {
+            Id = nutritionId,
+            RecipeId = recipeId,
+            CaloriesKcal = 100,
+            ProteinG = 10,
+            CarbsG = 20,
+            FatG = 5,
+            FiberG = 3,
+            SodiumMg = 200,
+            CreatedAt = DateTime.UtcNow
+        });
+        await ctx.SaveChangesAsync();
+
+        var tracked = await ctx.NutritionalInfos.FirstAsync(x => x.Id == nutritionId);
+
+        var detached = new NutritionalInfo
+        {
+            Id = nutritionId,
+            RecipeId = recipeId,
+            CaloriesKcal = 250,
+            ProteinG = 18,
+            CarbsG = 24,
+            FatG = 8,
+            FiberG = 6,
+            SodiumMg = 320,
+            CreatedAt = tracked.CreatedAt,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        repository.UpdateNutritionalInfo(detached);
+        await ctx.SaveChangesAsync();
+
+        Assert.Equal(250, tracked.CaloriesKcal);
+        Assert.Equal(18, tracked.ProteinG);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_AssignRecipeToWeekAsync_DerivesCategoryFromRecipe()
+    {
+        await using var ctx = CreateContext();
+        var repository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var expectedCategoryId = Guid.NewGuid();
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Assignment recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.DietaryCategories.Add(new DietaryCategory
+        {
+            Id = expectedCategoryId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Code = "vegan",
+            Name = "Vegan",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.RecipeDietaryCategories.Add(new RecipeDietaryCategory
+        {
+            Id = Guid.NewGuid(),
+            RecipeId = recipeId,
+            DietaryCategoryId = expectedCategoryId,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        repository.AddRuleConfig(new WeeklyMenuRuleConfig
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            RecipesPerCategory = 2,
+            NoRepeatWeeks = 0,
+            SelectionDeadlineDaysBeforeWeekStart = 2,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.AssignRecipeToWeekAsync(companyId, new WeeklyMenuAssignmentCreateDto
+        {
+            WeekStartDate = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc),
+            RecipeId = recipeId,
+            DietaryCategoryId = Guid.NewGuid(),
+            CreatedByAppUserId = actorId
+        });
+        await ctx.SaveChangesAsync();
+
+        Assert.True(result.Success);
+        Assert.Equal(expectedCategoryId, result.Assignment!.DietaryCategoryId);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuRepository_GetWeeklyAssignmentByIdAsync_RespectsTenantScope()
+    {
+        await using var ctx = CreateContext();
+        var repository = new WeeklyMenuRepository(ctx);
+
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var assignmentId = Guid.NewGuid();
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyA,
+            CreatedByAppUserId = actorId,
+            Name = "Tenant scoped recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var menu = new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CreatedByAppUserId = actorId,
+            WeekStartDate = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc),
+            SelectionDeadlineAt = new DateTime(2026, 03, 07, 0, 0, 0, DateTimeKind.Utc),
+            TotalRecipes = 1,
+            IsPublished = false,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.WeeklyMenus.Add(menu);
+
+        ctx.WeeklyMenuRecipes.Add(new WeeklyMenuRecipe
+        {
+            Id = assignmentId,
+            WeeklyMenuId = menu.Id,
+            RecipeId = recipeId,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var inScope = await repository.GetWeeklyAssignmentByIdAsync(companyA, assignmentId);
+        var outOfScope = await repository.GetWeeklyAssignmentByIdAsync(companyB, assignmentId);
+
+        Assert.NotNull(inScope);
+        Assert.Null(outOfScope);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_RemoveWeeklyAssignmentAsync_SoftDeletesAndDecrementsTotal()
+    {
+        await using var ctx = CreateContext();
+        var repository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(repository);
+
+        var companyId = Guid.NewGuid();
+        var otherCompanyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Remove assignment recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        var menu = new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            WeekStartDate = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc),
+            SelectionDeadlineAt = new DateTime(2026, 03, 07, 0, 0, 0, DateTimeKind.Utc),
+            TotalRecipes = 1,
+            IsPublished = false,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.WeeklyMenus.Add(menu);
+
+        var assignment = new WeeklyMenuRecipe
+        {
+            Id = Guid.NewGuid(),
+            WeeklyMenuId = menu.Id,
+            RecipeId = recipeId,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        };
+        ctx.WeeklyMenuRecipes.Add(assignment);
+        await ctx.SaveChangesAsync();
+
+        var result = await service.RemoveWeeklyAssignmentAsync(companyId, assignment.Id);
+        await ctx.SaveChangesAsync();
+
+        Assert.True(result.Success);
+
+        var storedAssignment = await ctx.WeeklyMenuRecipes.FirstAsync(x => x.Id == assignment.Id);
+        var storedMenu = await ctx.WeeklyMenus.FirstAsync(x => x.Id == menu.Id);
+        Assert.NotNull(storedAssignment.DeletedAt);
+        Assert.Equal(0, storedMenu.TotalRecipes);
+
+        var outOfScopeResult = await service.RemoveWeeklyAssignmentAsync(otherCompanyId, assignment.Id);
+        Assert.False(outOfScopeResult.Success);
+    }
+
+    [Fact]
+    public async Task RecipeService_UpsertRecipeEditorAsync_RemovesDeselectedLinksWithoutRecreatingKeptOnes()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+        var service = new RecipeService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var keepIngredientId = Guid.NewGuid();
+        var removeIngredientId = Guid.NewGuid();
+        var keepCategoryId = Guid.NewGuid();
+        var removeCategoryId = Guid.NewGuid();
+
+        ctx.Ingredients.AddRange(
+            new Ingredient
+            {
+                Id = keepIngredientId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Keep ingredient",
+                IsExclusionTag = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Ingredient
+            {
+                Id = removeIngredientId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Remove ingredient",
+                IsExclusionTag = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.DietaryCategories.AddRange(
+            new DietaryCategory
+            {
+                Id = keepCategoryId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Code = "keep",
+                Name = "Keep",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new DietaryCategory
+            {
+                Id = removeCategoryId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Code = "remove",
+                Name = "Remove",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Link replacement recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.NutritionalInfos.Add(new NutritionalInfo
+        {
+            Id = Guid.NewGuid(),
+            RecipeId = recipeId,
+            CaloriesKcal = 300,
+            ProteinG = 20,
+            CarbsG = 30,
+            FatG = 10,
+            FiberG = 5,
+            SodiumMg = 400,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.RecipeIngredients.AddRange(
+            new RecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeId,
+                IngredientId = keepIngredientId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new RecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeId,
+                IngredientId = removeIngredientId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            });
+        ctx.RecipeDietaryCategories.AddRange(
+            new RecipeDietaryCategory
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeId,
+                DietaryCategoryId = keepCategoryId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new RecipeDietaryCategory
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeId,
+                DietaryCategoryId = removeCategoryId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            });
+        await ctx.SaveChangesAsync();
+
+        await service.UpsertRecipeEditorAsync(companyId, actorId, new RecipeEditorUpsertDto
+        {
+            RecipeId = recipeId,
+            Name = "Link replacement recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            IngredientIds = [keepIngredientId],
+            DietaryCategoryIds = [keepCategoryId],
+            Nutrition = new RecipeNutritionDto
+            {
+                CaloriesKcal = 320,
+                ProteinG = 25,
+                CarbsG = 35,
+                FatG = 9,
+                FiberG = 6,
+                SodiumMg = 410
+            }
+        });
+        await ctx.SaveChangesAsync();
+
+        var ingredientLinks = await ctx.RecipeIngredients
+            .Where(x => x.RecipeId == recipeId)
+            .ToListAsync();
+        var categoryLinks = await ctx.RecipeDietaryCategories
+            .Where(x => x.RecipeId == recipeId)
+            .ToListAsync();
+
+        Assert.Equal(2, ingredientLinks.Count);
+        Assert.Equal(1, ingredientLinks.Count(x => x.IngredientId == keepIngredientId && x.DeletedAt == null));
+        Assert.Equal(1, ingredientLinks.Count(x => x.IngredientId == removeIngredientId && x.DeletedAt != null));
+
+        Assert.Equal(2, categoryLinks.Count);
+        Assert.Equal(1, categoryLinks.Count(x => x.DietaryCategoryId == keepCategoryId && x.DeletedAt == null));
+        Assert.Equal(1, categoryLinks.Count(x => x.DietaryCategoryId == removeCategoryId && x.DeletedAt != null));
+    }
+
+    [Fact]
+    public async Task RecipeService_UpsertRecipeEditorAsync_RemovesAllLinksWhenSelectionsAreNull()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+        var service = new RecipeService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+        var ingredientId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        ctx.Ingredients.Add(new Ingredient
+        {
+            Id = ingredientId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Ingredient",
+            IsExclusionTag = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.DietaryCategories.Add(new DietaryCategory
+        {
+            Id = categoryId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Code = "cat",
+            Name = "Category",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Null selection recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.NutritionalInfos.Add(new NutritionalInfo
+        {
+            Id = Guid.NewGuid(),
+            RecipeId = recipeId,
+            CaloriesKcal = 300,
+            ProteinG = 20,
+            CarbsG = 30,
+            FatG = 10,
+            FiberG = 5,
+            SodiumMg = 400,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.RecipeIngredients.Add(new RecipeIngredient
+        {
+            Id = Guid.NewGuid(),
+            RecipeId = recipeId,
+            IngredientId = ingredientId,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.RecipeDietaryCategories.Add(new RecipeDietaryCategory
+        {
+            Id = Guid.NewGuid(),
+            RecipeId = recipeId,
+            DietaryCategoryId = categoryId,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        });
+        await ctx.SaveChangesAsync();
+
+        await service.UpsertRecipeEditorAsync(companyId, actorId, new RecipeEditorUpsertDto
+        {
+            RecipeId = recipeId,
+            Name = "Null selection recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            IngredientIds = null!,
+            DietaryCategoryIds = null!,
+            Nutrition = new RecipeNutritionDto
+            {
+                CaloriesKcal = 310,
+                ProteinG = 21,
+                CarbsG = 31,
+                FatG = 11,
+                FiberG = 6,
+                SodiumMg = 410
+            }
+        });
+        await ctx.SaveChangesAsync();
+
+        var ingredientLink = await ctx.RecipeIngredients.SingleAsync(x => x.RecipeId == recipeId && x.IngredientId == ingredientId);
+        var categoryLink = await ctx.RecipeDietaryCategories.SingleAsync(x => x.RecipeId == recipeId && x.DietaryCategoryId == categoryId);
+
+        Assert.NotNull(ingredientLink.DeletedAt);
+        Assert.NotNull(categoryLink.DeletedAt);
+    }
+
+    [Fact]
+    public async Task IngredientService_UpsertCatalogItemAsync_DerivesExclusionKeyFromName()
+    {
+        await using var ctx = CreateContext();
+        var repository = new IngredientRepository(ctx);
+        var service = new IngredientService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var item = await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+        {
+            Name = "Cilantro",
+            IsExclusionTag = true,
+            ExclusionKey = null
+        });
+
+        Assert.Equal("cilantro", item.ExclusionKey);
+    }
+
+    [Fact]
+    public async Task IngredientService_UpsertCatalogItemAsync_AlwaysMarksIngredientAsExclusionTag()
+    {
+        await using var ctx = CreateContext();
+        var repository = new IngredientRepository(ctx);
+        var service = new IngredientService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var item = await service.UpsertCatalogItemAsync(companyId, actorId, new IngredientCatalogUpsertDto
+        {
+            Name = "Nut",
+            IsAllergen = true,
+            IsExclusionTag = false
+        });
+
+        Assert.True(item.IsExclusionTag);
+        Assert.Equal("nut", item.ExclusionKey);
+    }
+
+    [Fact]
+    public async Task DietaryCategoryService_UpsertCatalogItemAsync_DerivesCodeFromName()
+    {
+        await using var ctx = CreateContext();
+        var repository = new DietaryCategoryRepository(ctx);
+        var service = new DietaryCategoryService(repository);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var item = await service.UpsertCatalogItemAsync(companyId, actorId, new DietaryCategoryCatalogUpsertDto
+        {
+            Name = "Vegetarian",
+            Code = string.Empty,
+            IsActive = true
+        });
+
+        Assert.Equal("vegetarian", item.Code);
     }
 }

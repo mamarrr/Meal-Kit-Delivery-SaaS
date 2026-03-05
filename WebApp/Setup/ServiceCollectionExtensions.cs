@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IBoxService, BoxService>();
         services.AddScoped<IBoxPriceService, BoxPriceService>();
+        services.AddScoped<IPricingProductsService, PricingProductsService>();
         services.AddScoped<IMealSubscriptionService, MealSubscriptionService>();
         services.AddScoped<IPlatformSubscriptionService, PlatformSubscriptionService>();
         services.AddScoped<IPlatformSubscriptionStatusService, PlatformSubscriptionStatusService>();

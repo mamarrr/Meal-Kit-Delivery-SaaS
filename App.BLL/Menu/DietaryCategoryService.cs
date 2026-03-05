@@ -39,12 +39,7 @@ public class DietaryCategoryService : BaseTenantService<DietaryCategory, IDietar
             throw new ArgumentException("Dietary category name is required.", nameof(dto));
         }
 
-        if (string.IsNullOrWhiteSpace(dto.Code))
-        {
-            throw new ArgumentException("Dietary category code is required.", nameof(dto));
-        }
-
-        var normalizedCode = dto.Code.Trim().ToLowerInvariant();
+        var normalizedCode = dto.Name.Trim().ToLowerInvariant();
         var all = await Repository.GetAllByCompanyIdAsync(companyId);
 
         if (dto.DietaryCategoryId.HasValue)
@@ -95,6 +90,19 @@ public class DietaryCategoryService : BaseTenantService<DietaryCategory, IDietar
         }, companyId);
 
         return ToCatalogItem(created);
+    }
+
+    public async Task RemoveCatalogItemAsync(Guid companyId, Guid dietaryCategoryId)
+    {
+        var existing = await GetByIdAsync(dietaryCategoryId, companyId);
+        if (existing == null || existing.DeletedAt != null)
+        {
+            throw new KeyNotFoundException($"Dietary category {dietaryCategoryId} was not found in company scope {companyId}.");
+        }
+
+        existing.DeletedAt = DateTime.UtcNow;
+        existing.UpdatedAt = DateTime.UtcNow;
+        await UpdateAsync(existing, companyId);
     }
 
     private static DietaryCategoryCatalogItemDto ToCatalogItem(DietaryCategory category)

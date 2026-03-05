@@ -89,6 +89,15 @@
             Slug = operationalSlug,
             Context = ActiveUserSelectionHelper.CompanyContext
         });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Pricing & Products",
+            Controller = "PricingProducts",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
     }
 
 <div class="app-shell">

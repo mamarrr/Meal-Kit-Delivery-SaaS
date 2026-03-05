@@ -1,0 +1,46 @@
+@model (WebApp.ViewModels.Subscription.PricingProductsIndexViewModel Vm, List<App.Contracts.BLL.Subscription.PricingAdjustmentListItemDto> Items)
+
+<div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+        <thead>
+        <tr>
+            <th>Label</th>
+            <th>Amount</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @if (Model.Items.Count == 0)
+        {
+            <tr>
+                <td colspan="5" class="text-muted">No entries yet.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Label</td>
+                    <td>@(item.IsPercentage ? $"{item.Amount:0.##}%" : item.Amount.ToString("0.00"))</td>
+                    <td>@(item.IsPercentage ? "Percentage" : "Fixed")</td>
+                    <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                    <td class="text-end">
+                        @if (item.IsActive)
+                        {
+                            <form asp-controller="PricingProducts" asp-action="DeactivateAdjustment" asp-route-slug="@Model.Vm.CompanySlug" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="adjustmentId" value="@item.AdjustmentId" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Deactivate</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+    </table>
+</div>
+

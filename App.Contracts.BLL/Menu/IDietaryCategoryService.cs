@@ -6,5 +6,6 @@ public interface IDietaryCategoryService : ITenantEntityService<DietaryCategory>
 {
     Task<ICollection<DietaryCategoryCatalogItemDto>> GetCatalogAsync(Guid companyId);
     Task<DietaryCategoryCatalogItemDto> UpsertCatalogItemAsync(Guid companyId, Guid actorId, DietaryCategoryCatalogUpsertDto dto);
+    Task RemoveCatalogItemAsync(Guid companyId, Guid dietaryCategoryId);
 }
 

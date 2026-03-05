@@ -56,6 +56,21 @@ public class WeeklyMenuRepository : BaseRepository<WeeklyMenu, AppDbContext>, IW
         return RepositoryDbContext.WeeklyMenuRecipes.Add(assignment).Entity;
     }
 
+    public async Task<WeeklyMenuRecipe?> GetWeeklyAssignmentByIdAsync(Guid companyId, Guid weeklyMenuRecipeId)
+    {
+        return await RepositoryDbContext.WeeklyMenuRecipes
+            .Include(x => x.WeeklyMenu)
+            .FirstOrDefaultAsync(x => x.Id == weeklyMenuRecipeId
+                                      && x.DeletedAt == null
+                                      && x.WeeklyMenu != null
+                                      && x.WeeklyMenu.CompanyId == companyId);
+    }
+
+    public WeeklyMenuRecipe UpdateWeeklyAssignment(WeeklyMenuRecipe assignment)
+    {
+        return RepositoryDbContext.WeeklyMenuRecipes.Update(assignment).Entity;
+    }
+
     public async Task<bool> HasRecipeAssignedInPreviousWeeksAsync(Guid companyId, Guid recipeId, DateTime weekStartDate, int noRepeatWeeks)
     {
         var windowStart = weekStartDate.Date.AddDays(-(7 * Math.Max(0, noRepeatWeeks)));
@@ -68,6 +83,38 @@ public class WeeklyMenuRepository : BaseRepository<WeeklyMenu, AppDbContext>, IW
                            && x.WeeklyMenu.CompanyId == companyId
                            && x.WeeklyMenu.WeekStartDate >= windowStart
                            && x.WeeklyMenu.WeekStartDate < weekStartDate.Date);
+    }
+
+    public async Task<RecipeAssignmentContextDto?> GetRecipeAssignmentContextAsync(Guid companyId, Guid recipeId)
+    {
+        var exists = await RepositoryDbContext.Recipes
+            .AnyAsync(x => x.Id == recipeId
+                           && x.CompanyId == companyId
+                           && x.DeletedAt == null
+                           && x.IsActive);
+
+        if (!exists)
+        {
+            return null;
+        }
+
+        var categoryId = await (
+            from recipeCategory in RepositoryDbContext.RecipeDietaryCategories
+            join dietaryCategory in RepositoryDbContext.DietaryCategories
+                on recipeCategory.DietaryCategoryId equals dietaryCategory.Id
+            where recipeCategory.RecipeId == recipeId
+                  && recipeCategory.DeletedAt == null
+                  && dietaryCategory.DeletedAt == null
+                  && dietaryCategory.IsActive
+            orderby dietaryCategory.Name
+            select (Guid?)dietaryCategory.Id)
+            .FirstOrDefaultAsync();
+
+        return new RecipeAssignmentContextDto
+        {
+            RecipeId = recipeId,
+            DietaryCategoryId = categoryId
+        };
     }
 
     public async Task<ICollection<RecipeSimulationCandidate>> GetSimulationCandidatesAsync(Guid companyId, DateTime weekStartDate)
