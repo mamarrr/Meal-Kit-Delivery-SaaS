@@ -141,7 +141,7 @@ public class CustomerComplaintsController(
             return Forbid();
         }
 
-        var complaint = await qualityComplaintService.GetByIdAsync(id, customer.Id);
+        var complaint = await qualityComplaintService.GetByCustomerIdAsync(id, customer.Id);
         if (complaint == null || complaint.DeletedAt != null)
         {
             return NotFound();

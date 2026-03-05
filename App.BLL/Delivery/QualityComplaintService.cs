@@ -34,7 +34,7 @@ public class QualityComplaintService : BaseTenantService<QualityComplaint, IQual
         return await Repository.GetAllByCustomerIdAsync(customerId);
     }
 
-    public async Task<QualityComplaint?> GetByIdAsync(Guid id, Guid customerId)
+    public async Task<QualityComplaint?> GetByCustomerIdAsync(Guid id, Guid customerId)
     {
         var complaint = await Repository.GetByIdAsync(id);
         return complaint != null && complaint.CustomerId == customerId ? complaint : null;
