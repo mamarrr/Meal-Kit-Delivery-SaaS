@@ -1,0 +1,111 @@
+@model WebApp.ViewModels.Subscription.CustomerMealSelectionPageViewModel
+@{
+    ViewData["Title"] = "Meal Selection";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Meal Selection</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-controller="CustomerSubscriptions" asp-action="Manage">Manage Subscriptions</a>
+            <a class="btn btn-outline-secondary" asp-controller="CustomerPreferences" asp-action="Preferences">Preferences &amp; Exclusions</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!Model.HasActiveSubscriptions)
+    {
+        <div class="alert alert-info mb-0">
+            You have no active subscriptions. Subscribe to a box first to select weekly meals.
+        </div>
+    }
+    else
+    {
+        <form asp-action="MealSelection" method="get" class="card card-body mb-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">Active subscription</label>
+                    <select class="form-select" name="selectedSubscriptionId" required>
+                        @foreach (var sub in Model.ActiveSubscriptions)
+                        {
+                            <option value="@sub.SubscriptionId" selected="@(Model.SelectedSubscriptionId == sub.SubscriptionId)">
+                                @sub.BoxDisplayName (started @sub.StartDate.ToString("yyyy-MM-dd"))
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Week start (Monday)</label>
+                    <input class="form-control" type="date" name="weekStartDate" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" required />
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" type="submit">Load</button>
+                </div>
+            </div>
+        </form>
+
+        @if (!Model.SelectedSubscriptionId.HasValue)
+        {
+            <div class="alert alert-info">Select a subscription to continue.</div>
+        }
+        else if (!Model.HasWeeklyMenu)
+        {
+            <div class="alert alert-info">
+                No weekly menu is available for the selected week in this subscription company.
+            </div>
+        }
+        else if (!Model.HasAvailableRecipes)
+        {
+            <div class="alert alert-info">
+                No recipes are available for this subscription and week.
+            </div>
+        }
+        else
+        {
+            <form asp-action="MealSelection" method="post" class="card">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SubscriptionId" value="@Model.SelectedSubscriptionId" />
+                <input type="hidden" name="WeekStartDate" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" />
+
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Choose recipes</span>
+                    @if (Model.SelectionDeadlineAt.HasValue)
+                    {
+                        <small class="text-muted">Selection deadline: @Model.SelectionDeadlineAt.Value.ToString("yyyy-MM-dd")</small>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var recipe in Model.AvailableRecipes)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="SelectedRecipeIds"
+                                           value="@recipe.RecipeId"
+                                           id="recipe-@recipe.RecipeId"
+                                           checked="@(Model.SelectedRecipeIds.Contains(recipe.RecipeId))" />
+                                    <label class="form-check-label" for="recipe-@recipe.RecipeId">
+                                        @recipe.RecipeName
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <button type="submit" class="btn btn-success">Save selections</button>
+                </div>
+            </form>
+        }
+    }
+</div>
