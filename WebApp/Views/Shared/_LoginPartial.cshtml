@@ -1,7 +1,17 @@
 ﻿@using App.Domain.Identity
 @using Microsoft.AspNetCore.Identity
+@using WebApp.Helpers
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
+
+@{
+    var logoutReturnUrl = Url.Action("Index", "Landing", new { area = "" });
+    var operationalSlug = User.GetDefaultOperationalSlug();
+    if (!string.IsNullOrWhiteSpace(operationalSlug))
+    {
+        logoutReturnUrl = $"/{operationalSlug}/Landing/Index";
+    }
+}
 
 @if (SignInManager.IsSignedIn(User))
 {
@@ -9,7 +19,7 @@
         <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">@App.Resources.Views.Shared._Layout.Hello @User.Identity?.Name!</a>
     </li>
     <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Landing", new { area = "" })">
+        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@logoutReturnUrl">
             <button  type="submit" class="nav-link btn btn-link text-dark">@App.Resources.Views.Shared._Layout.Logout</button>
         </form>
     </li>

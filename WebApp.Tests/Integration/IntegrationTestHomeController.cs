@@ -39,4 +39,24 @@ public class IntegrationTestHomeController : IClassFixture<CustomWebApplicationF
         Assert.Contains("Register new company", html);
     }
 
+    [Fact]
+    public async Task Get_SlugScopedOperationalRoute_Anonymous_IsChallenged()
+    {
+        // Act
+        var response = await _client.GetAsync("/north-bites/CompanySettings");
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_UnknownSlugOperationalRoute_ReturnsNotFound()
+    {
+        // Act
+        var response = await _client.GetAsync("/unknown-company/CompanySettings");
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+    }
+
 }

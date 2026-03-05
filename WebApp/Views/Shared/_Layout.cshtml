@@ -17,15 +17,18 @@
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
 @{
+    var operationalSlug = User.GetDefaultOperationalSlug();
+
     var sidebarItems = new List<AppShellNavigationViewModel>
     {
-        new() { Title = "Home", Controller = "Landing", Action = "Entry" }
+        new() { Title = "Home", Controller = "Landing", Action = "Entry", Slug = operationalSlug }
     };
 
     if (User.IsInRole("Customer"))
     {
         sidebarItems.AddRange(
-        [
+        new List<AppShellNavigationViewModel>
+        {
             new() { Title = "Discover Plans", Controller = "MealPlans", Action = "Index" },
             new() { Title = "My Subscriptions", Controller = "MealSubscriptions", Action = "Index" },
             new() { Title = "Dietary Preferences", Controller = "CustomerPreferences", Action = "Index" },
@@ -34,13 +37,18 @@
             new() { Title = "Meal Selections", Controller = "MealSelections", Action = "Index" },
             new() { Title = "My Deliveries", Controller = "Deliveries", Action = "Index" },
             new() { Title = "Quality Complaints", Controller = "QualityComplaints", Action = "Index" }
-        ]);
+        }.Select(x =>
+        {
+            x.Slug = operationalSlug;
+            return x;
+        }));
     }
 
     if (User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
     {
         sidebarItems.AddRange(
-        [
+        new List<AppShellNavigationViewModel>
+        {
             new() { Title = "Company Profile", Controller = "CompanySettings", Action = "Profile" },
             new() { Title = "Operational Settings", Controller = "CompanySettings", Action = "Index" },
             new() { Title = "Box Sizes", Controller = "Boxes", Action = "Index" },
@@ -55,13 +63,18 @@
             new() { Title = "Complaints", Controller = "QualityComplaints", Action = "Index" },
             new() { Title = "Users & Roles", Controller = "CompanyUsers", Action = "Index" },
             new() { Title = "Subscription", Controller = "PlatformSubscriptions", Action = "Index" }
-        ]);
+        }.Select(x =>
+        {
+            x.Slug = operationalSlug;
+            return x;
+        }));
     }
 
     if (User.IsInRole("SystemAdmin") || User.IsInRole("SystemBilling") || User.IsInRole("SystemSupport"))
     {
         sidebarItems.AddRange(
-        [
+        new List<AppShellNavigationViewModel>
+        {
             new() { Title = "Companies", Controller = "Companies", Action = "Index" },
             new() { Title = "System Settings", Controller = "SystemSettings", Action = "Index" },
             new() { Title = "Analytics", Controller = "Analytics", Action = "Index" },
@@ -70,7 +83,11 @@
             new() { Title = "Billing & Invoices", Controller = "Invoices", Action = "Index" },
             new() { Title = "Support Tickets", Controller = "SupportTickets", Action = "Index" },
             new() { Title = "Support Access", Controller = "SupportAccess", Action = "Index" }
-        ]);
+        }.Select(x =>
+        {
+            x.Slug = operationalSlug;
+            return x;
+        }));
     }
 }
 

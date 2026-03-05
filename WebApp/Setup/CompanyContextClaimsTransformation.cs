@@ -19,7 +19,11 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
             c.Type == "tenant_id" ||
             c.Type == "companyId");
 
-        if (hasCompanyClaim)
+        var hasCompanySlugClaim = principal.HasClaim(c =>
+            c.Type == "company_slug" ||
+            c.Type == "tenant_slug");
+
+        if (hasCompanyClaim && hasCompanySlugClaim)
         {
             return principal;
         }
@@ -33,22 +37,35 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
             return principal;
         }
 
-        var companyId = await dbContext.CompanyAppUsers
+        var companyMembership = await dbContext.CompanyAppUsers
             .Where(x => x.AppUserId == userId && x.IsActive)
             .OrderByDescending(x => x.IsOwner)
-            .Select(x => (Guid?)x.CompanyId)
+            .Select(x => new
+            {
+                x.CompanyId,
+                CompanySlug = x.Company!.Slug
+            })
             .FirstOrDefaultAsync();
 
-        if (companyId == null)
+        if (companyMembership?.CompanyId == null)
         {
             return principal;
         }
 
         if (principal.Identity is ClaimsIdentity identity)
         {
-            identity.AddClaim(new Claim("company_id", companyId.Value.ToString()));
-            identity.AddClaim(new Claim("tenant_id", companyId.Value.ToString()));
-            identity.AddClaim(new Claim("companyId", companyId.Value.ToString()));
+            if (!hasCompanyClaim)
+            {
+                identity.AddClaim(new Claim("company_id", companyMembership.CompanyId.ToString()));
+                identity.AddClaim(new Claim("tenant_id", companyMembership.CompanyId.ToString()));
+                identity.AddClaim(new Claim("companyId", companyMembership.CompanyId.ToString()));
+            }
+
+            if (!hasCompanySlugClaim && !string.IsNullOrWhiteSpace(companyMembership.CompanySlug))
+            {
+                identity.AddClaim(new Claim("company_slug", companyMembership.CompanySlug));
+                identity.AddClaim(new Claim("tenant_slug", companyMembership.CompanySlug));
+            }
         }
 
         return principal;

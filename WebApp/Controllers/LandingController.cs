@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApp.Helpers;
 using WebApp.Services;
 using WebApp.ViewModels.Landing;
 
@@ -39,29 +40,41 @@ public class LandingController(TenantOnboardingService tenantOnboardingService) 
             return RedirectToAction(nameof(Index));
         }
 
+        var defaultSlug = User.GetDefaultOperationalSlug();
+
         if (User.IsInRole("SystemAdmin"))
         {
-            return RedirectToAction("Index", "Companies");
+            return defaultSlug == null
+                ? RedirectToAction("Index", "Companies")
+                : RedirectToAction("Index", "Companies", new { slug = defaultSlug });
         }
 
         if (User.IsInRole("SystemBilling"))
         {
-            return RedirectToAction("Index", "PlatformSubscriptionTiers");
+            return defaultSlug == null
+                ? RedirectToAction("Index", "PlatformSubscriptionTiers")
+                : RedirectToAction("Index", "PlatformSubscriptionTiers", new { slug = defaultSlug });
         }
 
         if (User.IsInRole("SystemSupport"))
         {
-            return RedirectToAction("Index", "SupportTickets");
+            return defaultSlug == null
+                ? RedirectToAction("Index", "SupportTickets")
+                : RedirectToAction("Index", "SupportTickets", new { slug = defaultSlug });
         }
 
         if (User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
         {
-            return RedirectToAction("Profile", "CompanySettings");
+            return defaultSlug == null
+                ? RedirectToAction("Profile", "CompanySettings")
+                : RedirectToAction("Profile", "CompanySettings", new { slug = defaultSlug });
         }
 
         if (User.IsInRole("Customer"))
         {
-            return RedirectToAction("Index", "MealPlans");
+            return defaultSlug == null
+                ? RedirectToAction("Index", "MealPlans")
+                : RedirectToAction("Index", "MealPlans", new { slug = defaultSlug });
         }
 
         return RedirectToAction("Index", "Home");

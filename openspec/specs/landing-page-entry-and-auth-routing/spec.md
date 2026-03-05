@@ -23,9 +23,10 @@ The landing page MUST provide direct navigation to the registration and login en
 - **THEN** the system navigates the user to the existing user login flow
 
 ### Requirement: Post-authentication routing SHALL resolve to an allowed context
-After successful login, the system SHALL route the authenticated user to an allowed company or customer context entry point and MUST NOT route to unauthorized tenant data.
+After successful login, the system SHALL route the authenticated user to an authorized slug-scoped company or customer operations entry URL and MUST NOT route to unauthorized tenant data.
 
 #### Scenario: Returning user logs in successfully
 - **WHEN** an existing user completes login
-- **THEN** the system redirects the user to an authorized application context entry page
+- **THEN** the system redirects the user to an authorized slug-scoped application context entry page
+- **AND** the redirected URL includes the selected authorized slug segment
 - **AND** the system does not expose data from tenants the user is not assigned to
