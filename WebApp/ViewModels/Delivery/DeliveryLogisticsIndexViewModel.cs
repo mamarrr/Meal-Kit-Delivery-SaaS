@@ -13,6 +13,7 @@ public class DeliveryLogisticsIndexViewModel
     public List<DeliveryZone> Zones { get; set; } = [];
     public List<DeliveryWindow> ZoneSchedules { get; set; } = [];
     public List<DeliveryRunOrderListItem> RunsAndOrders { get; set; } = [];
+    public List<DeliveryTrackingLogItemViewModel> TrackingLogEntries { get; set; } = [];
 
     public DeliveryZoneFormViewModel ZoneForm { get; set; } = new();
     public DeliveryWindowFormViewModel WindowForm { get; set; } = new();
@@ -25,6 +26,19 @@ public class DeliveryLogisticsIndexViewModel
     public List<SelectListItem> WindowOptions { get; set; } = [];
     public List<SelectListItem> DeliveryStatusOptions { get; set; } = [];
     public List<SelectListItem> AttemptResultOptions { get; set; } = [];
+}
+
+public class DeliveryTrackingLogItemViewModel
+{
+    public Guid DeliveryId { get; set; }
+    public string RunReference { get; set; } = string.Empty;
+    public string CustomerName { get; set; } = string.Empty;
+    public int AttemptNo { get; set; }
+    public DateTime AttemptAt { get; set; }
+    public string AttemptResultLabel { get; set; } = string.Empty;
+    public string DeliveryStatusLabel { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public string? FailureReason { get; set; }
 }
 
 public class DeliveryZoneFormViewModel

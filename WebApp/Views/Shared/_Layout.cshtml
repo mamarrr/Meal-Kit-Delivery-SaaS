@@ -107,6 +107,15 @@
             Slug = operationalSlug,
             Context = ActiveUserSelectionHelper.CompanyContext
         });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Company Complaints",
+            Controller = "CompanyComplaints",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
     }
 
     if (hasCustomerAccess

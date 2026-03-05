@@ -305,6 +305,51 @@
                         <button type="submit" class="btn btn-outline-primary">Save tracking</button>
                     </div>
                 </form>
+
+                <hr />
+
+                <h3 class="h6 mb-3">Tracking log</h3>
+                @if (Model.TrackingLogEntries.Count == 0)
+                {
+                    <p class="text-muted mb-0">No tracking entries exist for deliveries on the selected date.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Attempt time</th>
+                                <th>Run</th>
+                                <th>Customer</th>
+                                <th>Attempt #</th>
+                                <th>Result</th>
+                                <th>Status</th>
+                                <th>Notes / proof / failure reason</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var item in Model.TrackingLogEntries)
+                            {
+                                var details = string.IsNullOrWhiteSpace(item.Notes)
+                                    ? (item.FailureReason ?? "-")
+                                    : string.IsNullOrWhiteSpace(item.FailureReason)
+                                        ? item.Notes
+                                        : $"{item.Notes} | {item.FailureReason}";
+                                <tr>
+                                    <td>@item.AttemptAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@item.RunReference</td>
+                                    <td>@item.CustomerName</td>
+                                    <td>@item.AttemptNo</td>
+                                    <td>@item.AttemptResultLabel</td>
+                                    <td>@item.DeliveryStatusLabel</td>
+                                    <td>@details</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             </div>
         </section>
     </div>

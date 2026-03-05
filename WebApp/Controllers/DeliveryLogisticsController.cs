@@ -381,6 +381,29 @@ public class DeliveryLogisticsController(
         var statuses = await operationalLookupService.GetDeliveryStatusesAsync();
         var attemptResults = await operationalLookupService.GetDeliveryAttemptResultsAsync();
         var settings = await companySettingsService.GetByCompanyIdAsync(companyId);
+        var trackingLogEntries = new List<DeliveryTrackingLogItemViewModel>();
+
+        foreach (var delivery in deliveries)
+        {
+            var attempts = await deliveryAttemptService.GetAllByDeliveryIdAsync(delivery.Id, companyId);
+            foreach (var attempt in attempts
+                         .Where(a => a.DeletedAt == null)
+                         .OrderByDescending(a => a.AttemptAt))
+            {
+                trackingLogEntries.Add(new DeliveryTrackingLogItemViewModel
+                {
+                    DeliveryId = delivery.Id,
+                    RunReference = delivery.Id.ToString("N")[..8].ToUpperInvariant(),
+                    CustomerName = BuildCustomerName(delivery.Customer),
+                    AttemptNo = attempt.AttemptNo,
+                    AttemptAt = attempt.AttemptAt,
+                    AttemptResultLabel = attempt.DeliveryAttemptResult?.Label ?? "Unknown",
+                    DeliveryStatusLabel = statuses.FirstOrDefault(s => s.Id == delivery.DeliveryStatusId)?.Label ?? "Unknown",
+                    Notes = attempt.Notes,
+                    FailureReason = delivery.FailureReason
+                });
+            }
+        }
 
         var runs = deliveries.Select(d => new DeliveryRunOrderListItem
         {
@@ -404,6 +427,10 @@ public class DeliveryLogisticsController(
             Zones = zones.OrderBy(z => z.Name).ToList(),
             ZoneSchedules = schedules.OrderBy(w => w.DayOfWeek).ThenBy(w => w.StartTime).ToList(),
             RunsAndOrders = runs,
+            TrackingLogEntries = trackingLogEntries
+                .OrderByDescending(x => x.AttemptAt)
+                .ThenByDescending(x => x.AttemptNo)
+                .ToList(),
             DeliveryCreateForm = new DeliveryCreateFormViewModel
             {
                 ScheduledDate = targetDate
