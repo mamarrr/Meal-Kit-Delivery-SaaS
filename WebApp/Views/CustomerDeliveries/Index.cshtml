@@ -1,0 +1,50 @@
+@model WebApp.ViewModels.Delivery.CustomerDeliveriesIndexViewModel
+@{
+    ViewData["Title"] = "Deliveries";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Delivery History</h1>
+        <a class="btn btn-outline-secondary" asp-controller="CustomerComplaints" asp-action="Index">
+            Complaints
+        </a>
+    </div>
+
+    @if (Model.Deliveries.Count == 0)
+    {
+        <div class="alert alert-info">No deliveries found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Box</th>
+                    <th>Window</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Deliveries)
+                {
+                    <tr>
+                        <td>@item.ScheduledTime.ToString("yyyy-MM-dd") (@item.DeliveryId.ToString()[..8])</td>
+                        <td>@item.StatusLabel</td>
+                        <td>@item.BoxName (@item.MealsCount x @item.PeopleCount)</td>
+                        <td>@(item.WindowLabel ?? "-")</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary"
+                               asp-action="Details"
+                               asp-route-id="@item.DeliveryId">Details</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

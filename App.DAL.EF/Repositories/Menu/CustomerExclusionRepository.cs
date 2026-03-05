@@ -37,5 +37,14 @@ public class CustomerExclusionRepository : BaseRepository<CustomerExclusion, App
     {
         return await RepositoryDbContext.Ingredients.AnyAsync(i => i.Id == ingredientId && i.CompanyId == companyId);
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<CustomerExclusion>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await RepositoryDbSet
+            .Include(x => x.Ingredient)
+            .Where(x => x.CustomerId == customerId)
+            .ToListAsync();
+    }
 }
 

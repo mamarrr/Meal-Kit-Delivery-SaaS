@@ -19,5 +19,15 @@ public class MealSubscriptionService : BaseTenantService<MealSubscription, IMeal
     {
         return await Repository.GetAllByCustomerIdAsync(customerId, companyId);
     }
+
+    public async Task<ICollection<MealSubscription>> GetAllByCustomerIdsAsync(IReadOnlyCollection<Guid> customerIds)
+    {
+        return await Repository.GetAllByCustomerIdsAsync(customerIds);
+    }
+
+    public async Task<ICollection<Guid>> GetDistinctCompanyIdsByCustomerIdAsync(Guid customerId)
+    {
+        return await Repository.GetDistinctCompanyIdsByCustomerIdAsync(customerId);
+    }
 }
 

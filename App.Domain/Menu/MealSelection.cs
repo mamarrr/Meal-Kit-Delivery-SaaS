@@ -7,6 +7,8 @@ public class MealSelection : BaseEntity
     public bool SelectedAutomatically { get; set; }
     public DateTime SelectedAt { get; set; }
     public DateTime? LockedAt { get; set; }
+    public string? AutoSelectionReason { get; set; }
+    public string? AutoSelectionNotes { get; set; }
     
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

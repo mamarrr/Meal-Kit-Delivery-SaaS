@@ -1,0 +1,60 @@
+@model WebApp.ViewModels.Delivery.CustomerComplaintsIndexViewModel
+@{
+    ViewData["Title"] = "Complaints";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Complaints</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-controller="CustomerDeliveries" asp-action="Index">Deliveries</a>
+            <a class="btn btn-primary" asp-action="Create">Submit complaint</a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (Model.Complaints.Count == 0)
+    {
+        <div class="alert alert-info">No complaints submitted yet.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Severity</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Complaints)
+                {
+                    <tr>
+                        <td>@item.CreatedAt.ToString("yyyy-MM-dd") (@item.ComplaintId.ToString()[..8])</td>
+                        <td>@item.TypeLabel</td>
+                        <td>@item.StatusLabel</td>
+                        <td>@item.Severity</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary"
+                               asp-action="Details"
+                               asp-route-id="@item.ComplaintId">Details</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -40,5 +40,14 @@ public class CustomerPreferenceRepository : BaseRepository<CustomerPreference, A
                             && dc.CompanyId == companyId
                             && dc.DeletedAt == null);
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<CustomerPreference>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await RepositoryDbSet
+            .Include(x => x.DietaryCategory)
+            .Where(x => x.CustomerId == customerId)
+            .ToListAsync();
+    }
 }
 

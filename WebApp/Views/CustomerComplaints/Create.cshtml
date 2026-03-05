@@ -1,0 +1,48 @@
+@model WebApp.ViewModels.Delivery.CustomerComplaintCreateViewModel
+@{
+    ViewData["Title"] = "Submit Complaint";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Submit Complaint</h1>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to complaints</a>
+    </div>
+
+    <form asp-action="Create" method="post" class="card card-body">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="DeliveryId" class="form-label"></label>
+            <select asp-for="DeliveryId" class="form-select" asp-items="Model.DeliveryOptions">
+                <option value="">Select delivery</option>
+            </select>
+            <span asp-validation-for="DeliveryId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="ComplaintTypeId" class="form-label"></label>
+            <select asp-for="ComplaintTypeId" class="form-select" asp-items="Model.ComplaintTypeOptions">
+                <option value="">Select type</option>
+            </select>
+            <span asp-validation-for="ComplaintTypeId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Severity" class="form-label"></label>
+            <input asp-for="Severity" class="form-control" type="number" min="1" max="5" />
+            <span asp-validation-for="Severity" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label"></label>
+            <textarea asp-for="Description" class="form-control" rows="5"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">Submit complaint</button>
+        </div>
+    </form>
+</div>

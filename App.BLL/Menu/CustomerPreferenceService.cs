@@ -62,5 +62,10 @@ public class CustomerPreferenceService : BaseService<CustomerPreference, ICustom
 
         return await base.RemoveAsync(id);
     }
+
+    public async Task<ICollection<CustomerPreference>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await Repository.GetAllByCustomerIdAsync(customerId);
+    }
 }
 

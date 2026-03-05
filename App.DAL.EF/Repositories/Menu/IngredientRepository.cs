@@ -22,6 +22,20 @@ public class IngredientRepository : BaseRepository<Ingredient, AppDbContext>, II
             .ToListAsync();
     }
 
+    /// <inheritdoc />
+    public async Task<ICollection<Ingredient>> GetAllByCompanyIdsAsync(IEnumerable<Guid> companyIds)
+    {
+        var ids = companyIds.ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await RepositoryDbSet
+            .Where(i => ids.Contains(i.CompanyId))
+            .ToListAsync();
+    }
+
     public async Task<Ingredient?> GetByNameAsync(Guid companyId, string name)
     {
         return await RepositoryDbSet

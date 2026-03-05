@@ -22,6 +22,14 @@ public interface IDeliveryRepository : IRepository<App.Domain.Delivery.Delivery>
     Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCustomerIdAsync(Guid customerId);
 
     /// <summary>
+    /// Checks whether a delivery belongs to a specific customer.
+    /// </summary>
+    /// <param name="deliveryId">The delivery ID.</param>
+    /// <param name="customerId">The customer ID.</param>
+    /// <returns>True if the delivery belongs to the customer.</returns>
+    Task<bool> DeliveryBelongsToCustomerAsync(Guid deliveryId, Guid customerId);
+
+    /// <summary>
     /// Gets all deliveries for a specific customer within company scope.
     /// </summary>
     /// <param name="customerId">The customer ID.</param>

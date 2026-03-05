@@ -25,7 +25,11 @@ public class DeliveryRepository : BaseRepository<App.Domain.Delivery.Delivery, A
     public async Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCustomerIdAsync(Guid customerId)
     {
         return await RepositoryDbSet
-            .Where(d => d.CustomerId == customerId)
+            .Include(d => d.DeliveryStatus)
+            .Include(d => d.Box)
+            .Include(d => d.DeliveryWindow)
+            .Where(d => RepositoryDbContext.MealSubscriptions
+                .Any(ms => ms.Id == d.MealSubscriptionId && ms.CustomerId == customerId))
             .ToListAsync();
     }
 
@@ -33,6 +37,9 @@ public class DeliveryRepository : BaseRepository<App.Domain.Delivery.Delivery, A
     public async Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId)
     {
         return await RepositoryDbSet
+            .Include(d => d.DeliveryStatus)
+            .Include(d => d.Box)
+            .Include(d => d.DeliveryWindow)
             .Where(d => d.CustomerId == customerId && d.CompanyId == companyId)
             .ToListAsync();
     }
@@ -44,5 +51,12 @@ public class DeliveryRepository : BaseRepository<App.Domain.Delivery.Delivery, A
         return await RepositoryDbSet
             .Where(d => d.CompanyId == companyId && d.ScheduledTime.Date == date)
             .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeliveryBelongsToCustomerAsync(Guid deliveryId, Guid customerId)
+    {
+        return await RepositoryDbSet
+            .AnyAsync(d => d.Id == deliveryId && d.CustomerId == customerId);
     }
 }

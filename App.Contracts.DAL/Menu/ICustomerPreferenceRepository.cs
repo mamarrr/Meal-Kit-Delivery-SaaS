@@ -9,5 +9,12 @@ public interface ICustomerPreferenceRepository : IRepository<CustomerPreference>
     Task<CustomerPreference?> GetByIdAsync(Guid id, Guid companyId);
     Task<bool> IsCustomerInCompanyAsync(Guid customerId, Guid companyId);
     Task<bool> IsDietaryCategoryInCompanyAsync(Guid dietaryCategoryId, Guid companyId);
+    
+    /// <summary>
+    /// Gets all customer preferences for a specific customer.
+    /// </summary>
+    /// <param name="customerId">The customer ID.</param>
+    /// <returns>A collection of customer preferences.</returns>
+    Task<ICollection<CustomerPreference>> GetAllByCustomerIdAsync(Guid customerId);
 }
 

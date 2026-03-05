@@ -21,4 +21,18 @@ public class DietaryCategoryRepository : BaseRepository<DietaryCategory, AppDbCo
             .Where(dc => dc.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<DietaryCategory>> GetAllByCompanyIdsAsync(IEnumerable<Guid> companyIds)
+    {
+        var ids = companyIds.ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await RepositoryDbSet
+            .Where(dc => ids.Contains(dc.CompanyId))
+            .ToListAsync();
+    }
 }

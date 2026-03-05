@@ -29,4 +29,18 @@ public interface IMealSubscriptionRepository : IRepository<MealSubscription>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of meal subscriptions for the customer in the company.</returns>
     Task<ICollection<MealSubscription>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId);
+
+    /// <summary>
+    /// Gets all meal subscriptions for a set of customers across company scope.
+    /// </summary>
+    /// <param name="customerIds">Customer IDs.</param>
+    /// <returns>A collection of meal subscriptions.</returns>
+    Task<ICollection<MealSubscription>> GetAllByCustomerIdsAsync(IReadOnlyCollection<Guid> customerIds);
+
+    /// <summary>
+    /// Gets distinct company IDs from a customer's active subscriptions.
+    /// </summary>
+    /// <param name="customerId">The customer ID.</param>
+    /// <returns>A collection of company IDs the customer has active subscriptions with.</returns>
+    Task<ICollection<Guid>> GetDistinctCompanyIdsByCustomerIdAsync(Guid customerId);
 }

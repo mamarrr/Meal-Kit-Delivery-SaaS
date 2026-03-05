@@ -249,6 +249,29 @@ public class RecipeService : BaseTenantService<Recipe, IRecipeRepository>, IReci
         await UpdateAsync(recipe, companyId);
     }
 
+    public async Task<ICollection<RecipeListItemDto>> GetRecipesWithNutritionFilterAsync(Guid companyId, NutritionFilterDto? nutritionFilter)
+    {
+        var rows = await Repository.GetAllByCompanyIdWithNutritionFilterAsync(
+            companyId,
+            nutritionFilter?.MinCaloriesKcal,
+            nutritionFilter?.MaxCaloriesKcal,
+            nutritionFilter?.MinProteinG,
+            nutritionFilter?.MaxProteinG,
+            nutritionFilter?.MinCarbsG,
+            nutritionFilter?.MaxCarbsG,
+            nutritionFilter?.MinFatG,
+            nutritionFilter?.MaxFatG,
+            nutritionFilter?.MinFiberG,
+            nutritionFilter?.MaxFiberG,
+            nutritionFilter?.MinSodiumMg,
+            nutritionFilter?.MaxSodiumMg);
+
+        return rows
+            .Where(r => r.DeletedAt == null)
+            .Select(MapToListItem)
+            .ToList();
+    }
+
     private static RecipeListItemDto MapToListItem(Recipe recipe)
     {
         return new RecipeListItemDto

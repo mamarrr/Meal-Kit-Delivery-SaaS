@@ -37,6 +37,92 @@ public class RepositoryBehaviorTests
         var companyA = Guid.NewGuid();
         var companyB = Guid.NewGuid();
         var customer = Guid.NewGuid();
+        var createdByAppUserId = Guid.NewGuid();
+
+        var deliveryStatusId = Guid.NewGuid();
+        var deliveryZoneId = Guid.NewGuid();
+        var deliveryWindowId = Guid.NewGuid();
+        var weeklyMenuId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var mealSubscriptionId = Guid.NewGuid();
+        var mealSelectionId = Guid.NewGuid();
+
+        ctx.DeliveryStatuses.Add(new DeliveryStatus
+        {
+            Id = deliveryStatusId,
+            Code = "scheduled",
+            Label = "Scheduled"
+        });
+
+        ctx.DeliveryZones.Add(new DeliveryZone
+        {
+            Id = deliveryZoneId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            Name = "Zone A",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.DeliveryWindows.Add(new DeliveryWindow
+        {
+            Id = deliveryWindowId,
+            DeliveryZoneId = deliveryZoneId,
+            CreatedByAppUserId = createdByAppUserId,
+            DayOfWeek = (int)DateTime.UtcNow.DayOfWeek,
+            StartTime = new TimeSpan(8, 0, 0),
+            EndTime = new TimeSpan(12, 0, 0),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = weeklyMenuId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            WeekStartDate = DateTime.UtcNow.Date,
+            SelectionDeadlineAt = DateTime.UtcNow.Date.AddDays(-1),
+            TotalRecipes = 1,
+            IsPublished = true,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            MealsCount = 3,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = mealSubscriptionId,
+            CompanyId = companyA,
+            CustomerId = customer,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-7),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSelections.Add(new MealSelection
+        {
+            Id = mealSelectionId,
+            MealSubscriptionId = mealSubscriptionId,
+            WeeklyMenuId = weeklyMenuId,
+            RecipeId = Guid.NewGuid(),
+            SelectedAutomatically = false,
+            SelectedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
 
         repository.Add(new Delivery
         {
@@ -47,7 +133,16 @@ public class RepositoryBehaviorTests
             AddressLine = "Street 1",
             City = "Tallinn",
             PostalCode = "10111",
-            Country = "EE"
+            Country = "EE",
+            DeliveryStatusId = deliveryStatusId,
+            WeeklyMenuId = weeklyMenuId,
+            DeliveryZoneId = deliveryZoneId,
+            DeliveryWindowId = deliveryWindowId,
+            BoxId = boxId,
+            MealSelectionId = mealSelectionId,
+            MealSubscriptionId = mealSubscriptionId,
+            CreatedByAppUserId = createdByAppUserId,
+            CreatedAt = DateTime.UtcNow
         });
 
         repository.Add(new Delivery
@@ -59,7 +154,16 @@ public class RepositoryBehaviorTests
             AddressLine = "Street 2",
             City = "Tartu",
             PostalCode = "51004",
-            Country = "EE"
+            Country = "EE",
+            DeliveryStatusId = deliveryStatusId,
+            WeeklyMenuId = weeklyMenuId,
+            DeliveryZoneId = deliveryZoneId,
+            DeliveryWindowId = deliveryWindowId,
+            BoxId = boxId,
+            MealSelectionId = mealSelectionId,
+            MealSubscriptionId = mealSubscriptionId,
+            CreatedByAppUserId = createdByAppUserId,
+            CreatedAt = DateTime.UtcNow
         });
 
         await ctx.SaveChangesAsync();
@@ -169,14 +273,161 @@ public class RepositoryBehaviorTests
         var companyB = Guid.NewGuid();
         var customerId = Guid.NewGuid();
 
+        var createdByAppUserId = Guid.NewGuid();
+        var deliveryStatusId = Guid.NewGuid();
+        var deliveryZoneId = Guid.NewGuid();
+        var deliveryWindowId = Guid.NewGuid();
+        var weeklyMenuId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var mealSubscriptionId = Guid.NewGuid();
+        var mealSelectionId = Guid.NewGuid();
+        var complaintStatusId = Guid.NewGuid();
+        var complaintTypeId = Guid.NewGuid();
+
+        ctx.DeliveryStatuses.Add(new DeliveryStatus
+        {
+            Id = deliveryStatusId,
+            Code = "scheduled",
+            Label = "Scheduled"
+        });
+
+        ctx.DeliveryZones.Add(new DeliveryZone
+        {
+            Id = deliveryZoneId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            Name = "Zone A",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.DeliveryWindows.Add(new DeliveryWindow
+        {
+            Id = deliveryWindowId,
+            DeliveryZoneId = deliveryZoneId,
+            CreatedByAppUserId = createdByAppUserId,
+            DayOfWeek = (int)DateTime.UtcNow.DayOfWeek,
+            StartTime = new TimeSpan(8, 0, 0),
+            EndTime = new TimeSpan(12, 0, 0),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = weeklyMenuId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            WeekStartDate = DateTime.UtcNow.Date,
+            SelectionDeadlineAt = DateTime.UtcNow.Date.AddDays(-1),
+            TotalRecipes = 1,
+            IsPublished = true,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyA,
+            CreatedByAppUserId = createdByAppUserId,
+            MealsCount = 3,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = mealSubscriptionId,
+            CompanyId = companyA,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-7),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSelections.Add(new MealSelection
+        {
+            Id = mealSelectionId,
+            MealSubscriptionId = mealSubscriptionId,
+            WeeklyMenuId = weeklyMenuId,
+            RecipeId = Guid.NewGuid(),
+            SelectedAutomatically = false,
+            SelectedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.QualityComplaintStatuses.Add(new QualityComplaintStatus
+        {
+            Id = complaintStatusId,
+            Code = "submitted",
+            Label = "Submitted"
+        });
+
+        ctx.QualityComplaintTypes.Add(new QualityComplaintType
+        {
+            Id = complaintTypeId,
+            Code = "missing",
+            Label = "Missing item"
+        });
+
+        var deliveryAId = Guid.NewGuid();
+        var deliveryBId = Guid.NewGuid();
+
+        ctx.Deliveries.AddRange(
+            new Delivery
+            {
+                Id = deliveryAId,
+                CompanyId = companyA,
+                CustomerId = customerId,
+                ScheduledTime = DateTime.UtcNow,
+                AddressLine = "Street 1",
+                City = "Tallinn",
+                PostalCode = "10111",
+                Country = "EE",
+                DeliveryStatusId = deliveryStatusId,
+                WeeklyMenuId = weeklyMenuId,
+                DeliveryZoneId = deliveryZoneId,
+                DeliveryWindowId = deliveryWindowId,
+                BoxId = boxId,
+                MealSelectionId = mealSelectionId,
+                MealSubscriptionId = mealSubscriptionId,
+                CreatedByAppUserId = createdByAppUserId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Delivery
+            {
+                Id = deliveryBId,
+                CompanyId = companyB,
+                CustomerId = customerId,
+                ScheduledTime = DateTime.UtcNow,
+                AddressLine = "Street 2",
+                City = "Tartu",
+                PostalCode = "51004",
+                Country = "EE",
+                DeliveryStatusId = deliveryStatusId,
+                WeeklyMenuId = weeklyMenuId,
+                DeliveryZoneId = deliveryZoneId,
+                DeliveryWindowId = deliveryWindowId,
+                BoxId = boxId,
+                MealSelectionId = mealSelectionId,
+                MealSubscriptionId = mealSubscriptionId,
+                CreatedByAppUserId = createdByAppUserId,
+                CreatedAt = DateTime.UtcNow
+            });
+
         repository.Add(new QualityComplaint
         {
             Id = Guid.NewGuid(),
             CompanyId = companyA,
             CustomerId = customerId,
-            DeliveryId = Guid.NewGuid(),
-            QualityComplaintTypeId = Guid.NewGuid(),
-            QualityComplaintStatusId = Guid.NewGuid(),
+            DeliveryId = deliveryAId,
+            QualityComplaintTypeId = complaintTypeId,
+            QualityComplaintStatusId = complaintStatusId,
             Severity = 1,
             Description = "Complaint A",
             CreatedAt = DateTime.UtcNow
@@ -187,9 +438,9 @@ public class RepositoryBehaviorTests
             Id = Guid.NewGuid(),
             CompanyId = companyB,
             CustomerId = customerId,
-            DeliveryId = Guid.NewGuid(),
-            QualityComplaintTypeId = Guid.NewGuid(),
-            QualityComplaintStatusId = Guid.NewGuid(),
+            DeliveryId = deliveryBId,
+            QualityComplaintTypeId = complaintTypeId,
+            QualityComplaintStatusId = complaintStatusId,
             Severity = 2,
             Description = "Complaint B",
             CreatedAt = DateTime.UtcNow
@@ -966,6 +1217,839 @@ public class RepositoryBehaviorTests
     }
 
     [Fact]
+    public async Task WeeklyMenuService_ApplyAutoSelectionAsync_SkipsExcludedIngredientsAndRanksByRating()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository, ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+
+        var recipeAId = Guid.NewGuid();
+        var recipeBId = Guid.NewGuid();
+        var recipeCId = Guid.NewGuid();
+
+        var ingredientAId = Guid.NewGuid();
+        var ingredientBId = Guid.NewGuid();
+        var ingredientCId = Guid.NewGuid();
+
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "customer@example.com",
+            FirstName = "Customer",
+            LastName = "One",
+            IsActive = true,
+            AddressLine = "Main",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 2,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = subscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-5),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Recipes.AddRange(
+            new Recipe
+            {
+                Id = recipeAId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Recipe A",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = recipeBId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Recipe B",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = recipeCId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Recipe C",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.Ingredients.AddRange(
+            new Ingredient
+            {
+                Id = ingredientAId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Ingredient A",
+                IsExclusionTag = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Ingredient
+            {
+                Id = ingredientBId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Ingredient B",
+                IsExclusionTag = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Ingredient
+            {
+                Id = ingredientCId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Ingredient C",
+                IsExclusionTag = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.RecipeIngredients.AddRange(
+            new RecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeAId,
+                IngredientId = ingredientAId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new RecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeBId,
+                IngredientId = ingredientBId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new RecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeCId,
+                IngredientId = ingredientCId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.NutritionalInfos.AddRange(
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeAId,
+                CaloriesKcal = 400,
+                ProteinG = 30,
+                CarbsG = 35,
+                FatG = 12,
+                FiberG = 6,
+                SodiumMg = 450,
+                CreatedAt = DateTime.UtcNow
+            },
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeBId,
+                CaloriesKcal = 420,
+                ProteinG = 28,
+                CarbsG = 38,
+                FatG = 14,
+                FiberG = 5,
+                SodiumMg = 480,
+                CreatedAt = DateTime.UtcNow
+            },
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipeCId,
+                CaloriesKcal = 430,
+                ProteinG = 25,
+                CarbsG = 40,
+                FatG = 15,
+                FiberG = 4,
+                SodiumMg = 500,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            WeekStartDate = weekStart,
+            SelectionDeadlineAt = weekStart.AddDays(-2),
+            TotalRecipes = 3,
+            IsPublished = true,
+            PublishedAt = weekStart.AddDays(-3),
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId,
+            WeeklyMenuRecipes = new List<WeeklyMenuRecipe>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = recipeAId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = recipeBId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = recipeCId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                }
+            }
+        });
+
+        ctx.CustomerExclusions.Add(new CustomerExclusion
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customerId,
+            IngredientId = ingredientCId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Ratings.AddRange(
+            new Rating
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = customerId,
+                RecipeId = recipeBId,
+                Score = 5,
+                RatedAt = DateTime.UtcNow.AddDays(-10),
+                Notes = "Great"
+            },
+            new Rating
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = customerId,
+                RecipeId = recipeAId,
+                Score = 4,
+                RatedAt = DateTime.UtcNow.AddDays(-9),
+                Notes = "Good"
+            });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.ApplyAutoSelectionAsync(companyId, new WeeklyMenuAutoSelectionRequestDto
+        {
+            MealSubscriptionId = subscriptionId,
+            WeekStartDate = weekStart,
+            CurrentUtc = weekStart.AddDays(-1)
+        });
+
+        Assert.True(result.AutoSelectionApplied);
+        Assert.Equal(2, result.SelectedMealCount);
+        Assert.DoesNotContain(recipeCId, result.SelectedRecipeIds);
+        Assert.Contains(recipeBId, result.SelectedRecipeIds);
+        Assert.Contains(recipeAId, result.SelectedRecipeIds);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_ApplyAutoSelectionAsync_StopsWhenDeadlineNotPassed()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository, ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "customer2@example.com",
+            FirstName = "Customer",
+            LastName = "Two",
+            IsActive = true,
+            AddressLine = "Main",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 2,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = subscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-1),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            WeekStartDate = weekStart,
+            SelectionDeadlineAt = weekStart.AddDays(1),
+            TotalRecipes = 0,
+            IsPublished = true,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.ApplyAutoSelectionAsync(companyId, new WeeklyMenuAutoSelectionRequestDto
+        {
+            MealSubscriptionId = subscriptionId,
+            WeekStartDate = weekStart,
+            CurrentUtc = weekStart
+        });
+
+        Assert.False(result.DeadlinePassed);
+        Assert.False(result.AutoSelectionApplied);
+        Assert.Equal(0, result.SelectedMealCount);
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_ApplyAutoSelectionAsync_ExcludesRecentSelectionsWithinLookback()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository, ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+        var previousWeekStart = weekStart.AddDays(-7);
+
+        var recipeAId = Guid.NewGuid();
+        var recipeBId = Guid.NewGuid();
+
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "customer3@example.com",
+            FirstName = "Customer",
+            LastName = "Three",
+            IsActive = true,
+            AddressLine = "Main",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 1,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = subscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-10),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Recipes.AddRange(
+            new Recipe
+            {
+                Id = recipeAId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Recipe A",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = recipeBId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Recipe B",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        var previousMenu = new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            WeekStartDate = previousWeekStart,
+            SelectionDeadlineAt = previousWeekStart.AddDays(-2),
+            TotalRecipes = 1,
+            IsPublished = true,
+            PublishedAt = previousWeekStart.AddDays(-3),
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId
+        };
+
+        ctx.WeeklyMenus.AddRange(
+            previousMenu,
+            new WeeklyMenu
+            {
+                Id = Guid.NewGuid(),
+                CompanyId = companyId,
+                WeekStartDate = weekStart,
+                SelectionDeadlineAt = weekStart.AddDays(-2),
+                TotalRecipes = 2,
+                IsPublished = true,
+                PublishedAt = weekStart.AddDays(-3),
+                CreatedAt = DateTime.UtcNow,
+                CreatedByAppUserId = actorId,
+                WeeklyMenuRecipes = new List<WeeklyMenuRecipe>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        RecipeId = recipeAId,
+                        CreatedByAppUserId = actorId,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        RecipeId = recipeBId,
+                        CreatedByAppUserId = actorId,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                }
+            });
+        ctx.MealSelections.Add(new MealSelection
+        {
+            Id = Guid.NewGuid(),
+            MealSubscriptionId = subscriptionId,
+            WeeklyMenuId = previousMenu.Id,
+            RecipeId = recipeBId,
+            SelectedAutomatically = true,
+            SelectedAt = previousWeekStart,
+            CreatedAt = previousWeekStart
+        });
+
+        weeklyMenuRepository.AddRuleConfig(new WeeklyMenuRuleConfig
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            RecipesPerCategory = 2,
+            NoRepeatWeeks = 8,
+            SelectionDeadlineDaysBeforeWeekStart = 2,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.ApplyAutoSelectionAsync(companyId, new WeeklyMenuAutoSelectionRequestDto
+        {
+            MealSubscriptionId = subscriptionId,
+            WeekStartDate = weekStart,
+            CurrentUtc = weekStart.AddDays(-1)
+        });
+
+        Assert.True(result.AutoSelectionApplied);
+        Assert.Single(result.SelectedRecipeIds);
+        Assert.Equal(recipeAId, result.SelectedRecipeIds.Single());
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_ApplyAutoSelectionAsync_RespectsPreferenceCategories()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository, ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+
+        var preferredCategoryId = Guid.NewGuid();
+        var otherCategoryId = Guid.NewGuid();
+
+        var preferredRecipeId = Guid.NewGuid();
+        var otherRecipeId = Guid.NewGuid();
+
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "pref@example.com",
+            FirstName = "Pref",
+            LastName = "Customer",
+            IsActive = true,
+            AddressLine = "Main",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 1,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = subscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-5),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.DietaryCategories.AddRange(
+            new DietaryCategory
+            {
+                Id = preferredCategoryId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Code = "pref",
+                Name = "Preferred",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new DietaryCategory
+            {
+                Id = otherCategoryId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Code = "other",
+                Name = "Other",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.Recipes.AddRange(
+            new Recipe
+            {
+                Id = preferredRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Preferred recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = otherRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Other recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.RecipeDietaryCategories.AddRange(
+            new RecipeDietaryCategory
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = preferredRecipeId,
+                DietaryCategoryId = preferredCategoryId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new RecipeDietaryCategory
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = otherRecipeId,
+                DietaryCategoryId = otherCategoryId,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            WeekStartDate = weekStart,
+            SelectionDeadlineAt = weekStart.AddDays(-2),
+            TotalRecipes = 2,
+            IsPublished = true,
+            PublishedAt = weekStart.AddDays(-3),
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId,
+            WeeklyMenuRecipes = new List<WeeklyMenuRecipe>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = preferredRecipeId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = otherRecipeId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                }
+            }
+        });
+
+        ctx.CustomerPreferences.Add(new CustomerPreference
+        {
+            Id = Guid.NewGuid(),
+            CustomerId = customerId,
+            DietaryCategoryId = preferredCategoryId,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.ApplyAutoSelectionAsync(companyId, new WeeklyMenuAutoSelectionRequestDto
+        {
+            MealSubscriptionId = subscriptionId,
+            WeekStartDate = weekStart,
+            CurrentUtc = weekStart.AddDays(-1)
+        });
+
+        Assert.True(result.AutoSelectionApplied);
+        Assert.Single(result.SelectedRecipeIds);
+        Assert.Equal(preferredRecipeId, result.SelectedRecipeIds.Single());
+    }
+
+    [Fact]
+    public async Task WeeklyMenuService_ApplyAutoSelectionAsync_RespectsNutritionFilter()
+    {
+        await using var ctx = CreateContext();
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var service = new WeeklyMenuService(weeklyMenuRepository, ctx);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var subscriptionId = Guid.NewGuid();
+        var weekStart = new DateTime(2026, 03, 09, 0, 0, 0, DateTimeKind.Utc);
+
+        var inRangeRecipeId = Guid.NewGuid();
+        var outOfRangeRecipeId = Guid.NewGuid();
+
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "nutrition@example.com",
+            FirstName = "Nutrition",
+            LastName = "Customer",
+            IsActive = true,
+            AddressLine = "Main",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 1,
+            PeopleCount = 2,
+            DisplayName = "Standard",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = subscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-5),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        ctx.Recipes.AddRange(
+            new Recipe
+            {
+                Id = inRangeRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "In-range recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = outOfRangeRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Out-of-range recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.NutritionalInfos.AddRange(
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = inRangeRecipeId,
+                CaloriesKcal = 450,
+                ProteinG = 30,
+                CarbsG = 40,
+                FatG = 15,
+                FiberG = 6,
+                SodiumMg = 500,
+                CreatedAt = DateTime.UtcNow
+            },
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = outOfRangeRecipeId,
+                CaloriesKcal = 650,
+                ProteinG = 10,
+                CarbsG = 70,
+                FatG = 25,
+                FiberG = 2,
+                SodiumMg = 900,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            WeekStartDate = weekStart,
+            SelectionDeadlineAt = weekStart.AddDays(-2),
+            TotalRecipes = 2,
+            IsPublished = true,
+            PublishedAt = weekStart.AddDays(-3),
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId,
+            WeeklyMenuRecipes = new List<WeeklyMenuRecipe>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = inRangeRecipeId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    RecipeId = outOfRangeRecipeId,
+                    CreatedByAppUserId = actorId,
+                    CreatedAt = DateTime.UtcNow
+                }
+            }
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await service.ApplyAutoSelectionAsync(companyId, new WeeklyMenuAutoSelectionRequestDto
+        {
+            MealSubscriptionId = subscriptionId,
+            WeekStartDate = weekStart,
+            CurrentUtc = weekStart.AddDays(-1),
+            NutritionFilter = new NutritionFilterDto
+            {
+                MinCaloriesKcal = 300,
+                MaxCaloriesKcal = 500,
+                MinProteinG = 20,
+                MaxProteinG = 40
+            }
+        });
+
+        Assert.True(result.AutoSelectionApplied);
+        Assert.Single(result.SelectedRecipeIds);
+        Assert.Equal(inRangeRecipeId, result.SelectedRecipeIds.Single());
+    }
+
+    [Fact]
     public async Task IngredientService_UpsertCatalogItemAsync_EnforcesUniqueNamePerTenant()
     {
         await using var ctx = CreateContext();
@@ -1189,6 +2273,109 @@ public class RepositoryBehaviorTests
 
         Assert.Equal(250, tracked.CaloriesKcal);
         Assert.Equal(18, tracked.ProteinG);
+    }
+
+    [Fact]
+    public async Task RecipeRepository_GetAllByCompanyIdWithNutritionFilterAsync_FiltersByNutritionRanges()
+    {
+        await using var ctx = CreateContext();
+        var repository = new RecipeRepository(ctx);
+
+        var companyId = Guid.NewGuid();
+        var otherCompanyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+
+        var inRangeRecipeId = Guid.NewGuid();
+        var outOfRangeRecipeId = Guid.NewGuid();
+        var noNutritionRecipeId = Guid.NewGuid();
+
+        ctx.Recipes.AddRange(
+            new Recipe
+            {
+                Id = inRangeRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "In-range recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = outOfRangeRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "Out-of-range recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = noNutritionRecipeId,
+                CompanyId = companyId,
+                CreatedByAppUserId = actorId,
+                Name = "No nutrition recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Recipe
+            {
+                Id = Guid.NewGuid(),
+                CompanyId = otherCompanyId,
+                CreatedByAppUserId = actorId,
+                Name = "Other company recipe",
+                DefaultServings = 2,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        ctx.NutritionalInfos.AddRange(
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = inRangeRecipeId,
+                CaloriesKcal = 450,
+                ProteinG = 30,
+                CarbsG = 40,
+                FatG = 15,
+                FiberG = 6,
+                SodiumMg = 500,
+                CreatedAt = DateTime.UtcNow
+            },
+            new NutritionalInfo
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = outOfRangeRecipeId,
+                CaloriesKcal = 750,
+                ProteinG = 10,
+                CarbsG = 80,
+                FatG = 30,
+                FiberG = 2,
+                SodiumMg = 900,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await repository.GetAllByCompanyIdWithNutritionFilterAsync(
+            companyId,
+            minCaloriesKcal: 300,
+            maxCaloriesKcal: 500,
+            minProteinG: 20,
+            maxProteinG: 40,
+            minCarbsG: 30,
+            maxCarbsG: 60,
+            minFatG: 10,
+            maxFatG: 20,
+            minFiberG: 5,
+            maxFiberG: 10,
+            minSodiumMg: 400,
+            maxSodiumMg: 700);
+
+        Assert.Single(result);
+        Assert.Equal(inRangeRecipeId, result.First().Id);
     }
 
     [Fact]

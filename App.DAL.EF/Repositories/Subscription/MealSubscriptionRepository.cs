@@ -37,4 +37,31 @@ public class MealSubscriptionRepository : BaseRepository<MealSubscription, AppDb
             .Where(ms => ms.CustomerId == customerId && ms.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<MealSubscription>> GetAllByCustomerIdsAsync(IReadOnlyCollection<Guid> customerIds)
+    {
+        if (customerIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await RepositoryDbSet
+            .Include(ms => ms.Box)
+            .Include(ms => ms.Customer)
+            .Where(ms => customerIds.Contains(ms.CustomerId) && ms.DeletedAt == null)
+            .OrderByDescending(ms => ms.IsActive)
+            .ThenByDescending(ms => ms.StartDate)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<ICollection<Guid>> GetDistinctCompanyIdsByCustomerIdAsync(Guid customerId)
+    {
+        return await RepositoryDbSet
+            .Where(ms => ms.CustomerId == customerId && ms.IsActive && ms.DeletedAt == null)
+            .Select(ms => ms.CompanyId)
+            .Distinct()
+            .ToListAsync();
+    }
 }

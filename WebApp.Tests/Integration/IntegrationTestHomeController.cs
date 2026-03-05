@@ -15,6 +15,7 @@ public class IntegrationTestHomeController : IClassFixture<CustomWebApplicationF
     public IntegrationTestHomeController(CustomWebApplicationFactory<Program> factory)
     {
         _factory = factory;
+        CustomWebApplicationFactory<Program>.UseTestAuth = false;
         _client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false

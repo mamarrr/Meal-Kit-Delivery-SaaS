@@ -29,6 +29,17 @@ public class QualityComplaintService : BaseTenantService<QualityComplaint, IQual
         return await Repository.GetAllByCustomerIdAsync(customerId, companyId);
     }
 
+    public async Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await Repository.GetAllByCustomerIdAsync(customerId);
+    }
+
+    public async Task<QualityComplaint?> GetByIdAsync(Guid id, Guid customerId)
+    {
+        var complaint = await Repository.GetByIdAsync(id);
+        return complaint != null && complaint.CustomerId == customerId ? complaint : null;
+    }
+
     public override async Task<QualityComplaint> AddAsync(QualityComplaint entity, Guid companyId)
     {
         await ValidateTenantReferencesAsync(entity, companyId);

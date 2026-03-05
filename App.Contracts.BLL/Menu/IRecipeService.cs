@@ -40,5 +40,13 @@ public interface IRecipeService : ITenantEntityService<Recipe>
     Task<RecipeEditorDto?> GetRecipeEditorAsync(Guid companyId, Guid recipeId);
     Task<RecipeEditorDto> UpsertRecipeEditorAsync(Guid companyId, Guid actorId, RecipeEditorUpsertDto dto);
     Task RemoveRecipeAsync(Guid companyId, Guid recipeId);
+
+    /// <summary>
+    /// Gets recipes with optional nutrition filtering.
+    /// </summary>
+    /// <param name="companyId">The company ID.</param>
+    /// <param name="nutritionFilter">Optional nutrition filter criteria.</param>
+    /// <returns>Collection of recipe list items matching the nutrition criteria.</returns>
+    Task<ICollection<RecipeListItemDto>> GetRecipesWithNutritionFilterAsync(Guid companyId, NutritionFilterDto? nutritionFilter);
 }
 

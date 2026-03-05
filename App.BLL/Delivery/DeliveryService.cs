@@ -51,6 +51,17 @@ public class DeliveryService : BaseTenantService<DeliveryEntity, IDeliveryReposi
         return await Repository.GetAllByCustomerIdAsync(customerId, companyId);
     }
 
+    public async Task<ICollection<DeliveryEntity>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await Repository.GetAllByCustomerIdAsync(customerId);
+    }
+
+    public async Task<DeliveryEntity?> GetByIdAsync(Guid id, Guid customerId)
+    {
+        var delivery = await Repository.GetByIdAsync(id);
+        return delivery != null && delivery.CustomerId == customerId ? delivery : null;
+    }
+
     public async Task<ICollection<DeliveryEntity>> GetAllByCompanyAndScheduledDateAsync(Guid companyId, DateTime scheduledDateUtc)
     {
         return await Repository.GetAllByCompanyAndScheduledDateAsync(companyId, scheduledDateUtc);

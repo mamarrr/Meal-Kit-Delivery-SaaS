@@ -12,6 +12,8 @@ public interface IWeeklyMenuService : ITenantEntityService<WeeklyMenu>
     Task<WeeklyMenuAssignmentResultDto> RemoveWeeklyAssignmentAsync(Guid companyId, Guid weeklyMenuRecipeId);
 
     Task<WeeklyMenuSimulationResultDto> SimulateAutoSelectionAsync(Guid companyId, WeeklyMenuSimulationRequestDto dto);
+
+    Task<WeeklyMenuAutoSelectionResultDto> ApplyAutoSelectionAsync(Guid companyId, WeeklyMenuAutoSelectionRequestDto dto);
 }
 
 public sealed class WeeklyMenuRuleConfigDto
@@ -85,5 +87,25 @@ public sealed class WeeklyMenuSimulationExclusionDto
     public Guid RecipeId { get; init; }
     public string RecipeName { get; init; } = string.Empty;
     public string Reason { get; init; } = string.Empty;
+}
+
+public sealed class WeeklyMenuAutoSelectionRequestDto
+{
+    public Guid MealSubscriptionId { get; init; }
+    public DateTime WeekStartDate { get; init; }
+    public DateTime? CurrentUtc { get; init; }
+    public NutritionFilterDto? NutritionFilter { get; init; }
+}
+
+public sealed class WeeklyMenuAutoSelectionResultDto
+{
+    public Guid MealSubscriptionId { get; init; }
+    public DateTime WeekStartDate { get; init; }
+    public bool DeadlinePassed { get; init; }
+    public bool AutoSelectionApplied { get; init; }
+    public int RequiredMealCount { get; init; }
+    public int SelectedMealCount { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public IReadOnlyCollection<Guid> SelectedRecipeIds { get; init; } = [];
 }
 

@@ -105,6 +105,11 @@ public class DietaryCategoryService : BaseTenantService<DietaryCategory, IDietar
         await UpdateAsync(existing, companyId);
     }
 
+    public async Task<ICollection<DietaryCategory>> GetAllByCompanyIdsAsync(IEnumerable<Guid> companyIds)
+    {
+        return await Repository.GetAllByCompanyIdsAsync(companyIds);
+    }
+
     private static DietaryCategoryCatalogItemDto ToCatalogItem(DietaryCategory category)
     {
         return new DietaryCategoryCatalogItemDto

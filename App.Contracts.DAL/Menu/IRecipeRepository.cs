@@ -52,4 +52,36 @@ public interface IRecipeRepository : IRepository<Recipe>
     /// <param name="nutritionalInfo">Entity to update.</param>
     /// <returns>Updated nutritional info entity.</returns>
     NutritionalInfo UpdateNutritionalInfo(NutritionalInfo nutritionalInfo);
+
+    /// <summary>
+    /// Gets recipes with optional nutrition filtering.
+    /// </summary>
+    /// <param name="companyId">The company ID.</param>
+    /// <param name="minCaloriesKcal">Minimum calories (kcal).</param>
+    /// <param name="maxCaloriesKcal">Maximum calories (kcal).</param>
+    /// <param name="minProteinG">Minimum protein (g).</param>
+    /// <param name="maxProteinG">Maximum protein (g).</param>
+    /// <param name="minCarbsG">Minimum carbs (g).</param>
+    /// <param name="maxCarbsG">Maximum carbs (g).</param>
+    /// <param name="minFatG">Minimum fat (g).</param>
+    /// <param name="maxFatG">Maximum fat (g).</param>
+    /// <param name="minFiberG">Minimum fiber (g).</param>
+    /// <param name="maxFiberG">Maximum fiber (g).</param>
+    /// <param name="minSodiumMg">Minimum sodium (mg).</param>
+    /// <param name="maxSodiumMg">Maximum sodium (mg).</param>
+    /// <returns>Collection of recipes matching the nutrition criteria.</returns>
+    Task<ICollection<Recipe>> GetAllByCompanyIdWithNutritionFilterAsync(
+        Guid companyId,
+        decimal? minCaloriesKcal = null,
+        decimal? maxCaloriesKcal = null,
+        decimal? minProteinG = null,
+        decimal? maxProteinG = null,
+        decimal? minCarbsG = null,
+        decimal? maxCarbsG = null,
+        decimal? minFatG = null,
+        decimal? maxFatG = null,
+        decimal? minFiberG = null,
+        decimal? maxFiberG = null,
+        decimal? minSodiumMg = null,
+        decimal? maxSodiumMg = null);
 }

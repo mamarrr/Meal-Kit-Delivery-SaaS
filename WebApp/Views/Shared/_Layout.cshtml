@@ -109,6 +109,50 @@
         });
     }
 
+    if (hasCustomerAccess
+        && string.Equals(activeContext, ActiveUserSelectionHelper.CustomerContext, StringComparison.OrdinalIgnoreCase))
+    {
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Discover",
+            Controller = "CustomerSubscriptions",
+            Action = "Discover",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Manage Subscriptions",
+            Controller = "CustomerSubscriptions",
+            Action = "Manage",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Preferences & Exclusions",
+            Controller = "CustomerPreferences",
+            Action = "Preferences",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Deliveries",
+            Controller = "CustomerDeliveries",
+            Action = "Index",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Complaints",
+            Controller = "CustomerComplaints",
+            Action = "Index",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+    }
+
 <div class="app-shell">
     <partial name="_SidebarNavigation" model="sidebarItems" />
 

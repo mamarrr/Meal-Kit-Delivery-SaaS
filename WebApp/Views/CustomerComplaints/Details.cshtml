@@ -1,0 +1,45 @@
+@model WebApp.ViewModels.Delivery.CustomerComplaintDetailsViewModel
+@{
+    ViewData["Title"] = "Complaint Details";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Complaint Details</h1>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to complaints</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Complaint @Model.ComplaintId.ToString()[..8]</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Delivery</dt>
+                <dd class="col-sm-8">@Model.DeliveryId.ToString()[..8]</dd>
+
+                <dt class="col-sm-4">Type</dt>
+                <dd class="col-sm-8">@Model.TypeLabel</dd>
+
+                <dt class="col-sm-4">Status</dt>
+                <dd class="col-sm-8">@Model.StatusLabel</dd>
+
+                <dt class="col-sm-4">Severity</dt>
+                <dd class="col-sm-8">@Model.Severity</dd>
+
+                <dt class="col-sm-4">Description</dt>
+                <dd class="col-sm-8">@Model.Description</dd>
+
+                <dt class="col-sm-4">Created</dt>
+                <dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                <dt class="col-sm-4">Updated</dt>
+                <dd class="col-sm-8">@(Model.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+
+                <dt class="col-sm-4">Escalated</dt>
+                <dd class="col-sm-8">@(Model.EscalatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+
+                <dt class="col-sm-4">Escalation action</dt>
+                <dd class="col-sm-8">@(Model.EscalationAction ?? "-")</dd>
+            </dl>
+        </div>
+    </div>
+</div>

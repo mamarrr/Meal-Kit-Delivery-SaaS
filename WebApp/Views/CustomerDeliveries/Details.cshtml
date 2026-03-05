@@ -1,0 +1,44 @@
+@model WebApp.ViewModels.Delivery.CustomerDeliveryDetailsViewModel
+@{
+    ViewData["Title"] = "Delivery Details";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Delivery Details</h1>
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to deliveries</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Delivery @Model.DeliveryId.ToString()[..8]</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Scheduled</dt>
+                <dd class="col-sm-8">@Model.ScheduledTime.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                <dt class="col-sm-4">Status</dt>
+                <dd class="col-sm-8">@Model.StatusLabel</dd>
+
+                <dt class="col-sm-4">Delivered at</dt>
+                <dd class="col-sm-8">@(Model.DeliveredAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+
+                <dt class="col-sm-4">Box</dt>
+                <dd class="col-sm-8">@Model.BoxName (@Model.MealsCount x @Model.PeopleCount)</dd>
+
+                <dt class="col-sm-4">Window</dt>
+                <dd class="col-sm-8">@(Model.WindowLabel ?? "-")</dd>
+
+                <dt class="col-sm-4">Address</dt>
+                <dd class="col-sm-8">@Model.AddressLine, @Model.City, @Model.PostalCode, @Model.Country</dd>
+
+                <dt class="col-sm-4">Failure reason</dt>
+                <dd class="col-sm-8">@(Model.FailureReason ?? "-")</dd>
+            </dl>
+        </div>
+        <div class="card-footer text-end">
+            <a class="btn btn-outline-primary" asp-controller="CustomerComplaints" asp-action="Create" asp-route-deliveryId="@Model.DeliveryId">
+                Report an issue
+            </a>
+        </div>
+    </div>
+</div>

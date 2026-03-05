@@ -10,6 +10,7 @@ using App.Contracts.BLL.Identity;
 using App.Contracts.BLL.Menu;
 using App.Contracts.BLL.Subscription;
 using App.Contracts.BLL.Support;
+using App.Contracts.DAL.Menu;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace App.BLL;
@@ -30,7 +31,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDietaryCategoryService, DietaryCategoryService>();
         services.AddScoped<ICustomerPreferenceService, CustomerPreferenceService>();
         services.AddScoped<ICustomerExclusionService, CustomerExclusionService>();
-        services.AddScoped<IWeeklyMenuService, WeeklyMenuService>();
+        services.AddScoped<IWeeklyMenuService>(sp =>
+            new WeeklyMenuService(
+                sp.GetRequiredService<IWeeklyMenuRepository>(),
+                sp.GetRequiredService<App.DAL.EF.AppDbContext>()));
         services.AddScoped<IMealSelectionService, MealSelectionService>();
 
         services.AddScoped<IDeliveryService, DeliveryService>();

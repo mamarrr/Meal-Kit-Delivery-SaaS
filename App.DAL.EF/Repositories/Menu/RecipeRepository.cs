@@ -184,4 +184,67 @@ public class RecipeRepository : BaseRepository<Recipe, AppDbContext>, IRecipeRep
 
         return RepositoryDbContext.NutritionalInfos.Update(nutritionalInfo).Entity;
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<Recipe>> GetAllByCompanyIdWithNutritionFilterAsync(
+        Guid companyId,
+        decimal? minCaloriesKcal = null,
+        decimal? maxCaloriesKcal = null,
+        decimal? minProteinG = null,
+        decimal? maxProteinG = null,
+        decimal? minCarbsG = null,
+        decimal? maxCarbsG = null,
+        decimal? minFatG = null,
+        decimal? maxFatG = null,
+        decimal? minFiberG = null,
+        decimal? maxFiberG = null,
+        decimal? minSodiumMg = null,
+        decimal? maxSodiumMg = null)
+    {
+        var query = RepositoryDbSet
+            .Include(r => r.NutritionalInfo)
+            .Include(r => r.RecipeIngredients!)
+                .ThenInclude(ri => ri.Ingredient)
+            .Include(r => r.RecipeDietaryCategories!)
+                .ThenInclude(rd => rd.DietaryCategory)
+            .Where(r => r.CompanyId == companyId && r.DeletedAt == null);
+
+        // Apply nutrition filters using LEFT JOIN to NutritionalInfo
+        if (minCaloriesKcal.HasValue || maxCaloriesKcal.HasValue ||
+            minProteinG.HasValue || maxProteinG.HasValue ||
+            minCarbsG.HasValue || maxCarbsG.HasValue ||
+            minFatG.HasValue || maxFatG.HasValue ||
+            minFiberG.HasValue || maxFiberG.HasValue ||
+            minSodiumMg.HasValue || maxSodiumMg.HasValue)
+        {
+            query = query.Where(r => r.NutritionalInfo != null);
+
+            if (minCaloriesKcal.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.CaloriesKcal >= minCaloriesKcal.Value);
+            if (maxCaloriesKcal.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.CaloriesKcal <= maxCaloriesKcal.Value);
+            if (minProteinG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.ProteinG >= minProteinG.Value);
+            if (maxProteinG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.ProteinG <= maxProteinG.Value);
+            if (minCarbsG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.CarbsG >= minCarbsG.Value);
+            if (maxCarbsG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.CarbsG <= maxCarbsG.Value);
+            if (minFatG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.FatG >= minFatG.Value);
+            if (maxFatG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.FatG <= maxFatG.Value);
+            if (minFiberG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.FiberG >= minFiberG.Value);
+            if (maxFiberG.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.FiberG <= maxFiberG.Value);
+            if (minSodiumMg.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.SodiumMg >= minSodiumMg.Value);
+            if (maxSodiumMg.HasValue)
+                query = query.Where(r => r.NutritionalInfo!.SodiumMg <= maxSodiumMg.Value);
+        }
+
+        return await query.OrderBy(r => r.Name).ToListAsync();
+    }
 }

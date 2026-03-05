@@ -10,6 +10,25 @@ public sealed class RecipeNutritionDto
     public decimal SodiumMg { get; init; }
 }
 
+/// <summary>
+/// DTO for nutrition-based filtering with min/max range constraints.
+/// </summary>
+public sealed class NutritionFilterDto
+{
+    public decimal? MinCaloriesKcal { get; init; }
+    public decimal? MaxCaloriesKcal { get; init; }
+    public decimal? MinProteinG { get; init; }
+    public decimal? MaxProteinG { get; init; }
+    public decimal? MinCarbsG { get; init; }
+    public decimal? MaxCarbsG { get; init; }
+    public decimal? MinFatG { get; init; }
+    public decimal? MaxFatG { get; init; }
+    public decimal? MinFiberG { get; init; }
+    public decimal? MaxFiberG { get; init; }
+    public decimal? MinSodiumMg { get; init; }
+    public decimal? MaxSodiumMg { get; init; }
+}
+
 public sealed class RecipeListItemDto
 {
     public Guid RecipeId { get; init; }

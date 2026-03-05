@@ -15,6 +15,13 @@ public interface IIngredientRepository : IRepository<Ingredient>
     /// <returns>A collection of ingredients belonging to the company.</returns>
     Task<ICollection<Ingredient>> GetAllByCompanyIdAsync(Guid companyId);
 
+    /// <summary>
+    /// Gets all ingredients for a collection of companies.
+    /// </summary>
+    /// <param name="companyIds">The company IDs.</param>
+    /// <returns>A collection of ingredients belonging to the companies.</returns>
+    Task<ICollection<Ingredient>> GetAllByCompanyIdsAsync(IEnumerable<Guid> companyIds);
+
     Task<Ingredient?> GetByNameAsync(Guid companyId, string name);
     Task<ICollection<Ingredient>> GetByIdsAsync(Guid companyId, ICollection<Guid> ids);
 }

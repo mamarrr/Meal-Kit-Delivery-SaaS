@@ -1,0 +1,100 @@
+@model WebApp.ViewModels.Subscription.ManageSubscriptionsViewModel
+@{
+    ViewData["Title"] = "Manage Subscriptions";
+}
+
+<div class="container py-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h3 mb-0">Manage Subscriptions</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" asp-controller="CustomerPreferences" asp-action="Preferences">
+                Preferences & Exclusions
+            </a>
+            <a class="btn btn-outline-secondary" asp-controller="CustomerDeliveries" asp-action="Index">
+                Deliveries
+            </a>
+            <a class="btn btn-outline-secondary" asp-controller="CustomerComplaints" asp-action="Index">
+                Complaints
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                    <tr>
+                        <th>Subscription</th>
+                        <th>Status</th>
+                        <th>Start</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Subscriptions)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                            <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
+                            <td class="text-end">
+                                <a class="btn btn-sm btn-outline-primary"
+                                   asp-action="Manage"
+                                   asp-route-selectedSubscriptionId="@item.Id">Details</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            @if (Model.SelectedSubscription != null)
+            {
+                <div class="card">
+                    <div class="card-header">Subscription Details</div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Id</dt>
+                            <dd class="col-sm-8">@Model.SelectedSubscription.Id</dd>
+
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8">@(Model.SelectedSubscription.IsActive ? "Active" : "Inactive")</dd>
+
+                            <dt class="col-sm-4">Start</dt>
+                            <dd class="col-sm-8">@Model.SelectedSubscription.StartDate.ToString("yyyy-MM-dd")</dd>
+
+                            <dt class="col-sm-4">End</dt>
+                            <dd class="col-sm-8">@(Model.SelectedSubscription.EndDate?.ToString("yyyy-MM-dd") ?? "-")</dd>
+                        </dl>
+                    </div>
+                    <div class="card-footer text-end">
+                        @if (Model.SelectedSubscription.IsActive)
+                        {
+                            <form asp-action="Unsubscribe" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subscriptionId" value="@Model.SelectedSubscription.Id" />
+                                <button type="submit" class="btn btn-danger">Unsubscribe</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">No subscription selected.</div>
+            }
+        </div>
+    </div>
+</div>
+

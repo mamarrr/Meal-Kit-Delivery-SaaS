@@ -9,5 +9,12 @@ public interface ICustomerPreferenceService : IBaseEntityService<CustomerPrefere
     Task<CustomerPreference> AddAsync(CustomerPreference entity, Guid companyId);
     Task<CustomerPreference> UpdateAsync(CustomerPreference entity, Guid companyId);
     Task<CustomerPreference> RemoveAsync(Guid id, Guid companyId);
+    
+    /// <summary>
+    /// Gets all preferences for a specific customer.
+    /// </summary>
+    /// <param name="customerId">The customer ID.</param>
+    /// <returns>A collection of customer preferences.</returns>
+    Task<ICollection<CustomerPreference>> GetAllByCustomerIdAsync(Guid customerId);
 }
 

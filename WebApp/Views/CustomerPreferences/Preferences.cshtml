@@ -1,0 +1,153 @@
+@model WebApp.ViewModels.Subscription.CustomerPreferencesViewModel
+@{
+    ViewData["Title"] = "Preferences & Exclusions";
+}
+
+<div class="container py-3">
+    <h1 class="h3 mb-3">Preferences & Exclusions</h1>
+
+    <div class="d-flex gap-2 mb-3">
+        <a class="btn btn-outline-secondary" asp-controller="CustomerSubscriptions" asp-action="Discover">Discover</a>
+        <a class="btn btn-outline-secondary" asp-controller="CustomerSubscriptions" asp-action="Manage">Manage</a>
+        <a class="btn btn-outline-secondary" asp-controller="CustomerDeliveries" asp-action="Index">Deliveries</a>
+        <a class="btn btn-outline-secondary" asp-controller="CustomerComplaints" asp-action="Index">Complaints</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <form asp-action="Preferences" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">Dietary preferences</div>
+                    <div class="card-body">
+                        @if (Model.AvailableDietaryCategories.Count == 0)
+                        {
+                            <div class="text-muted">No dietary categories available for your subscriptions.</div>
+                        }
+                        else
+                        {
+                            foreach (var category in Model.AvailableDietaryCategories)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="SelectedPreferenceIds"
+                                           value="@category.Id"
+                                           checked="@(Model.SelectedPreferenceIds.Contains(category.Id))"
+                                           id="pref-@category.Id" />
+                                    <label class="form-check-label" for="pref-@category.Id">
+                                        @category.Name
+                                    </label>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">Ingredient exclusions</div>
+                    <div class="card-body">
+                        @if (Model.AvailableIngredients.Count == 0)
+                        {
+                            <div class="text-muted">No ingredients available for your subscriptions.</div>
+                        }
+                        else
+                        {
+                            <div class="row">
+                                @foreach (var ingredient in Model.AvailableIngredients)
+                                {
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   name="SelectedExclusionIds"
+                                                   value="@ingredient.Id"
+                                                   checked="@(Model.SelectedExclusionIds.Contains(ingredient.Id))"
+                                                   id="ex-@ingredient.Id" />
+                                            <label class="form-check-label" for="ex-@ingredient.Id">
+                                                @ingredient.Name
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">Nutrition filter (per serving)</div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-2">
+                        <label class="form-label">Min kcal</label>
+                        <input class="form-control" name="MinCaloriesKcal" type="number" step="0.1" value="@Model.MinCaloriesKcal" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max kcal</label>
+                        <input class="form-control" name="MaxCaloriesKcal" type="number" step="0.1" value="@Model.MaxCaloriesKcal" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min protein (g)</label>
+                        <input class="form-control" name="MinProteinG" type="number" step="0.1" value="@Model.MinProteinG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max protein (g)</label>
+                        <input class="form-control" name="MaxProteinG" type="number" step="0.1" value="@Model.MaxProteinG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min carbs (g)</label>
+                        <input class="form-control" name="MinCarbsG" type="number" step="0.1" value="@Model.MinCarbsG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max carbs (g)</label>
+                        <input class="form-control" name="MaxCarbsG" type="number" step="0.1" value="@Model.MaxCarbsG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min fat (g)</label>
+                        <input class="form-control" name="MinFatG" type="number" step="0.1" value="@Model.MinFatG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max fat (g)</label>
+                        <input class="form-control" name="MaxFatG" type="number" step="0.1" value="@Model.MaxFatG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min fiber (g)</label>
+                        <input class="form-control" name="MinFiberG" type="number" step="0.1" value="@Model.MinFiberG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max fiber (g)</label>
+                        <input class="form-control" name="MaxFiberG" type="number" step="0.1" value="@Model.MaxFiberG" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Min sodium (mg)</label>
+                        <input class="form-control" name="MinSodiumMg" type="number" step="0.1" value="@Model.MinSodiumMg" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Max sodium (mg)</label>
+                        <input class="form-control" name="MaxSodiumMg" type="number" step="0.1" value="@Model.MaxSodiumMg" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 text-end">
+            <button type="submit" class="btn btn-primary">Save preferences</button>
+        </div>
+    </form>
+</div>

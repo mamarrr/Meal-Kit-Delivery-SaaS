@@ -26,7 +26,28 @@ public class QualityComplaintRepository : BaseRepository<QualityComplaint, AppDb
     public async Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId)
     {
         return await RepositoryDbSet
+            .Include(qc => qc.QualityComplaintStatus)
+            .Include(qc => qc.QualityComplaintType)
+            .Include(qc => qc.Delivery)
             .Where(qc => qc.CustomerId == customerId && qc.CompanyId == companyId)
             .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<ICollection<QualityComplaint>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await RepositoryDbSet
+            .Include(qc => qc.QualityComplaintStatus)
+            .Include(qc => qc.QualityComplaintType)
+            .Include(qc => qc.Delivery)
+            .Where(qc => qc.CustomerId == customerId)
+            .ToListAsync();
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> DeliveryBelongsToCustomerAsync(Guid deliveryId, Guid customerId)
+    {
+        return await RepositoryDbContext.Deliveries
+            .AnyAsync(d => d.Id == deliveryId && d.CustomerId == customerId);
     }
 }

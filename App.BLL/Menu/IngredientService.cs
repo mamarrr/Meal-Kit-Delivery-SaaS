@@ -118,6 +118,11 @@ public class IngredientService : BaseTenantService<Ingredient, IIngredientReposi
         await UpdateAsync(existing, companyId);
     }
 
+    public async Task<ICollection<Ingredient>> GetAllByCompanyIdsAsync(IEnumerable<Guid> companyIds)
+    {
+        return await Repository.GetAllByCompanyIdsAsync(companyIds);
+    }
+
     private static IngredientCatalogItemDto ToCatalogItem(Ingredient ingredient)
     {
         return new IngredientCatalogItemDto

@@ -62,5 +62,10 @@ public class CustomerExclusionService : BaseService<CustomerExclusion, ICustomer
 
         return await base.RemoveAsync(id);
     }
+
+    public async Task<ICollection<CustomerExclusion>> GetAllByCustomerIdAsync(Guid customerId)
+    {
+        return await Repository.GetAllByCustomerIdAsync(customerId);
+    }
 }
 
