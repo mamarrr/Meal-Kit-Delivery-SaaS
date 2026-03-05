@@ -1,84 +1,80 @@
-@model IEnumerable<App.Domain.Core.CompanyAppUser>
+@model WebApp.ViewModels.CompanyUsers.CompanyUserIndexViewModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Company users";
 }
 
-<h1>Index</h1>
+<h1>Company users</h1>
+<p class="text-muted">Manage tenant members and roles.</p>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.IsOwner)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsActive)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UpdatedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DeletedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Company)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.AppUser)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CompanyRole)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedByAppUser)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsOwner)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UpdatedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DeletedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Company!.ContactEmail)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.AppUser!.FirstName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CompanyRole!.Code)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedByAppUser!.FirstName)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+@if (TempData["SuccessMessage"] is string success)
+{
+    <div class="alert alert-success" role="status">@success</div>
 }
-    </tbody>
-</table>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-0">Invite user by email</h2>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">The user must already have an account. Select role and add them to this company.</p>
+        <a class="btn btn-primary" asp-action="Create">Add user</a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-0">Current members</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead>
+            <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Member since</th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var member in Model.Members)
+            {
+                <tr>
+                    <td>@member.Email</td>
+                    <td>@member.FullName</td>
+                    <td>
+                        @member.RoleLabel
+                        @if (member.IsOwner)
+                        {
+                            <span class="badge bg-primary ms-2">Owner</span>
+                        }
+                    </td>
+                    <td>
+                        @if (member.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>@member.CreatedAt.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end">
+                        @if (Model.CanTransferOwnership && !member.IsOwner && member.IsActive)
+                        {
+                            <form asp-action="TransferOwnership" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="memberId" value="@member.Id"/>
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Transfer ownership</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

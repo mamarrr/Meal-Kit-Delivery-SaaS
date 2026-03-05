@@ -1,47 +1,36 @@
 @model WebApp.ViewModels.CompanyUsers.CompanyUserEditViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Update role";
 }
 
-<h1>Edit</h1>
+<h1>Update company role</h1>
 
-<h4>CompanyAppUser</h4>
+<h4>Company member role</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Edit">
+        <form asp-action="Edit" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="CompanyAppUser.IsOwner" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsOwner)
-                </label>
+
+            <div class="mb-3">
+                <label asp-for="TargetEmail" class="form-label">User email</label>
+                <input asp-for="TargetEmail" class="form-control" readonly />
             </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="CompanyAppUser.IsActive" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsActive)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyAppUser.AppUserId" class="control-label"></label>
-                <select asp-for="CompanyAppUser.AppUserId" class="form-control" asp-items="Model.AppUserOptions"></select>
-                <span asp-validation-for="CompanyAppUser.AppUserId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyAppUser.CompanyRoleId" class="control-label"></label>
-                <select asp-for="CompanyAppUser.CompanyRoleId" class="form-control" asp-items="Model.CompanyRoleOptions"></select>
+
+            <div class="mb-3">
+                <label asp-for="CompanyAppUser.CompanyRoleId" class="form-label">Role</label>
+                <select asp-for="CompanyAppUser.CompanyRoleId" class="form-select" asp-items="Model.CompanyRoleOptions"></select>
                 <span asp-validation-for="CompanyAppUser.CompanyRoleId" class="text-danger"></span>
             </div>
+
             <input type="hidden" asp-for="CompanyAppUser.Id" />
-            <div class="form-group">
+            <div class="form-group mt-3">
                 <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
     </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {

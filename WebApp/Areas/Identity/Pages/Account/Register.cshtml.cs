@@ -43,6 +43,18 @@ public class RegisterModel(UserManager<AppUser> userManager, SignInManager<AppUs
         var result = await userManager.CreateAsync(user, Input.Password);
         if (result.Succeeded)
         {
+            var roleResult = await userManager.AddToRoleAsync(user, "Customer");
+            if (!roleResult.Succeeded)
+            {
+                foreach (var error in roleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                await userManager.DeleteAsync(user);
+                return Page();
+            }
+
             logger.LogInformation("User created a new account with password.");
             await signInManager.SignInAsync(user, isPersistent: false);
             return LocalRedirect(returnUrl);

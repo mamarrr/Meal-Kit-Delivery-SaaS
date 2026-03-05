@@ -1,47 +1,35 @@
 @model WebApp.ViewModels.CompanyUsers.CompanyUserEditViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Add user";
 }
 
-<h1>Create</h1>
+<h1>Add user to company</h1>
+<p class="text-muted">Enter an existing account email and assign a role.</p>
 
-<h4>CompanyAppUser</h4>
-<hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
+    <div class="col-lg-6">
+        <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="CompanyAppUser.IsOwner" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsOwner)
-                </label>
+
+            <div class="mb-3">
+                <label asp-for="TargetEmail" class="form-label">User email</label>
+                <input asp-for="TargetEmail" class="form-control" autocomplete="email" />
+                <span asp-validation-for="TargetEmail" class="text-danger"></span>
             </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="CompanyAppUser.IsActive" /> @Html.DisplayNameFor(model => model.CompanyAppUser.IsActive)
-                </label>
+
+            <div class="mb-3">
+                <label asp-for="CompanyAppUser.CompanyRoleId" class="form-label">Role</label>
+                <select asp-for="CompanyAppUser.CompanyRoleId" class="form-select" asp-items="Model.CompanyRoleOptions"></select>
+                <span asp-validation-for="CompanyAppUser.CompanyRoleId" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="CompanyAppUser.AppUserId" class="control-label"></label>
-                <select asp-for="CompanyAppUser.AppUserId" class="form-control" asp-items="Model.AppUserOptions"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="CompanyAppUser.CompanyRoleId" class="control-label"></label>
-                <select asp-for="CompanyAppUser.CompanyRoleId" class="form-control" asp-items="Model.CompanyRoleOptions"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
+
+            <button type="submit" class="btn btn-primary">Add user</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
         </form>
     </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

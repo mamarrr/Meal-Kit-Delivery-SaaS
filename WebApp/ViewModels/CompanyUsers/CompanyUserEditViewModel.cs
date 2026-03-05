@@ -7,7 +7,7 @@ public class CompanyUserEditViewModel
 {
     public CompanyAppUser CompanyAppUser { get; set; } = default!;
 
-    public IReadOnlyList<SelectListItem> AppUserOptions { get; set; } = [];
+    public string TargetEmail { get; set; } = string.Empty;
 
     public IReadOnlyList<SelectListItem> CompanyRoleOptions { get; set; } = [];
 }

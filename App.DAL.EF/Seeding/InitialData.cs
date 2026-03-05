@@ -20,6 +20,7 @@ public static class InitialData
             ("CompanyAdmin", null),
             ("CompanyManager", null),
             ("CompanyEmployee", null),
+            ("Customer", null),
         ];
 
     public static readonly (string name, string password, Guid? id, string[] roles)[]
@@ -44,6 +45,10 @@ public static class InitialData
             ("employee1@northbites.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"]),
             ("employee2@northbites.local", "Kala.Maja.101", null, ["user", "CompanyEmployee"]),
 
+            // Customer-only users
+            ("customer1@platform.local", "Kala.Maja.101", null, ["user", "Customer"]),
+            ("customer2@platform.local", "Kala.Maja.101", null, ["user", "Customer"]),
+
             // Company 2 users: 1 owner, 2 admins, 2 managers, 2 employees
             ("owner@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyOwner"]),
             ("admin1@southspoon.local", "Kala.Maja.101", null, ["user", "CompanyAdmin"]),
@@ -65,9 +70,9 @@ public static class InitialData
     public static readonly CompanyRole[] CompanyRoles =
     [
         new() { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Code = "owner", Label = "Owner" },
-        new() { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Code = "manager", Label = "Manager" },
-        new() { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Code = "chef", Label = "Chef" },
-        new() { Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), Code = "delivery", Label = "Delivery Driver" },
+        new() { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Code = "admin", Label = "Admin" },
+        new() { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Code = "manager", Label = "Manager" },
+        new() { Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), Code = "employee", Label = "Employee" },
         new() { Id = Guid.Parse("55555555-5555-5555-5555-555555555555"), Code = "support", Label = "Support Staff" },
     ];
     

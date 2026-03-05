@@ -1,297 +1,260 @@
+using System.Security.Claims;
 using App.Contracts.BLL.Core;
 using App.Contracts.BLL.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using App.Domain.Core;
-using System.Security.Claims;
-using System.Linq;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using WebApp.ViewModels.CompanyUsers;
 
-namespace WebApp.Controllers
+namespace WebApp.Controllers;
+
+[Authorize(Policy = "CompanyAdmin")]
+public class CompanyUsersController(
+    ICompanyAppUserService companyAppUserService,
+    ICompanyRoleService companyRoleService,
+    IAppUserService appUserService) : Controller
 {
-    [Authorize(Policy = "CompanyAdmin")]
-    public class CompanyUsersController : Controller
+    public async Task<IActionResult> Index()
     {
-        private readonly ICompanyAppUserService _companyAppUserService;
-        private readonly ICompanyRoleService _companyRoleService;
-        private readonly IAppUserService _appUserService;
-
-        public CompanyUsersController(
-            ICompanyAppUserService companyAppUserService,
-            ICompanyRoleService companyRoleService,
-            IAppUserService appUserService)
+        var companyId = GetCurrentCompanyId();
+        if (companyId == null)
         {
-            _companyAppUserService = companyAppUserService;
-            _companyRoleService = companyRoleService;
-            _appUserService = appUserService;
+            return Forbid();
         }
 
-        // GET: CompanyUsers
-        public async Task<IActionResult> Index()
+        var roleCodes = await GetRoleCodeMapAsync();
+        var members = await companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
+
+        var viewModel = new CompanyUserIndexViewModel
         {
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
-
-            return View(await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value));
-        }
-
-        // GET: CompanyUsers/Details/5
-        public async Task<IActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
-
-            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
-            if (companyAppUser == null)
-            {
-                return NotFound();
-            }
-
-            return View(companyAppUser);
-        }
-
-        // GET: CompanyUsers/Create
-        public async Task<IActionResult> Create()
-        {
-            return View(await BuildEditViewModelAsync(new CompanyAppUser { IsActive = true }));
-        }
-
-        // POST: CompanyUsers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CompanyUserEditViewModel viewModel)
-        {
-            var companyId = GetCurrentCompanyId();
-            var userId = GetCurrentUserId();
-            if (companyId == null || userId == null)
-            {
-                return Forbid();
-            }
-
-            if (viewModel.CompanyAppUser == null)
-            {
-                return BadRequest();
-            }
-
-            var companyAppUser = viewModel.CompanyAppUser;
-
-            if (!await IsAllowedRoleAsync(companyAppUser.CompanyRoleId))
-            {
-                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.CompanyRoleId), "Selected role is not allowed for tenant assignments.");
-            }
-
-            var existingAssignments = await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
-            if (existingAssignments.Any(x => x.AppUserId == companyAppUser.AppUserId))
-            {
-                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.AppUserId), "User is already assigned to this tenant.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                companyAppUser.CompanyId = companyId.Value;
-                companyAppUser.CreatedByAppUserId = userId.Value;
-                companyAppUser.CreatedAt = DateTime.UtcNow;
-                companyAppUser.UpdatedAt = null;
-                companyAppUser.DeletedAt = null;
-
-                await _companyAppUserService.AddAsync(companyAppUser, companyId.Value);
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(await BuildEditViewModelAsync(companyAppUser));
-        }
-
-        // GET: CompanyUsers/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
-
-            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
-            if (companyAppUser == null)
-            {
-                return NotFound();
-            }
-
-            return View(await BuildEditViewModelAsync(companyAppUser));
-        }
-
-        // POST: CompanyUsers/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, CompanyUserEditViewModel viewModel)
-        {
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
-
-            if (viewModel.CompanyAppUser == null)
-            {
-                return BadRequest();
-            }
-
-            var companyAppUser = viewModel.CompanyAppUser;
-            if (id != companyAppUser.Id)
-            {
-                return NotFound();
-            }
-
-            if (!await IsAllowedRoleAsync(companyAppUser.CompanyRoleId))
-            {
-                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.CompanyRoleId), "Selected role is not allowed for tenant assignments.");
-            }
-
-            var existingAssignments = await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
-            if (existingAssignments.Any(x => x.AppUserId == companyAppUser.AppUserId && x.Id != companyAppUser.Id))
-            {
-                ModelState.AddModelError(nameof(viewModel.CompanyAppUser.AppUserId), "User is already assigned to this tenant.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                var existing = await _companyAppUserService.GetByIdAsync(id, companyId.Value);
-                if (existing == null)
+            CanTransferOwnership = User.IsInRole("CompanyOwner"),
+            Members = members
+                .OrderByDescending(x => x.IsOwner)
+                .ThenBy(x => x.AppUser!.Email)
+                .Select(x => new CompanyUserMemberViewModel
                 {
-                    return NotFound();
-                }
+                    Id = x.Id,
+                    Email = x.AppUser?.Email ?? string.Empty,
+                    FullName = $"{x.AppUser?.FirstName} {x.AppUser?.LastName}".Trim(),
+                    RoleLabel = roleCodes.TryGetValue(x.CompanyRoleId, out var code)
+                        ? ToDisplayRole(code)
+                        : (x.CompanyRole?.Label ?? x.CompanyRole?.Code ?? "Unknown"),
+                    IsOwner = x.IsOwner,
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt
+                })
+                .ToList()
+        };
 
-                companyAppUser.CompanyId = companyId.Value;
-                companyAppUser.CreatedByAppUserId = existing.CreatedByAppUserId;
-                companyAppUser.CreatedAt = existing.CreatedAt;
-                companyAppUser.DeletedAt = existing.DeletedAt;
-                companyAppUser.UpdatedAt = DateTime.UtcNow;
+        return View(viewModel);
+    }
 
-                await _companyAppUserService.UpdateAsync(companyAppUser, companyId.Value);
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(await BuildEditViewModelAsync(companyAppUser));
+    public async Task<IActionResult> Create()
+    {
+        if (!CanManageUsers())
+        {
+            return Forbid();
         }
 
-        // GET: CompanyUsers/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        return View(await BuildEditViewModelAsync(new CompanyAppUser
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            IsActive = true,
+            IsOwner = false
+        }));
+    }
 
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
-
-            var companyAppUser = await _companyAppUserService.GetByIdAsync(id.Value, companyId.Value);
-            if (companyAppUser == null)
-            {
-                return NotFound();
-            }
-
-            return View(companyAppUser);
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CompanyUserEditViewModel viewModel)
+    {
+        if (!CanManageUsers())
+        {
+            return Forbid();
         }
 
-        // POST: CompanyUsers/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        var companyId = GetCurrentCompanyId();
+        var currentUserId = GetCurrentUserId();
+        if (companyId == null || currentUserId == null)
         {
-            var companyId = GetCurrentCompanyId();
-            if (companyId == null)
-            {
-                return Forbid();
-            }
+            return Forbid();
+        }
 
-            await _companyAppUserService.RemoveAsync(id, companyId.Value);
+        if (viewModel.CompanyAppUser == null)
+        {
+            return BadRequest();
+        }
+
+        var companyAppUser = viewModel.CompanyAppUser;
+        companyAppUser.IsOwner = false;
+
+        var targetAppUser = await appUserService.GetByEmailAsync(viewModel.TargetEmail.Trim());
+        if (targetAppUser == null)
+        {
+            ModelState.AddModelError(nameof(viewModel.TargetEmail), "No account with this email exists. Ask the user to register first.");
+        }
+        else
+        {
+            companyAppUser.AppUserId = targetAppUser.Id;
+        }
+
+        if (!await IsAllowedRoleAsync(companyAppUser.CompanyRoleId))
+        {
+            ModelState.AddModelError(nameof(viewModel.CompanyAppUser.CompanyRoleId), "Selected role must be Admin, Manager, or Employee.");
+        }
+
+        var existingAssignments = await companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
+        if (existingAssignments.Any(x => x.AppUserId == companyAppUser.AppUserId))
+        {
+            ModelState.AddModelError(nameof(viewModel.TargetEmail), "User is already a member of this company.");
+        }
+
+        if (ModelState.IsValid)
+        {
+            companyAppUser.CompanyId = companyId.Value;
+            companyAppUser.CreatedByAppUserId = currentUserId.Value;
+            companyAppUser.CreatedAt = DateTime.UtcNow;
+            companyAppUser.UpdatedAt = null;
+            companyAppUser.DeletedAt = null;
+            companyAppUser.IsActive = true;
+
+            await companyAppUserService.AddAsync(companyAppUser, companyId.Value);
+            TempData["SuccessMessage"] = $"Added {targetAppUser!.Email} to the company.";
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task<CompanyUserEditViewModel> BuildEditViewModelAsync(CompanyAppUser companyAppUser)
+        return View(await BuildEditViewModelAsync(companyAppUser, viewModel.TargetEmail));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TransferOwnership(Guid memberId)
+    {
+        if (!User.IsInRole("CompanyOwner"))
         {
-            var companyId = GetCurrentCompanyId();
-            var allowedRoleCodes = new[] { "owner", "admin", "manager", "employee" };
+            return Forbid();
+        }
 
-            var users = await _appUserService.GetAllAsync();
-            var roles = (await _companyRoleService.GetAllAsync())
-                .Where(r => allowedRoleCodes.Contains(r.Code.ToLowerInvariant()))
-                .ToList();
+        var companyId = GetCurrentCompanyId();
+        if (companyId == null)
+        {
+            return Forbid();
+        }
 
-            var existingUsers = companyId == null
-                ? []
-                : (await _companyAppUserService.GetAllByCompanyIdAsync(companyId.Value))
-                .Select(x => x.AppUserId)
-                .ToHashSet();
+        var members = await companyAppUserService.GetAllByCompanyIdAsync(companyId.Value);
+        var currentOwner = members.FirstOrDefault(x => x.IsOwner && x.IsActive);
+        var newOwner = members.FirstOrDefault(x => x.Id == memberId && x.IsActive);
 
-            var candidateUsers = users
-                .Where(u => companyAppUser.AppUserId == Guid.Empty || u.Id == companyAppUser.AppUserId || !existingUsers.Contains(u.Id))
-                .OrderBy(u => u.Email)
-                .ToList();
+        if (currentOwner == null || newOwner == null)
+        {
+            return NotFound();
+        }
 
-            return new CompanyUserEditViewModel
+        var roleCodes = await GetRoleCodeMapAsync();
+        var ownerRoleId = roleCodes.FirstOrDefault(x => x.Value == "owner").Key;
+        var adminRoleId = roleCodes.FirstOrDefault(x => x.Value == "admin").Key;
+
+        if (ownerRoleId == Guid.Empty || adminRoleId == Guid.Empty)
+        {
+            ModelState.AddModelError(string.Empty, "Company roles are not initialized correctly.");
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (currentOwner.Id != newOwner.Id)
+        {
+            currentOwner.IsOwner = false;
+            if (roleCodes.TryGetValue(currentOwner.CompanyRoleId, out var existingCode) && existingCode == "owner")
             {
-                CompanyAppUser = companyAppUser,
-                AppUserOptions = candidateUsers
-                    .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(u.Email ?? u.Id.ToString(), u.Id.ToString(), u.Id == companyAppUser.AppUserId))
-                    .ToList(),
-                CompanyRoleOptions = roles
-                    .Select(r => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(r.Label, r.Id.ToString(), r.Id == companyAppUser.CompanyRoleId))
-                    .ToList()
-            };
+                currentOwner.CompanyRoleId = adminRoleId;
+            }
+
+            currentOwner.UpdatedAt = DateTime.UtcNow;
+
+            newOwner.IsOwner = true;
+            newOwner.CompanyRoleId = ownerRoleId;
+            newOwner.UpdatedAt = DateTime.UtcNow;
+
+            await companyAppUserService.UpdateAsync(currentOwner, companyId.Value);
+            await companyAppUserService.UpdateAsync(newOwner, companyId.Value);
         }
 
-        private Guid? GetCurrentCompanyId()
+        TempData["SuccessMessage"] = $"Ownership transferred to {newOwner.AppUser?.Email}.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task<CompanyUserEditViewModel> BuildEditViewModelAsync(CompanyAppUser companyAppUser, string? targetEmail = null)
+    {
+        var roles = (await companyRoleService.GetAllAsync())
+            .Where(r => r.Code.Equals("admin", StringComparison.OrdinalIgnoreCase)
+                        || r.Code.Equals("manager", StringComparison.OrdinalIgnoreCase)
+                        || r.Code.Equals("employee", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(r => r.Label)
+            .ToList();
+
+        return new CompanyUserEditViewModel
         {
-            var companyIdRaw = User.FindFirst("company_id")?.Value
-                               ?? User.FindFirst("tenant_id")?.Value
-                               ?? User.FindFirst("companyId")?.Value;
+            CompanyAppUser = companyAppUser,
+            TargetEmail = targetEmail ?? string.Empty,
+            CompanyRoleOptions = roles
+                .Select(r => new SelectListItem(r.Label, r.Id.ToString(), r.Id == companyAppUser.CompanyRoleId))
+                .ToList()
+        };
+    }
 
-            return Guid.TryParse(companyIdRaw, out var companyId)
-                ? companyId
-                : null;
-        }
+    private async Task<Dictionary<Guid, string>> GetRoleCodeMapAsync()
+    {
+        var roles = await companyRoleService.GetAllAsync();
+        return roles.ToDictionary(x => x.Id, x => x.Code.ToLowerInvariant());
+    }
 
-        private Guid? GetCurrentUserId()
+    private static string ToDisplayRole(string code)
+    {
+        return code switch
         {
-            var userIdRaw = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                            ?? User.FindFirst("sub")?.Value
-                            ?? User.FindFirst("user_id")?.Value;
+            "owner" => "Owner",
+            "admin" => "Admin",
+            "manager" => "Manager",
+            "employee" => "Employee",
+            _ => code
+        };
+    }
 
-            return Guid.TryParse(userIdRaw, out var userId)
-                ? userId
-                : null;
-        }
+    private bool CanManageUsers()
+    {
+        return User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin");
+    }
 
-        private async Task<bool> IsAllowedRoleAsync(Guid roleId)
+    private Guid? GetCurrentCompanyId()
+    {
+        var companyIdRaw = User.FindFirst("company_id")?.Value
+                           ?? User.FindFirst("tenant_id")?.Value
+                           ?? User.FindFirst("companyId")?.Value;
+
+        return Guid.TryParse(companyIdRaw, out var companyId)
+            ? companyId
+            : null;
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var userIdRaw = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? User.FindFirstValue("sub")
+                        ?? User.FindFirstValue("user_id");
+
+        return Guid.TryParse(userIdRaw, out var userId)
+            ? userId
+            : null;
+    }
+
+    private async Task<bool> IsAllowedRoleAsync(Guid roleId)
+    {
+        var role = await companyRoleService.GetByIdAsync(roleId);
+        if (role == null)
         {
-            var allowedRoleCodes = new[] { "owner", "admin", "manager", "employee" };
-            var role = await _companyRoleService.GetByIdAsync(roleId);
-
-            return role != null && allowedRoleCodes.Contains(role.Code.ToLowerInvariant());
+            return false;
         }
+
+        var code = role.Code.ToLowerInvariant();
+        return code is "admin" or "manager" or "employee";
     }
 }

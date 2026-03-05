@@ -19,4 +19,6 @@ public class MealPlanListItemViewModel
     public DateTime? ValidTo { get; set; }
 
     public string SubscribeUrl { get; set; } = "/MealSubscriptions/Create";
+
+    public string? Slug { get; set; }
 }

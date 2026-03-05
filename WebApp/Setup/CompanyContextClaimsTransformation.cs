@@ -54,6 +54,38 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
 
         if (principal.Identity is ClaimsIdentity identity)
         {
+            var companyRoles = await dbContext.UserRoles
+                .Where(x => x.UserId == userId)
+                .Join(
+                    dbContext.Roles,
+                    userRole => userRole.RoleId,
+                    role => role.Id,
+                    (userRole, role) => role.Name)
+                .Where(name => name == "CompanyOwner" || name == "CompanyAdmin" || name == "CompanyManager" || name == "CompanyEmployee")
+                .ToListAsync();
+
+            if (companyRoles.Count > 0 && !identity.HasClaim(c => c.Type == "has_company_access"))
+            {
+                identity.AddClaim(new Claim("has_company_access", "true"));
+            }
+
+            if (!identity.HasClaim(c => c.Type == "has_customer_access"))
+            {
+                var hasCustomerAccess = await dbContext.UserRoles
+                    .Where(x => x.UserId == userId)
+                    .Join(
+                        dbContext.Roles,
+                        userRole => userRole.RoleId,
+                        role => role.Id,
+                        (userRole, role) => role.Name)
+                    .AnyAsync(name => name == "Customer");
+
+                if (hasCustomerAccess)
+                {
+                    identity.AddClaim(new Claim("has_customer_access", "true"));
+                }
+            }
+
             if (!hasCompanyClaim)
             {
                 identity.AddClaim(new Claim("company_id", companyMembership.CompanyId.ToString()));

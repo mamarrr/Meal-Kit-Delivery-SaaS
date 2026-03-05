@@ -6,10 +6,11 @@
 
 @{
     var logoutReturnUrl = Url.Action("Index", "Landing", new { area = "" });
-    var operationalSlug = User.GetDefaultOperationalSlug();
-    if (!string.IsNullOrWhiteSpace(operationalSlug))
+    var slugFromRoute = ViewContext.RouteData.Values["slug"]?.ToString();
+    var registerReturnUrl = "/entry";
+    if (!string.IsNullOrWhiteSpace(slugFromRoute))
     {
-        logoutReturnUrl = $"/{operationalSlug}/Landing/Index";
+        registerReturnUrl = $"/{slugFromRoute}";
     }
 }
 
@@ -27,7 +28,10 @@
 else
 {
     <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">@App.Resources.Views.Shared._Layout.Register</a>
+        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register" asp-route-returnUrl="@registerReturnUrl">Customer register</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-controller="Landing" asp-action="CompanySignup">Company signup</a>
     </li>
     <li class="nav-item">
         <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">@App.Resources.Views.Shared._Layout.Login</a>

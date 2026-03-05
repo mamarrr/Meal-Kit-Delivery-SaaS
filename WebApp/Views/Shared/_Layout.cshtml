@@ -16,15 +16,24 @@
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
-@{
+@if (User.Identity?.IsAuthenticated == true)
+{
     var operationalSlug = User.GetDefaultOperationalSlug();
+    var activeContext = Context.Request.Cookies["active_context"]?.ToLowerInvariant();
+    var hasCustomerAccess = User.IsInRole("Customer") || User.HasClaim("has_customer_access", "true");
+    var hasCompanyAccess = User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee") || User.HasClaim("has_company_access", "true");
+
+    if (string.IsNullOrWhiteSpace(activeContext))
+    {
+        activeContext = hasCustomerAccess ? "customer" : "company";
+    }
 
     var sidebarItems = new List<AppShellNavigationViewModel>
     {
-        new() { Title = "Home", Controller = "Landing", Action = "Entry", Slug = operationalSlug }
+        new() { Title = "Home", Controller = "Landing", Action = "Entry", Slug = activeContext == "company" ? operationalSlug : null }
     };
 
-    if (User.IsInRole("Customer"))
+    if (hasCustomerAccess && activeContext == "customer")
     {
         sidebarItems.AddRange(
         new List<AppShellNavigationViewModel>
@@ -44,7 +53,7 @@
         }));
     }
 
-    if (User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee"))
+    if (hasCompanyAccess && activeContext == "company")
     {
         sidebarItems.AddRange(
         new List<AppShellNavigationViewModel>
@@ -89,7 +98,6 @@
             return x;
         }));
     }
-}
 
 <div class="app-shell">
     <partial name="_SidebarNavigation" model="sidebarItems" />
@@ -100,6 +108,19 @@
                 <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Landing" asp-action="Index">@AppNameService.AppName</a>
             </div>
             <div class="app-topbar-actions">
+                @if (hasCustomerAccess && hasCompanyAccess)
+                {
+                    <div class="btn-group me-3" role="group" aria-label="Switch active context">
+                        <a class="btn btn-sm @(activeContext == "customer" ? "btn-primary" : "btn-outline-primary")"
+                           asp-controller="Landing"
+                           asp-action="Entry"
+                           asp-route-context="customer">Customer view</a>
+                        <a class="btn btn-sm @(activeContext == "company" ? "btn-primary" : "btn-outline-primary")"
+                           asp-controller="Landing"
+                           asp-action="Entry"
+                           asp-route-context="company">Company view</a>
+                    </div>
+                }
                 <ul class="navbar-nav">
                     <partial name="_LoginPartial" />
                 </ul>
@@ -111,6 +132,22 @@
         </main>
     </div>
 </div>
+}
+else
+{
+    <div class="container py-4">
+        <header class="d-flex justify-content-between align-items-center mb-3">
+            <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Landing" asp-action="Index">@AppNameService.AppName</a>
+            <ul class="navbar-nav flex-row gap-3">
+                <partial name="_LoginPartial" />
+            </ul>
+        </header>
+
+        <main id="main-content" role="main" class="app-content">
+            @RenderBody()
+        </main>
+    </div>
+}
 
 <footer class="border-top footer text-muted py-3 mt-auto">
     <div class="container">

@@ -4,6 +4,7 @@ using App.Domain.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
 using WebApp.ViewModels.MealSubscriptions;
 
 namespace WebApp.Controllers
@@ -13,15 +14,18 @@ namespace WebApp.Controllers
     {
         private readonly IMealSubscriptionService _mealSubscriptionService;
         private readonly ICustomerService _customerService;
+        private readonly ICustomerAppUserService _customerAppUserService;
         private readonly IBoxService _boxService;
 
         public MealSubscriptionsController(
             IMealSubscriptionService mealSubscriptionService,
             ICustomerService customerService,
+            ICustomerAppUserService customerAppUserService,
             IBoxService boxService)
         {
             _mealSubscriptionService = mealSubscriptionService;
             _customerService = customerService;
+            _customerAppUserService = customerAppUserService;
             _boxService = boxService;
         }
 
@@ -34,7 +38,13 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
-            return View(await _mealSubscriptionService.GetAllByCompanyIdAsync(companyId.Value));
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
+            return View(await _mealSubscriptionService.GetAllByCustomerIdAsync(customerId.Value, companyId.Value));
         }
 
         // GET: MealSubscriptions/Details/5
@@ -51,8 +61,14 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
             var mealSubscription = await _mealSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
-            if (mealSubscription == null)
+            if (mealSubscription == null || mealSubscription.CustomerId != customerId.Value)
             {
                 return NotFound();
             }
@@ -61,7 +77,7 @@ namespace WebApp.Controllers
         }
 
         // GET: MealSubscriptions/Create
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(Guid? boxId = null)
         {
             var companyId = GetCurrentCompanyId();
             if (companyId == null)
@@ -69,7 +85,25 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
-            return View(await BuildEditViewModelAsync(new MealSubscription(), companyId.Value));
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
+            var mealSubscription = new MealSubscription
+            {
+                IsActive = true,
+                StartDate = DateTime.UtcNow.Date,
+                CustomerId = customerId.Value
+            };
+
+            if (boxId.HasValue)
+            {
+                mealSubscription.BoxId = boxId.Value;
+            }
+
+            return View(await BuildEditViewModelAsync(mealSubscription, companyId.Value));
         }
 
         // POST: MealSubscriptions/Create
@@ -85,7 +119,15 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
             var mealSubscription = viewModel.MealSubscription;
+            mealSubscription.CustomerId = customerId.Value;
+
             if (ModelState.IsValid)
             {
                 mealSubscription.CreatedAt = DateTime.UtcNow;
@@ -112,8 +154,14 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
             var mealSubscription = await _mealSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
-            if (mealSubscription == null)
+            if (mealSubscription == null || mealSubscription.CustomerId != customerId.Value)
             {
                 return NotFound();
             }
@@ -134,6 +182,12 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
             var mealSubscription = viewModel.MealSubscription;
             if (id != mealSubscription.Id)
             {
@@ -148,8 +202,14 @@ namespace WebApp.Controllers
                     return NotFound();
                 }
 
+                if (existing.CustomerId != customerId.Value)
+                {
+                    return NotFound();
+                }
+
                 mealSubscription.CreatedAt = existing.CreatedAt;
                 mealSubscription.CompanyId = companyId.Value;
+                mealSubscription.CustomerId = existing.CustomerId;
                 mealSubscription.UpdatedAt = DateTime.UtcNow;
                 await _mealSubscriptionService.UpdateAsync(mealSubscription, companyId.Value);
 
@@ -173,8 +233,14 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
             var mealSubscription = await _mealSubscriptionService.GetByIdAsync(id.Value, companyId.Value);
-            if (mealSubscription == null)
+            if (mealSubscription == null || mealSubscription.CustomerId != customerId.Value)
             {
                 return NotFound();
             }
@@ -193,6 +259,18 @@ namespace WebApp.Controllers
                 return Forbid();
             }
 
+            var customerId = await GetCurrentCustomerIdAsync(companyId.Value);
+            if (customerId == null)
+            {
+                return Forbid();
+            }
+
+            var existing = await _mealSubscriptionService.GetByIdAsync(id, companyId.Value);
+            if (existing == null || existing.CustomerId != customerId.Value)
+            {
+                return NotFound();
+            }
+
             await _mealSubscriptionService.RemoveAsync(id, companyId.Value);
             return RedirectToAction(nameof(Index));
         }
@@ -206,6 +284,7 @@ namespace WebApp.Controllers
             {
                 MealSubscription = mealSubscription,
                 CustomerOptions = customers
+                    .Where(c => c.Id == mealSubscription.CustomerId)
                     .Select(c => new SelectListItem($"{c.FirstName} {c.LastName} ({c.Email})", c.Id.ToString(), c.Id == mealSubscription.CustomerId))
                     .ToList(),
                 BoxOptions = boxes
@@ -223,6 +302,45 @@ namespace WebApp.Controllers
             return Guid.TryParse(companyIdRaw, out var companyId)
                 ? companyId
                 : null;
+        }
+
+        private async Task<Guid?> GetCurrentCustomerIdAsync(Guid companyId)
+        {
+            var userIdRaw = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            ?? User.FindFirstValue("sub")
+                            ?? User.FindFirstValue("user_id");
+
+            if (!Guid.TryParse(userIdRaw, out var userId))
+            {
+                return null;
+            }
+
+            var customers = await _customerService.GetAllByCompanyIdAsync(companyId);
+            var allowedCustomerIds = customers.Select(c => c.Id).ToHashSet();
+
+            var customerLinks = await _customerAppUserService.GetAllByAppUserIdAsync(userId);
+            var linkedCustomerId = customerLinks
+                .Select(link => link.CustomerId)
+                .FirstOrDefault(customerId => allowedCustomerIds.Contains(customerId));
+
+            if (linkedCustomerId != Guid.Empty)
+            {
+                return linkedCustomerId;
+            }
+
+            var userEmail = User.Identity?.Name;
+            if (!string.IsNullOrWhiteSpace(userEmail))
+            {
+                var emailMatch = customers.FirstOrDefault(c =>
+                    string.Equals(c.Email, userEmail, StringComparison.OrdinalIgnoreCase));
+
+                if (emailMatch != null)
+                {
+                    return emailMatch.Id;
+                }
+            }
+
+            return null;
         }
     }
 }
