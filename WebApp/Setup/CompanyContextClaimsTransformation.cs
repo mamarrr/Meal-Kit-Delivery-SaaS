@@ -3,12 +3,24 @@ using App.DAL.EF;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using WebApp.Helpers;
 
 namespace WebApp.Setup;
 
-public class CompanyContextClaimsTransformation(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor) : IClaimsTransformation
+public class CompanyContextClaimsTransformation(
+    AppDbContext dbContext,
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<CompanyContextClaimsTransformation> logger) : IClaimsTransformation
 {
+    private static readonly string[] CompanyIdentityRoleNames =
+    [
+        "CompanyOwner",
+        "CompanyAdmin",
+        "CompanyManager",
+        "CompanyEmployee"
+    ];
+
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity?.IsAuthenticated != true)
@@ -31,7 +43,9 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext, IHttpCon
             .Select(x => new
             {
                 x.CompanyId,
-                CompanySlug = x.Company!.Slug
+                CompanySlug = x.Company!.Slug,
+                x.IsOwner,
+                CompanyRoleCode = x.CompanyRole!.Code
             })
             .ToListAsync();
 
@@ -50,8 +64,17 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext, IHttpCon
                     userRole => userRole.RoleId,
                     role => role.Id,
                     (userRole, role) => role.Name)
-                .Where(name => name == "CompanyOwner" || name == "CompanyAdmin" || name == "CompanyManager" || name == "CompanyEmployee")
+                .Where(name => CompanyIdentityRoleNames.Contains(name!))
+                .Select(name => name!)
                 .ToListAsync();
+
+            SynchronizeCompanyRoleClaims(identity, companyRoles);
+
+            logger.LogInformation(
+                "CompanyContext transform: userId={UserId}, identityRoles=[{IdentityRoles}], memberships=[{Memberships}]",
+                userId,
+                string.Join(",", companyRoles),
+                string.Join(",", memberships.Select(x => $"{x.CompanySlug}:{x.CompanyRoleCode}:owner={x.IsOwner}")));
 
             if (companyRoles.Count > 0 && !identity.HasClaim(c => c.Type == "has_company_access"))
             {
@@ -120,6 +143,29 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext, IHttpCon
         foreach (var claim in claims)
         {
             identity.RemoveClaim(claim);
+        }
+    }
+
+    private static void SynchronizeCompanyRoleClaims(ClaimsIdentity identity, IReadOnlyCollection<string> effectiveCompanyRoles)
+    {
+        var existingRoleClaims = identity.Claims
+            .Where(c => c.Type == identity.RoleClaimType && CompanyIdentityRoleNames.Contains(c.Value))
+            .ToList();
+
+        foreach (var existingRoleClaim in existingRoleClaims)
+        {
+            if (!effectiveCompanyRoles.Contains(existingRoleClaim.Value))
+            {
+                identity.RemoveClaim(existingRoleClaim);
+            }
+        }
+
+        foreach (var roleName in effectiveCompanyRoles)
+        {
+            if (!identity.HasClaim(identity.RoleClaimType, roleName))
+            {
+                identity.AddClaim(new Claim(identity.RoleClaimType, roleName));
+            }
         }
     }
 }

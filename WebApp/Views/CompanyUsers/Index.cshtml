@@ -1,0 +1,136 @@
+@model WebApp.ViewModels.CompanyUsers.CompanyUsersManageViewModel
+@{
+    ViewData["Title"] = "Manage Users and Roles";
+    var isOwner = User.IsInRole("CompanyOwner");
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-3">Manage Users and Roles</h1>
+        <p class="text-muted mb-0">Add existing users by email, manage company roles, remove memberships, and transfer ownership.</p>
+    </div>
+</section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Add user to company</h2>
+        <form asp-controller="CompanyUsers" asp-action="Add" asp-route-slug="@Model.CompanySlug" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row g-3">
+                <div class="col-md-7">
+                    <label asp-for="AddEmail" class="form-label"></label>
+                    <input asp-for="AddEmail" class="form-control" />
+                    <span asp-validation-for="AddEmail" class="text-danger"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="AddRoleCode" class="form-label"></label>
+                    <select asp-for="AddRoleCode" class="form-select">
+                        @foreach (var role in Model.AssignableRoles)
+                        {
+                            <option value="@role.Code">@role.Label</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Add user</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Current company users</h2>
+
+        @if (Model.Members.Count == 0)
+        {
+            <p class="text-muted mb-0">No active company users found.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var member in Model.Members)
+                    {
+                        <tr>
+                            <td>
+                                @member.FullName
+                                @if (member.IsOwner)
+                                {
+                                    <span class="badge text-bg-warning ms-2">Owner</span>
+                                }
+                            </td>
+                            <td>@member.Email</td>
+                            <td>
+                                @if (member.IsOwner)
+                                {
+                                    <span>@member.RoleLabel</span>
+                                }
+                                else
+                                {
+                                    <form asp-controller="CompanyUsers" asp-action="UpdateRole" asp-route-slug="@Model.CompanySlug" method="post" class="d-flex gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="targetAppUserId" value="@member.AppUserId" />
+                                        <select name="roleCode" class="form-select form-select-sm">
+                                            @foreach (var role in Model.AssignableRoles)
+                                            {
+                                                <option value="@role.Code" selected="@(string.Equals(role.Code, member.RoleCode, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@role.Label</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+                                    </form>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (!member.IsOwner)
+                                {
+                                    <form asp-controller="CompanyUsers" asp-action="Remove" asp-route-slug="@Model.CompanySlug" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="targetAppUserId" value="@member.AppUserId" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                                    </form>
+
+                                    @if (isOwner)
+                                    {
+                                        <form asp-controller="CompanyUsers" asp-action="TransferOwnership" asp-route-slug="@Model.CompanySlug" method="post" class="d-inline ms-2">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="targetAppUserId" value="@member.AppUserId" />
+                                            <button type="submit" class="btn btn-warning btn-sm">Make owner</button>
+                                        </form>
+                                    }
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

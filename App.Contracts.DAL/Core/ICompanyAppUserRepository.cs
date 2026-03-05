@@ -22,4 +22,8 @@ public interface ICompanyAppUserRepository : IRepository<CompanyAppUser>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of company-app-user relationships.</returns>
     Task<ICollection<CompanyAppUser>> GetAllByAppUserIdAsync(Guid appUserId, Guid companyId);
+
+    Task<CompanyAppUser?> GetActiveMembershipAsync(Guid appUserId, Guid companyId);
+    Task<ICollection<CompanyAppUser>> GetActiveMembershipsByCompanyAsync(Guid companyId);
+    Task<CompanyAppUser?> GetActiveOwnerByCompanyIdAsync(Guid companyId);
 }

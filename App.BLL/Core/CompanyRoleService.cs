@@ -9,5 +9,15 @@ public class CompanyRoleService : BaseService<CompanyRole, ICompanyRoleRepositor
     public CompanyRoleService(ICompanyRoleRepository repository) : base(repository)
     {
     }
+
+    public async Task<CompanyRole?> GetByCodeAsync(string code)
+    {
+        return await Repository.GetByCodeAsync(code);
+    }
+
+    public async Task<ICollection<CompanyRole>> GetAllAssignableAsync()
+    {
+        return await Repository.GetAllAssignableAsync();
+    }
 }
 

@@ -8,5 +8,7 @@ namespace App.Contracts.DAL.Core;
 /// </summary>
 public interface ICompanyRoleRepository : IRepository<CompanyRole>
 {
+    Task<CompanyRole?> GetByCodeAsync(string code);
+    Task<ICollection<CompanyRole>> GetAllAssignableAsync();
 }
 

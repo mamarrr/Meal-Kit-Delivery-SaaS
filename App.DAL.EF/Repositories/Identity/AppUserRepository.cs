@@ -17,8 +17,10 @@ public class AppUserRepository : BaseRepository<AppUser, AppDbContext>, IAppUser
     /// <inheritdoc />
     public async Task<AppUser?> GetByEmailAsync(string email)
     {
+        var normalizedEmail = email.Trim().ToUpperInvariant();
+
         return await RepositoryDbSet
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
     }
 
     /// <inheritdoc />
