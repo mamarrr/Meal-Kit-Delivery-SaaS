@@ -1,5 +1,6 @@
 using App.DAL.EF;
 using App.Domain.Identity;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,8 @@ public static class IdentitySetupExtensions
             .AddDefaultUI()
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
+
+        services.AddScoped<IClaimsTransformation, CompanyContextClaimsTransformation>();
 
         // Authorization policies aligned with workflow coverage matrix roles
         services.AddAuthorization(options =>
