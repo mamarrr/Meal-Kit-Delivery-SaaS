@@ -9,6 +9,7 @@ using App.Domain.Delivery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using WebApp.ViewModels.Delivery;
 
 namespace WebApp.Controllers;
@@ -288,7 +289,10 @@ public class DeliveryLogisticsController(
     {
         if (!TryGetCompanyContext(slug, out var companyId)) return Forbid();
 
-        var delivery = await deliveryService.GetByIdAsync(model.TrackingForm.DeliveryId, companyId);
+        var delivery = await dbContext.Deliveries
+            .FirstOrDefaultAsync(d => d.Id == model.TrackingForm.DeliveryId
+                                      && d.CompanyId == companyId
+                                      && d.DeletedAt == null);
         if (delivery == null)
         {
             TempData["ErrorMessage"] = "Delivery is outside company scope.";

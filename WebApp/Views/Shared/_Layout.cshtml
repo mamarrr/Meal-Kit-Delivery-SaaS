@@ -130,6 +130,14 @@
 
         sidebarItems.Add(new AppShellNavigationViewModel
         {
+            Title = "Meal Selection",
+            Controller = "CustomerSubscriptions",
+            Action = "MealSelection",
+            Context = ActiveUserSelectionHelper.CustomerContext
+        });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
             Title = "Preferences & Exclusions",
             Controller = "CustomerPreferences",
             Action = "Preferences",

@@ -57,3 +57,41 @@ public sealed class CustomerPreferencesViewModel
     public decimal? MaxSodiumMg { get; set; }
 }
 
+public sealed class CustomerMealSelectionPageViewModel
+{
+    public List<CustomerMealSelectionSubscriptionOptionViewModel> ActiveSubscriptions { get; set; } = [];
+    public Guid? SelectedSubscriptionId { get; set; }
+    public DateTime WeekStartDate { get; set; }
+
+    public Guid? WeeklyMenuId { get; set; }
+    public DateTime? SelectionDeadlineAt { get; set; }
+
+    public List<CustomerMealSelectionRecipeOptionViewModel> AvailableRecipes { get; set; } = [];
+    public List<Guid> SelectedRecipeIds { get; set; } = [];
+
+    public bool HasActiveSubscriptions => ActiveSubscriptions.Count > 0;
+    public bool HasWeeklyMenu => WeeklyMenuId.HasValue;
+    public bool HasAvailableRecipes => AvailableRecipes.Count > 0;
+}
+
+public sealed class CustomerMealSelectionSaveRequestViewModel
+{
+    public Guid SubscriptionId { get; set; }
+    public DateTime WeekStartDate { get; set; }
+    public List<Guid> SelectedRecipeIds { get; set; } = [];
+}
+
+public sealed class CustomerMealSelectionSubscriptionOptionViewModel
+{
+    public Guid SubscriptionId { get; set; }
+    public Guid CompanyId { get; set; }
+    public string BoxDisplayName { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+}
+
+public sealed class CustomerMealSelectionRecipeOptionViewModel
+{
+    public Guid RecipeId { get; set; }
+    public string RecipeName { get; set; } = string.Empty;
+}
+

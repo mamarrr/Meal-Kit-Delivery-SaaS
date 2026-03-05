@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Contracts.BLL.Menu;
 using App.Contracts.BLL.Subscription;
 using App.DAL.EF;
 using App.Domain.Core;
@@ -15,6 +16,7 @@ namespace WebApp.Controllers;
 public class CustomerSubscriptionsController(
     IBoxService boxService,
     IMealSubscriptionService mealSubscriptionService,
+    IMealSelectionService mealSelectionService,
     AppDbContext dbContext,
     ILogger<CustomerSubscriptionsController> logger) : Controller
 {
@@ -205,6 +207,151 @@ public class CustomerSubscriptionsController(
         return RedirectToAction(nameof(Manage));
     }
 
+    [HttpGet("/customer/meal-selection")]
+    public async Task<IActionResult> MealSelection(Guid? selectedSubscriptionId, DateTime? weekStartDate)
+    {
+        var customerIds = await ResolveAccessibleCustomerIdsForUserAsync();
+        if (customerIds.Count == 0)
+        {
+            return Forbid();
+        }
+
+        var activeSubscriptions = (await mealSubscriptionService.GetAllByCustomerIdsAsync(customerIds))
+            .Where(x => x.DeletedAt == null && x.IsActive && customerIds.Contains(x.CustomerId))
+            .OrderByDescending(x => x.StartDate)
+            .ToList();
+
+        var selectedSubscription = selectedSubscriptionId.HasValue
+            ? activeSubscriptions.FirstOrDefault(x => x.Id == selectedSubscriptionId.Value)
+            : activeSubscriptions.FirstOrDefault();
+
+        var weekStart = NormalizeWeekStart(weekStartDate ?? DateTime.UtcNow.Date);
+        var model = await BuildMealSelectionViewModelAsync(activeSubscriptions, selectedSubscription, weekStart);
+        return View(model);
+    }
+
+    [HttpPost("/customer/meal-selection")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MealSelection(CustomerMealSelectionSaveRequestViewModel model)
+    {
+        var weekStart = NormalizeWeekStart(model.WeekStartDate);
+
+        try
+        {
+            var customerIds = await ResolveAccessibleCustomerIdsForUserAsync();
+            if (customerIds.Count == 0)
+            {
+                return Forbid();
+            }
+
+            var activeSubscriptions = (await mealSubscriptionService.GetAllByCustomerIdsAsync(customerIds))
+                .Where(x => x.DeletedAt == null && x.IsActive && customerIds.Contains(x.CustomerId))
+                .ToList();
+
+            var subscription = activeSubscriptions.FirstOrDefault(x => x.Id == model.SubscriptionId);
+            if (subscription == null)
+            {
+                TempData["ErrorMessage"] = "Selected subscription is outside your active customer scope.";
+                return RedirectToAction(nameof(MealSelection), new
+                {
+                    selectedSubscriptionId = model.SubscriptionId,
+                    weekStartDate = weekStart.ToString("yyyy-MM-dd")
+                });
+            }
+
+            var weeklyMenu = await dbContext.WeeklyMenus
+                .FirstOrDefaultAsync(x =>
+                    x.CompanyId == subscription.CompanyId &&
+                    x.WeekStartDate.Date == weekStart.Date &&
+                    x.DeletedAt == null);
+
+            if (weeklyMenu == null)
+            {
+                TempData["ErrorMessage"] = "No weekly menu is published for the selected subscription week.";
+                return RedirectToAction(nameof(MealSelection), new
+                {
+                    selectedSubscriptionId = model.SubscriptionId,
+                    weekStartDate = weekStart.ToString("yyyy-MM-dd")
+                });
+            }
+
+            var eligibleRecipeIds = await dbContext.WeeklyMenuRecipes
+                .Include(x => x.Recipe)
+                .Where(x =>
+                    x.WeeklyMenuId == weeklyMenu.Id &&
+                    x.DeletedAt == null &&
+                    x.Recipe != null &&
+                    x.Recipe.CompanyId == subscription.CompanyId &&
+                    x.Recipe.DeletedAt == null &&
+                    x.Recipe.IsActive)
+                .Select(x => x.RecipeId)
+                .Distinct()
+                .ToListAsync();
+
+            var eligibleRecipeSet = eligibleRecipeIds.ToHashSet();
+            var selectedRecipeIds = (model.SelectedRecipeIds ?? [])
+                .Distinct()
+                .ToList();
+
+            if (selectedRecipeIds.Any(id => !eligibleRecipeSet.Contains(id)))
+            {
+                TempData["ErrorMessage"] = "One or more selected recipes are outside your subscription menu scope.";
+                return RedirectToAction(nameof(MealSelection), new
+                {
+                    selectedSubscriptionId = model.SubscriptionId,
+                    weekStartDate = weekStart.ToString("yyyy-MM-dd")
+                });
+            }
+
+            var existingSelections = await dbContext.MealSelections
+                .Where(x =>
+                    x.MealSubscriptionId == subscription.Id &&
+                    x.WeeklyMenuId == weeklyMenu.Id &&
+                    x.DeletedAt == null)
+                .ToListAsync();
+
+            foreach (var existingSelection in existingSelections)
+            {
+                await mealSelectionService.RemoveAsync(existingSelection.Id, subscription.CompanyId);
+            }
+
+            var now = DateTime.UtcNow;
+            foreach (var recipeId in selectedRecipeIds)
+            {
+                await mealSelectionService.AddAsync(new App.Domain.Menu.MealSelection
+                {
+                    MealSubscriptionId = subscription.Id,
+                    WeeklyMenuId = weeklyMenu.Id,
+                    RecipeId = recipeId,
+                    SelectedAutomatically = false,
+                    SelectedAt = now,
+                    LockedAt = null,
+                    AutoSelectionReason = null,
+                    AutoSelectionNotes = null,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    DeletedAt = null
+                }, subscription.CompanyId);
+            }
+
+            await dbContext.SaveChangesAsync();
+            TempData["SuccessMessage"] = selectedRecipeIds.Count == 0
+                ? "Meal selections cleared for the selected week."
+                : $"Saved {selectedRecipeIds.Count} meal selection(s) for the selected week.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "CustomerSubscriptions/MealSelection save failed");
+            TempData["ErrorMessage"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(MealSelection), new
+        {
+            selectedSubscriptionId = model.SubscriptionId,
+            weekStartDate = weekStart.ToString("yyyy-MM-dd")
+        });
+    }
+
     private async Task<DiscoverSubscriptionsViewModel> BuildDiscoverViewModelAsync(
         List<Guid> selectedCompanyIds,
         decimal? minPrice,
@@ -238,6 +385,95 @@ public class CustomerSubscriptionsController(
             MaxPrice = maxPrice,
             SelectedDietaryCategoryIds = selectedDietaryCategoryIds
         };
+    }
+
+    private async Task<CustomerMealSelectionPageViewModel> BuildMealSelectionViewModelAsync(
+        List<MealSubscription> activeSubscriptions,
+        MealSubscription? selectedSubscription,
+        DateTime weekStartDate)
+    {
+        var model = new CustomerMealSelectionPageViewModel
+        {
+            WeekStartDate = weekStartDate,
+            ActiveSubscriptions = activeSubscriptions
+                .Select(x => new CustomerMealSelectionSubscriptionOptionViewModel
+                {
+                    SubscriptionId = x.Id,
+                    CompanyId = x.CompanyId,
+                    BoxDisplayName = x.Box?.DisplayName ?? x.BoxId.ToString(),
+                    StartDate = x.StartDate
+                })
+                .ToList(),
+            SelectedSubscriptionId = selectedSubscription?.Id
+        };
+
+        if (selectedSubscription == null)
+        {
+            return model;
+        }
+
+        var weeklyMenu = await dbContext.WeeklyMenus
+            .FirstOrDefaultAsync(x =>
+                x.CompanyId == selectedSubscription.CompanyId &&
+                x.WeekStartDate.Date == weekStartDate.Date &&
+                x.DeletedAt == null);
+
+        if (weeklyMenu == null)
+        {
+            return model;
+        }
+
+        model.WeeklyMenuId = weeklyMenu.Id;
+        model.SelectionDeadlineAt = weeklyMenu.SelectionDeadlineAt;
+
+        var availableRecipes = await dbContext.WeeklyMenuRecipes
+            .Include(x => x.Recipe)
+            .Where(x =>
+                x.WeeklyMenuId == weeklyMenu.Id &&
+                x.DeletedAt == null &&
+                x.Recipe != null &&
+                x.Recipe.CompanyId == selectedSubscription.CompanyId &&
+                x.Recipe.DeletedAt == null &&
+                x.Recipe.IsActive)
+            .Select(x => new
+            {
+                RecipeId = x.RecipeId,
+                RecipeName = x.Recipe!.Name
+            })
+            .Distinct()
+            .OrderBy(x => x.RecipeName)
+            .Select(x => new CustomerMealSelectionRecipeOptionViewModel
+            {
+                RecipeId = x.RecipeId,
+                RecipeName = x.RecipeName
+            })
+            .ToListAsync();
+
+        model.AvailableRecipes = availableRecipes;
+        var availableRecipeIds = availableRecipes.Select(x => x.RecipeId).ToHashSet();
+
+        model.SelectedRecipeIds = await dbContext.MealSelections
+            .Where(x =>
+                x.MealSubscriptionId == selectedSubscription.Id &&
+                x.WeeklyMenuId == weeklyMenu.Id &&
+                x.DeletedAt == null)
+            .Select(x => x.RecipeId)
+            .Where(x => availableRecipeIds.Contains(x))
+            .Distinct()
+            .ToListAsync();
+
+        return model;
+    }
+
+    private static DateTime NormalizeWeekStart(DateTime value)
+    {
+        var day = value.Date;
+        while (day.DayOfWeek != DayOfWeek.Monday)
+        {
+            day = day.AddDays(-1);
+        }
+
+        return day;
     }
 
     private async Task<HashSet<Guid>> ResolveAccessibleCustomerIdsForUserAsync()
