@@ -6,6 +6,7 @@ using App.Domain.Subscription;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using WebApp.ViewModels.Subscription;
 
 namespace WebApp.Controllers;
@@ -55,10 +56,32 @@ public class CustomerSubscriptionsController(
             }
 
             var companyId = selectedBox.CompanyId;
-            var customer = await ResolveCustomerAsync(companyId);
+            var customer = await EnsureCustomerForCompanyAsync(companyId);
             if (customer == null)
             {
                 TempData["ErrorMessage"] = "Customer profile could not be resolved for current user in company scope.";
+                return RedirectToAction(nameof(Discover), new
+                {
+                    companyIds = model.SelectedCompanyIds,
+                    minPrice = model.MinPrice,
+                    maxPrice = model.MaxPrice,
+                    dietaryCategoryIds = model.SelectedDietaryCategoryIds
+                });
+            }
+
+            await using var tx = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+            var hasActiveDuplicate = await dbContext.MealSubscriptions
+                .AnyAsync(x =>
+                    x.CompanyId == companyId &&
+                    x.CustomerId == customer.Id &&
+                    x.BoxId == selectedBox.BoxId &&
+                    x.DeletedAt == null &&
+                    x.IsActive);
+
+            if (hasActiveDuplicate)
+            {
+                TempData["ErrorMessage"] = "You already have an active subscription for this box.";
                 return RedirectToAction(nameof(Discover), new
                 {
                     companyIds = model.SelectedCompanyIds,
@@ -83,6 +106,7 @@ public class CustomerSubscriptionsController(
             }, companyId);
 
             await dbContext.SaveChangesAsync();
+            await tx.CommitAsync();
             TempData["SuccessMessage"] = "Subscription created.";
         }
         catch (Exception ex)
@@ -115,6 +139,14 @@ public class CustomerSubscriptionsController(
             .ThenByDescending(x => x.StartDate)
             .ToList();
 
+        var activeSubscriptions = subscriptions
+            .Where(x => x.IsActive)
+            .ToList();
+
+        var subscriptionHistory = subscriptions
+            .Where(x => !x.IsActive)
+            .ToList();
+
         var selected = selectedSubscriptionId.HasValue
             ? subscriptions.FirstOrDefault(x => x.Id == selectedSubscriptionId.Value)
             : subscriptions.FirstOrDefault();
@@ -122,6 +154,8 @@ public class CustomerSubscriptionsController(
         return View(new ManageSubscriptionsViewModel
         {
             Subscriptions = subscriptions,
+            ActiveSubscriptions = activeSubscriptions,
+            SubscriptionHistory = subscriptionHistory,
             SelectedSubscriptionId = selected?.Id,
             SelectedSubscription = selected
         });
@@ -145,6 +179,12 @@ public class CustomerSubscriptionsController(
             if (subscription == null || !customerIds.Contains(subscription.CustomerId))
             {
                 TempData["ErrorMessage"] = "Subscription is outside customer ownership scope.";
+                return RedirectToAction(nameof(Manage));
+            }
+
+            if (!subscription.IsActive)
+            {
+                TempData["SuccessMessage"] = "Subscription is already inactive.";
                 return RedirectToAction(nameof(Manage));
             }
 
@@ -204,10 +244,30 @@ public class CustomerSubscriptionsController(
     {
         var userId = GetCurrentUserId();
 
+        var mappedCustomers = await dbContext.CustomerAppUsers
+            .Where(link => link.AppUserId == userId && link.Customer != null)
+            .Select(link => new
+            {
+                link.CustomerId,
+                CompanyId = link.Customer!.CompanyId,
+                CustomerDeletedAt = link.Customer!.DeletedAt
+            })
+            .ToListAsync();
+
+        logger.LogInformation(
+            "CustomerSubscriptions.ResolveAccessibleCustomerIds: userId={UserId}, mappings=[{Mappings}]",
+            userId,
+            string.Join(",", mappedCustomers.Select(x => $"{x.CustomerId}@{x.CompanyId}:deleted={x.CustomerDeletedAt != null}")));
+
         var ids = await dbContext.CustomerAppUsers
             .Where(link => link.AppUserId == userId && link.Customer != null && link.Customer.DeletedAt == null)
             .Select(link => link.CustomerId)
             .ToListAsync();
+
+        logger.LogInformation(
+            "CustomerSubscriptions.ResolveAccessibleCustomerIds result: userId={UserId}, customerIds=[{CustomerIds}]",
+            userId,
+            string.Join(",", ids));
 
         return ids.ToHashSet();
     }
@@ -216,6 +276,24 @@ public class CustomerSubscriptionsController(
     {
         var userId = GetCurrentUserId();
 
+        var mappedCustomers = await dbContext.CustomerAppUsers
+            .Where(link => link.AppUserId == userId && link.Customer != null)
+            .Select(link => new
+            {
+                link.CustomerId,
+                CompanyId = link.Customer!.CompanyId,
+                CustomerDeletedAt = link.Customer!.DeletedAt
+            })
+            .ToListAsync();
+
+        logger.LogInformation(
+            "CustomerSubscriptions.ResolveCustomer start: userId={UserId}, targetCompanyId={TargetCompanyId}, claimCompanyId={ClaimCompanyId}, claimCompanySlug={ClaimCompanySlug}, mappings=[{Mappings}]",
+            userId,
+            companyId,
+            User.FindFirstValue("company_id") ?? "<null>",
+            User.FindFirstValue("company_slug") ?? "<null>",
+            string.Join(",", mappedCustomers.Select(x => $"{x.CustomerId}@{x.CompanyId}:deleted={x.CustomerDeletedAt != null}")));
+
         var customerId = await dbContext.CustomerAppUsers
             .Where(link => link.AppUserId == userId && link.Customer != null && link.Customer.CompanyId == companyId)
             .Select(link => link.CustomerId)
@@ -223,11 +301,83 @@ public class CustomerSubscriptionsController(
 
         if (customerId == Guid.Empty)
         {
+            logger.LogWarning(
+                "CustomerSubscriptions.ResolveCustomer unresolved mapping: userId={UserId}, targetCompanyId={TargetCompanyId}",
+                userId,
+                companyId);
             return null;
         }
 
-        return await dbContext.Customers
+        var customer = await dbContext.Customers
             .FirstOrDefaultAsync(c => c.Id == customerId && c.CompanyId == companyId && c.DeletedAt == null);
+
+        logger.LogInformation(
+            "CustomerSubscriptions.ResolveCustomer result: userId={UserId}, targetCompanyId={TargetCompanyId}, customerId={CustomerId}, resolved={Resolved}",
+            userId,
+            companyId,
+            customerId,
+            customer != null);
+
+        return customer;
+    }
+
+    private async Task<Customer?> EnsureCustomerForCompanyAsync(Guid companyId)
+    {
+        var existing = await ResolveCustomerAsync(companyId);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var userId = GetCurrentUserId();
+        var appUser = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
+        if (appUser == null)
+        {
+            logger.LogWarning(
+                "CustomerSubscriptions.EnsureCustomerForCompany app user not found: userId={UserId}, targetCompanyId={TargetCompanyId}",
+                userId,
+                companyId);
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var firstName = string.IsNullOrWhiteSpace(appUser.FirstName) ? "Customer" : appUser.FirstName;
+        var lastName = string.IsNullOrWhiteSpace(appUser.LastName) ? "User" : appUser.LastName;
+        var email = string.IsNullOrWhiteSpace(appUser.Email) ? $"{userId}@customer.local" : appUser.Email;
+
+        var customer = new Customer
+        {
+            CompanyId = companyId,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            PhoneNumber = appUser.PhoneNumber,
+            IsActive = true,
+            AddressLine = "Not provided",
+            City = "Not provided",
+            PostalCode = "00000",
+            Country = "EE",
+            CreatedAt = now,
+            UpdatedAt = now,
+            DeletedAt = null
+        };
+
+        await dbContext.Customers.AddAsync(customer);
+        await dbContext.CustomerAppUsers.AddAsync(new CustomerAppUser
+        {
+            CustomerId = customer.Id,
+            AppUserId = userId,
+            CreatedAt = now,
+            DeletedAt = null
+        });
+
+        logger.LogInformation(
+            "CustomerSubscriptions.EnsureCustomerForCompany creating customer mapping: userId={UserId}, targetCompanyId={TargetCompanyId}, customerId={CustomerId}",
+            userId,
+            companyId,
+            customer.Id);
+
+        return customer;
     }
 
     private Guid GetCurrentUserId()

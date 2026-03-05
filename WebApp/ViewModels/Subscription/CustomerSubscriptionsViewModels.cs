@@ -23,6 +23,8 @@ public sealed class ManageSubscriptionsViewModel
 {
     public string? CompanySlug { get; set; }
     public List<MealSubscription> Subscriptions { get; set; } = [];
+    public List<MealSubscription> ActiveSubscriptions { get; set; } = [];
+    public List<MealSubscription> SubscriptionHistory { get; set; } = [];
     public MealSubscription? SelectedSubscription { get; set; }
     public Guid? SelectedSubscriptionId { get; set; }
 }

@@ -30,33 +30,94 @@
 
     <div class="row g-3">
         <div class="col-lg-7">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
-                    <tr>
-                        <th>Subscription</th>
-                        <th>Status</th>
-                        <th>Start</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var item in Model.Subscriptions)
-                    {
-                        <tr>
-                            <td>@item.Id</td>
-                            <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                            <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
-                            <td class="text-end">
-                                <a class="btn btn-sm btn-outline-primary"
-                                   asp-action="Manage"
-                                   asp-route-selectedSubscriptionId="@item.Id">Details</a>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            </div>
+            @if (Model.Subscriptions.Count == 0)
+            {
+                <div class="alert alert-info mb-0">You do not have any subscriptions yet.</div>
+            }
+            else
+            {
+                <div class="card mb-3">
+                    <div class="card-header">Active subscriptions</div>
+                    <div class="card-body p-0">
+                        @if (Model.ActiveSubscriptions.Count == 0)
+                        {
+                            <div class="p-3 text-muted">No active subscriptions.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Box</th>
+                                        <th>Status</th>
+                                        <th>Start</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var item in Model.ActiveSubscriptions)
+                                    {
+                                        <tr>
+                                            <td>@(item.Box?.DisplayName ?? item.BoxId.ToString())</td>
+                                            <td>Active</td>
+                                            <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
+                                            <td class="text-end">
+                                                <a class="btn btn-sm btn-outline-primary"
+                                                   asp-action="Manage"
+                                                   asp-route-selectedSubscriptionId="@item.Id">Details</a>
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Subscription history</div>
+                    <div class="card-body p-0">
+                        @if (Model.SubscriptionHistory.Count == 0)
+                        {
+                            <div class="p-3 text-muted">No inactive subscriptions yet.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Box</th>
+                                        <th>Status</th>
+                                        <th>Start</th>
+                                        <th>End</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var item in Model.SubscriptionHistory)
+                                    {
+                                        <tr>
+                                            <td>@(item.Box?.DisplayName ?? item.BoxId.ToString())</td>
+                                            <td>Inactive</td>
+                                            <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
+                                            <td>@(item.EndDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                            <td class="text-end">
+                                                <a class="btn btn-sm btn-outline-primary"
+                                                   asp-action="Manage"
+                                                   asp-route-selectedSubscriptionId="@item.Id">Details</a>
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         </div>
         <div class="col-lg-5">
             @if (Model.SelectedSubscription != null)
@@ -67,6 +128,9 @@
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Id</dt>
                             <dd class="col-sm-8">@Model.SelectedSubscription.Id</dd>
+
+                            <dt class="col-sm-4">Box</dt>
+                            <dd class="col-sm-8">@(Model.SelectedSubscription.Box?.DisplayName ?? Model.SelectedSubscription.BoxId.ToString())</dd>
 
                             <dt class="col-sm-4">Status</dt>
                             <dd class="col-sm-8">@(Model.SelectedSubscription.IsActive ? "Active" : "Inactive")</dd>

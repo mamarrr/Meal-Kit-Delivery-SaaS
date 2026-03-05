@@ -205,6 +205,23 @@ public class CustomerPreferencesController(
     {
         var userId = GetCurrentUserId();
 
+        var mappedCustomers = await dbContext.CustomerAppUsers
+            .Where(link => link.AppUserId == userId && link.Customer != null)
+            .Select(link => new
+            {
+                link.CustomerId,
+                CompanyId = link.Customer!.CompanyId,
+                CustomerDeletedAt = link.Customer!.DeletedAt
+            })
+            .ToListAsync();
+
+        logger.LogInformation(
+            "CustomerPreferences.ResolveCustomer start: userId={UserId}, claimCompanyId={ClaimCompanyId}, claimCompanySlug={ClaimCompanySlug}, mappings=[{Mappings}]",
+            userId,
+            User.FindFirstValue("company_id") ?? "<null>",
+            User.FindFirstValue("company_slug") ?? "<null>",
+            string.Join(",", mappedCustomers.Select(x => $"{x.CustomerId}@{x.CompanyId}:deleted={x.CustomerDeletedAt != null}")));
+
         var customerId = await dbContext.CustomerAppUsers
             .Where(link => link.AppUserId == userId && link.Customer != null && link.Customer.DeletedAt == null)
             .Select(link => link.CustomerId)
@@ -212,11 +229,20 @@ public class CustomerPreferencesController(
 
         if (customerId == Guid.Empty)
         {
+            logger.LogWarning("CustomerPreferences.ResolveCustomer unresolved mapping: userId={UserId}", userId);
             return null;
         }
 
-        return await dbContext.Customers
+        var customer = await dbContext.Customers
             .FirstOrDefaultAsync(c => c.Id == customerId && c.DeletedAt == null);
+
+        logger.LogInformation(
+            "CustomerPreferences.ResolveCustomer result: userId={UserId}, customerId={CustomerId}, resolved={Resolved}",
+            userId,
+            customerId,
+            customer != null);
+
+        return customer;
     }
 
     private Guid GetCurrentUserId()
