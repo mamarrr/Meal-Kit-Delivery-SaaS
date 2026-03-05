@@ -1,29 +1,17 @@
 using System.Security.Claims;
 using App.DAL.EF;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using WebApp.Helpers;
 
 namespace WebApp.Setup;
 
-public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaimsTransformation
+public class CompanyContextClaimsTransformation(AppDbContext dbContext, IHttpContextAccessor httpContextAccessor) : IClaimsTransformation
 {
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity?.IsAuthenticated != true)
-        {
-            return principal;
-        }
-
-        var hasCompanyClaim = principal.HasClaim(c =>
-            c.Type == "company_id" ||
-            c.Type == "tenant_id" ||
-            c.Type == "companyId");
-
-        var hasCompanySlugClaim = principal.HasClaim(c =>
-            c.Type == "company_slug" ||
-            c.Type == "tenant_slug");
-
-        if (hasCompanyClaim && hasCompanySlugClaim)
         {
             return principal;
         }
@@ -37,7 +25,7 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
             return principal;
         }
 
-        var companyMembership = await dbContext.CompanyAppUsers
+        var memberships = await dbContext.CompanyAppUsers
             .Where(x => x.AppUserId == userId && x.IsActive)
             .OrderByDescending(x => x.IsOwner)
             .Select(x => new
@@ -45,15 +33,16 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
                 x.CompanyId,
                 CompanySlug = x.Company!.Slug
             })
-            .FirstOrDefaultAsync();
-
-        if (companyMembership?.CompanyId == null)
-        {
-            return principal;
-        }
+            .ToListAsync();
 
         if (principal.Identity is ClaimsIdentity identity)
         {
+            RemoveClaim(identity, "company_id");
+            RemoveClaim(identity, "tenant_id");
+            RemoveClaim(identity, "companyId");
+            RemoveClaim(identity, "company_slug");
+            RemoveClaim(identity, "tenant_slug");
+
             var companyRoles = await dbContext.UserRoles
                 .Where(x => x.UserId == userId)
                 .Join(
@@ -86,20 +75,51 @@ public class CompanyContextClaimsTransformation(AppDbContext dbContext) : IClaim
                 }
             }
 
-            if (!hasCompanyClaim)
+            var selectedCompanyCookie = httpContextAccessor.HttpContext?.Request.Cookies[ActiveUserSelectionHelper.ActiveCompanyCookieName];
+            Guid? selectedCompanyId = null;
+            if (Guid.TryParse(selectedCompanyCookie, out var parsedCompanyId))
             {
-                identity.AddClaim(new Claim("company_id", companyMembership.CompanyId.ToString()));
-                identity.AddClaim(new Claim("tenant_id", companyMembership.CompanyId.ToString()));
-                identity.AddClaim(new Claim("companyId", companyMembership.CompanyId.ToString()));
+                selectedCompanyId = parsedCompanyId;
             }
 
-            if (!hasCompanySlugClaim && !string.IsNullOrWhiteSpace(companyMembership.CompanySlug))
+            var selectedMembership = selectedCompanyId != null
+                ? memberships.FirstOrDefault(m => m.CompanyId == selectedCompanyId.Value)
+                : null;
+
+            var effectiveMembership = selectedMembership ?? memberships.FirstOrDefault();
+
+            if (effectiveMembership != null)
             {
-                identity.AddClaim(new Claim("company_slug", companyMembership.CompanySlug));
-                identity.AddClaim(new Claim("tenant_slug", companyMembership.CompanySlug));
+                identity.AddClaim(new Claim("company_id", effectiveMembership.CompanyId.ToString()));
+                identity.AddClaim(new Claim("tenant_id", effectiveMembership.CompanyId.ToString()));
+                identity.AddClaim(new Claim("companyId", effectiveMembership.CompanyId.ToString()));
+
+                if (!string.IsNullOrWhiteSpace(effectiveMembership.CompanySlug))
+                {
+                    identity.AddClaim(new Claim("company_slug", effectiveMembership.CompanySlug));
+                    identity.AddClaim(new Claim("tenant_slug", effectiveMembership.CompanySlug));
+                }
+
+                if (selectedMembership == null && selectedCompanyId != null)
+                {
+                    httpContextAccessor.HttpContext?.Response.Cookies.Delete(ActiveUserSelectionHelper.ActiveCompanyCookieName);
+                }
+            }
+            else
+            {
+                httpContextAccessor.HttpContext?.Response.Cookies.Delete(ActiveUserSelectionHelper.ActiveCompanyCookieName);
             }
         }
 
         return principal;
+    }
+
+    private static void RemoveClaim(ClaimsIdentity identity, string type)
+    {
+        var claims = identity.FindAll(type).ToList();
+        foreach (var claim in claims)
+        {
+            identity.RemoveClaim(claim);
+        }
     }
 }

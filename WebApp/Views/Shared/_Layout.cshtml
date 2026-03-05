@@ -18,20 +18,32 @@
 <a class="skip-link" href="#main-content">Skip to main content</a>
 @if (User.Identity?.IsAuthenticated == true)
 {
-    var operationalSlug = User.GetDefaultOperationalSlug();
-    var activeContext = Context.Request.Cookies["active_context"]?.ToLowerInvariant();
+    var operationalSlug = User.GetCompanySlug();
+    var activeContext = Context.Request.Cookies[ActiveUserSelectionHelper.ActiveContextCookieName]?.ToLowerInvariant();
     var hasCustomerAccess = User.IsInRole("Customer") || User.HasClaim("has_customer_access", "true");
-    var hasCompanyAccess = User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee") || User.HasClaim("has_company_access", "true");
+    var hasCompanyAccess = User.IsInRole("CompanyOwner") || User.IsInRole("CompanyAdmin") || User.IsInRole("CompanyManager") || User.IsInRole("CompanyEmployee") || User.HasClaim("has_company_access", "true") || !string.IsNullOrWhiteSpace(operationalSlug);
+    var canRegisterNewCompany = ActiveUserSelectionHelper.CanRegisterNewCompanyFromSidebar(User);
 
     if (string.IsNullOrWhiteSpace(activeContext))
     {
-        activeContext = hasCustomerAccess ? "customer" : "company";
+        activeContext = hasCompanyAccess ? ActiveUserSelectionHelper.CompanyContext : (hasCustomerAccess ? ActiveUserSelectionHelper.CustomerContext : ActiveUserSelectionHelper.SystemContext);
     }
 
     var sidebarItems = new List<AppShellNavigationViewModel>
     {
         new() { Title = "Entry", Controller = "Landing", Action = "Entry", Slug = activeContext == "company" ? operationalSlug : null }
     };
+
+    if (canRegisterNewCompany)
+    {
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Register new company",
+            Controller = "Landing",
+            Action = "CompanySignupAuthenticated",
+            Context = "company-register"
+        });
+    }
 
 <div class="app-shell">
     <partial name="_SidebarNavigation" model="sidebarItems" />
@@ -42,19 +54,6 @@
                 <a class="navbar-brand fw-semibold" asp-area="" asp-controller="Landing" asp-action="Index">@AppNameService.AppName</a>
             </div>
             <div class="app-topbar-actions">
-                @if (hasCustomerAccess && hasCompanyAccess)
-                {
-                    <div class="btn-group me-3" role="group" aria-label="Switch active context">
-                        <a class="btn btn-sm @(activeContext == "customer" ? "btn-primary" : "btn-outline-primary")"
-                           asp-controller="Landing"
-                           asp-action="Entry"
-                           asp-route-context="customer">Customer view</a>
-                        <a class="btn btn-sm @(activeContext == "company" ? "btn-primary" : "btn-outline-primary")"
-                           asp-controller="Landing"
-                           asp-action="Entry"
-                           asp-route-context="company">Company view</a>
-                    </div>
-                }
                 <ul class="navbar-nav">
                     <partial name="_LoginPartial" />
                 </ul>

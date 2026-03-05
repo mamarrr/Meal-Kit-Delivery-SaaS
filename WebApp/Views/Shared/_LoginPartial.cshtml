@@ -1,8 +1,12 @@
 ﻿@using App.Domain.Identity
+@using App.DAL.EF
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Mvc.Rendering
 @using Microsoft.AspNetCore.Identity
 @using WebApp.Helpers
 @inject SignInManager<AppUser> SignInManager
 @inject UserManager<AppUser> UserManager
+@inject AppDbContext DbContext
 
 @{
     var logoutReturnUrl = Url.Action("Index", "Landing", new { area = "" });
@@ -16,6 +20,82 @@
 
 @if (SignInManager.IsSignedIn(User))
 {
+    var activeContext = Context.Request.Cookies[ActiveUserSelectionHelper.ActiveContextCookieName]?.ToLowerInvariant();
+    if (string.IsNullOrWhiteSpace(activeContext))
+    {
+        activeContext = "company";
+    }
+
+    var activeCompanyIdCookie = Context.Request.Cookies[ActiveUserSelectionHelper.ActiveCompanyCookieName];
+    Guid? activeCompanyId = null;
+    if (Guid.TryParse(activeCompanyIdCookie, out var parsedCompanyId))
+    {
+        activeCompanyId = parsedCompanyId;
+    }
+
+    var memberships = new List<SelectListItem>();
+    var userIdRaw = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? User.FindFirst("sub")?.Value
+                    ?? User.FindFirst("user_id")?.Value;
+    if (Guid.TryParse(userIdRaw, out var userId))
+    {
+        memberships = await DbContext.CompanyAppUsers
+            .Where(cau => cau.AppUserId == userId && cau.IsActive)
+            .Select(cau => new SelectListItem
+            {
+                Value = cau.CompanyId.ToString(),
+                Text = cau.Company!.Name
+            })
+            .OrderBy(x => x.Text)
+            .ToListAsync();
+    }
+
+    var shouldShowCompanySelector = memberships.Count > 1;
+    var hasCustomerAccess = User.IsInRole("Customer") || User.HasClaim("has_customer_access", "true");
+    var hasSystemAccess = User.IsInRole("SystemAdmin") || User.IsInRole("SystemSupport") || User.IsInRole("SystemBilling");
+
+    <li class="nav-item me-2 d-flex align-items-center gap-2">
+        @if (hasCustomerAccess)
+        {
+            <form asp-controller="Landing" asp-action="SwitchContext" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="context" value="customer" />
+                <button type="submit" class="btn btn-sm @(activeContext == "customer" ? "btn-primary" : "btn-outline-primary")">Customer</button>
+            </form>
+        }
+
+        @if (memberships.Count == 1)
+        {
+            <form asp-controller="Landing" asp-action="SwitchContext" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="context" value="company" />
+                <button type="submit" class="btn btn-sm @(activeContext == "company" ? "btn-primary" : "btn-outline-primary")">@memberships[0].Text</button>
+            </form>
+        }
+        else if (shouldShowCompanySelector)
+        {
+            <form asp-controller="Landing" asp-action="SwitchCompany" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <label class="visually-hidden" for="topbarCompanySelect">Active company</label>
+                <select id="topbarCompanySelect" name="companyId" class="form-select form-select-sm" style="min-width: 180px;" onchange="this.form.submit()" aria-label="Company context" @(activeContext != "company" ? "disabled" : null)>
+                    @foreach (var company in memberships)
+                    {
+                        <option value="@company.Value" selected="@(activeCompanyId?.ToString() == company.Value)">@company.Text</option>
+                    }
+                </select>
+            </form>
+        }
+
+        @if (hasSystemAccess)
+        {
+            <form asp-controller="Landing" asp-action="SwitchContext" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="context" value="system" />
+                <button type="submit" class="btn btn-sm @(activeContext == "system" ? "btn-primary" : "btn-outline-primary")">System</button>
+            </form>
+        }
+    </li>
+
     <li class="nav-item">
         <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">@App.Resources.Views.Shared._Layout.Hello @User.Identity?.Name!</a>
     </li>

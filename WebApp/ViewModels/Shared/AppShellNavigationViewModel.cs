@@ -6,4 +6,6 @@ public class AppShellNavigationViewModel
     public string Controller { get; set; } = default!;
     public string Action { get; set; } = default!;
     public string? Slug { get; set; }
+    public string? Context { get; set; }
+    public string? CssClass { get; set; }
 }

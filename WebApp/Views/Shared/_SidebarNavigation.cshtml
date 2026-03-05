@@ -2,12 +2,13 @@
 @model IReadOnlyCollection<AppShellNavigationViewModel>
 
 <aside class="app-sidebar" aria-label="Primary navigation">
-    <nav>
+    <nav class="app-sidebar-nav">
         <ul class="nav flex-column gap-1">
             @foreach (var item in Model)
             {
+                var itemHref = Url.Action(item.Action, item.Controller, new { slug = item.Slug, context = item.Context });
                 <li class="nav-item">
-                    <a class="nav-link" asp-controller="@item.Controller" asp-action="@item.Action" asp-route-slug="@item.Slug">@item.Title</a>
+                    <a class="nav-link" href="@(itemHref ?? "#")" data-debug-href="@itemHref">@item.Title</a>
                 </li>
             }
         </ul>

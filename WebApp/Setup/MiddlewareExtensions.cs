@@ -130,6 +130,8 @@ public static class MiddlewareExtensions
 
     public static WebApplication MapAppEndpoints(this WebApplication app)
     {
+        Console.WriteLine("[RouteDiagnostics] Registering slug routes: '{slug:regex(^[a-z0-9-]+$)}' and '{slug:regex(^[a-z0-9-]+$)}/{controller}/{action=Index}/{id?}'");
+
         app.MapStaticAssets();
 
         app.MapControllerRoute(
