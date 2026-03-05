@@ -93,6 +93,13 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
             .OrderBy(x => x.CompanyName)
             .ToListAsync();
 
+        logger.LogInformation(
+            "Entry pre-resolve: user={User}, requestedContext={RequestedContext}, requestedSlug={RequestedSlug}, membershipsCount={MembershipsCount}",
+            User.Identity?.Name ?? "anonymous",
+            context ?? "<null>",
+            slug ?? "<null>",
+            memberships.Count);
+
         var allowedContexts = ActiveUserSelectionHelper.GetAllowedContexts(User, memberships.Count > 0);
         var activeContext = ActiveUserSelectionHelper.ResolveValidContext(
             context,
@@ -120,6 +127,15 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
                                     ? memberships.FirstOrDefault(x => x.CompanyId == persistedCompanyId.Value)
                                     : null)
                                 ?? memberships.FirstOrDefault();
+
+        logger.LogInformation(
+            "Entry company resolution: user={User}, persistedCompanyCookie={PersistedCompanyCookie}, matchedBySlug={MatchedBySlug}, resolvedCompanyId={ResolvedCompanyId}, resolvedCompanySlug={ResolvedCompanySlug}, activeContext={ActiveContext}",
+            User.Identity?.Name ?? "anonymous",
+            persistedCompanyCookie ?? "<null>",
+            slugMembership != null,
+            companyMembership?.CompanyId,
+            companyMembership?.CompanySlug ?? "<null>",
+            activeContext);
 
         if (companyMembership != null)
         {
@@ -189,6 +205,16 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
             Request.Cookies[ActiveUserSelectionHelper.ActiveContextCookieName],
             allowedContexts);
 
+        logger.LogInformation(
+            "SwitchContext requested: user={User}, postedContext={PostedContext}, normalizedRequestedContext={RequestedContext}, resolvedContext={ResolvedContext}, hasActiveCompanyMembership={HasActiveCompanyMembership}, allowedContexts=[{AllowedContexts}], activeCompanyCookie={ActiveCompanyCookie}",
+            User.Identity?.Name ?? "anonymous",
+            context,
+            requestedContext ?? "<null>",
+            activeContext,
+            hasActiveCompanyMembership,
+            string.Join(",", allowedContexts),
+            Request.Cookies[ActiveUserSelectionHelper.ActiveCompanyCookieName] ?? "<null>");
+
         Response.Cookies.Append(
             ActiveUserSelectionHelper.ActiveContextCookieName,
             activeContext,
@@ -219,6 +245,13 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
     [HttpPost("/entry/company")]
     public async Task<IActionResult> SwitchCompany(Guid companyId)
     {
+        logger.LogInformation(
+            "SwitchCompany requested: user={User}, requestedCompanyId={RequestedCompanyId}, activeContextCookie={ActiveContextCookie}, activeCompanyCookie={ActiveCompanyCookie}",
+            User.Identity?.Name ?? "anonymous",
+            companyId,
+            Request.Cookies[ActiveUserSelectionHelper.ActiveContextCookieName] ?? "<null>",
+            Request.Cookies[ActiveUserSelectionHelper.ActiveCompanyCookieName] ?? "<null>");
+
         var userIdRaw = User.FindFirstValue(ClaimTypes.NameIdentifier)
                         ?? User.FindFirstValue("sub")
                         ?? User.FindFirstValue("user_id");
@@ -235,6 +268,10 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
 
         if (companyMembership == null)
         {
+            logger.LogWarning(
+                "SwitchCompany denied: user={User}, requestedCompanyId={RequestedCompanyId} is not an active membership",
+                User.Identity?.Name ?? "anonymous",
+                companyId);
             Response.Cookies.Delete(ActiveUserSelectionHelper.ActiveCompanyCookieName);
             return RedirectToAction(nameof(Entry));
         }
@@ -256,6 +293,13 @@ public class LandingController(TenantOnboardingService tenantOnboardingService, 
             ActiveUserSelectionHelper.ActiveContextCookieName,
             activeContext,
             ActiveUserSelectionHelper.CreateSelectionCookieOptions());
+
+        logger.LogInformation(
+            "SwitchCompany success: user={User}, resolvedCompanyId={ResolvedCompanyId}, resolvedCompanySlug={ResolvedCompanySlug}, resolvedContext={ResolvedContext}",
+            User.Identity?.Name ?? "anonymous",
+            companyMembership.CompanyId,
+            companyMembership.Slug,
+            activeContext);
 
         return Redirect($"/{companyMembership.Slug}/entry");
     }
