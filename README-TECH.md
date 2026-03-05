@@ -92,3 +92,6 @@ dotnet aspnet-codegenerator controller -name GpsLocationsController     -m GpsLo
   - Uniqueness/index updates for ingredient name and exclusion key per company.
   - Migration: `20260305134656_RecipesNutritionCatalog`.
 
+## Running postgre in docker
+
+docker run --name meal-delivery-postgres --restart unless-stopped -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=meal-delivery-saas -p 5432:5432 -v meal-delivery-postgres-data:/var/lib/postgresql/data -d postgres:16
