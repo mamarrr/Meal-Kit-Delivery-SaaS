@@ -51,6 +51,11 @@ public class DeliveryService : BaseTenantService<DeliveryEntity, IDeliveryReposi
         return await Repository.GetAllByCustomerIdAsync(customerId, companyId);
     }
 
+    public async Task<ICollection<DeliveryEntity>> GetAllByCompanyAndScheduledDateAsync(Guid companyId, DateTime scheduledDateUtc)
+    {
+        return await Repository.GetAllByCompanyAndScheduledDateAsync(companyId, scheduledDateUtc);
+    }
+
     public override async Task<DeliveryEntity> AddAsync(DeliveryEntity entity, Guid companyId)
     {
         await ValidateTenantReferencesAsync(entity, companyId);

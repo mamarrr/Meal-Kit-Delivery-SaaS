@@ -21,6 +21,13 @@ public class OperationalLookupService : IOperationalLookupService
             .ToListAsync();
     }
 
+    public async Task<ICollection<DeliveryAttemptResult>> GetDeliveryAttemptResultsAsync()
+    {
+        return await _context.DeliveryAttemptResults
+            .OrderBy(x => x.Label)
+            .ToListAsync();
+    }
+
     public async Task<ICollection<DeliveryWindow>> GetDeliveryWindowsByCompanyIdAsync(Guid companyId)
     {
         var deliveryZoneIds = await _context.DeliveryZones

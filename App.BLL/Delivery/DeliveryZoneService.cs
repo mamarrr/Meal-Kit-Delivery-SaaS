@@ -21,6 +21,11 @@ public class DeliveryZoneService : BaseTenantService<DeliveryZone, IDeliveryZone
         return await Repository.GetAllByCompanyIdAsync(companyId);
     }
 
+    public async Task<ICollection<DeliveryZone>> GetActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await Repository.GetActiveByCompanyIdAsync(companyId);
+    }
+
     public async Task<int?> GetMaxZonesForCompanyAsync(Guid companyId)
     {
         var activeSubscription = await _platformSubscriptionService.GetCurrentActiveByCompanyIdAsync(companyId);

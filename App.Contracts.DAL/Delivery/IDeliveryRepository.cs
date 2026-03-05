@@ -28,4 +28,12 @@ public interface IDeliveryRepository : IRepository<App.Domain.Delivery.Delivery>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of deliveries for the customer in the company.</returns>
     Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCustomerIdAsync(Guid customerId, Guid companyId);
+
+    /// <summary>
+    /// Gets deliveries for a specific company and scheduled date (UTC date component).
+    /// </summary>
+    /// <param name="companyId">The company ID.</param>
+    /// <param name="scheduledDateUtc">Target UTC date.</param>
+    /// <returns>A collection of deliveries scheduled on the specified date for the company.</returns>
+    Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCompanyAndScheduledDateAsync(Guid companyId, DateTime scheduledDateUtc);
 }

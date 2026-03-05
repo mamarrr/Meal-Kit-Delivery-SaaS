@@ -13,6 +13,11 @@ public interface IDeliveryAttemptService : IBaseEntityService<DeliveryAttempt>
     Task<ICollection<DeliveryAttempt>> GetAllByDeliveryIdAsync(Guid deliveryId);
 
     /// <summary>
+    /// Gets all delivery attempts for a specific delivery within company scope.
+    /// </summary>
+    Task<ICollection<DeliveryAttempt>> GetAllByDeliveryIdAsync(Guid deliveryId, Guid companyId);
+
+    /// <summary>
     /// Gets all delivery attempts for deliveries belonging to a specific company.
     /// </summary>
     Task<ICollection<DeliveryAttempt>> GetAllByCompanyIdAsync(Guid companyId);

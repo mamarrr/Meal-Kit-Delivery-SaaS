@@ -98,6 +98,15 @@
             Slug = operationalSlug,
             Context = ActiveUserSelectionHelper.CompanyContext
         });
+
+        sidebarItems.Add(new AppShellNavigationViewModel
+        {
+            Title = "Delivery Logistics",
+            Controller = "DeliveryLogistics",
+            Action = "Index",
+            Slug = operationalSlug,
+            Context = ActiveUserSelectionHelper.CompanyContext
+        });
     }
 
 <div class="app-shell">

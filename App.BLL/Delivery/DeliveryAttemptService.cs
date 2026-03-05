@@ -20,6 +20,12 @@ public class DeliveryAttemptService : BaseService<DeliveryAttempt, IDeliveryAtte
     }
 
     /// <inheritdoc />
+    public async Task<ICollection<DeliveryAttempt>> GetAllByDeliveryIdAsync(Guid deliveryId, Guid companyId)
+    {
+        return await Repository.GetAllByDeliveryIdAsync(deliveryId, companyId);
+    }
+
+    /// <inheritdoc />
     public async Task<ICollection<DeliveryAttempt>> GetAllByCompanyIdAsync(Guid companyId)
     {
         return await Repository.GetAllByCompanyIdAsync(companyId);

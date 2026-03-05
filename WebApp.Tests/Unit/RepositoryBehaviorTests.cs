@@ -572,6 +572,328 @@ public class RepositoryBehaviorTests
     }
 
     [Fact]
+    public async Task DeliveryRepository_GetAllByCompanyAndScheduledDateAsync_FiltersByDateAndTenant()
+    {
+        await using var ctx = CreateContext();
+        var repository = new DeliveryRepository(ctx);
+
+        var companyA = Guid.NewGuid();
+        var companyB = Guid.NewGuid();
+        var targetDate = DateTime.UtcNow.Date;
+
+        repository.Add(new Delivery
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CustomerId = Guid.NewGuid(),
+            ScheduledTime = targetDate.AddHours(9),
+            AddressLine = "A Street 1",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE"
+        });
+
+        repository.Add(new Delivery
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyA,
+            CustomerId = Guid.NewGuid(),
+            ScheduledTime = targetDate.AddDays(1).AddHours(9),
+            AddressLine = "A Street 2",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE"
+        });
+
+        repository.Add(new Delivery
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyB,
+            CustomerId = Guid.NewGuid(),
+            ScheduledTime = targetDate.AddHours(10),
+            AddressLine = "B Street 1",
+            City = "Tartu",
+            PostalCode = "51004",
+            Country = "EE"
+        });
+
+        await ctx.SaveChangesAsync();
+
+        var result = await repository.GetAllByCompanyAndScheduledDateAsync(companyA, targetDate);
+
+        Assert.Single(result);
+        Assert.All(result, x =>
+        {
+            Assert.Equal(companyA, x.CompanyId);
+            Assert.Equal(targetDate, x.ScheduledTime.Date);
+        });
+    }
+
+    [Fact]
+    public async Task DeliveryZoneService_CanCreateZoneAsync_RespectsTierMaxZones()
+    {
+        await using var ctx = CreateContext();
+
+        var zoneRepository = new DeliveryZoneRepository(ctx);
+        var platformSubscriptionRepository = new PlatformSubscriptionRepository(ctx);
+        var platformSubscriptionService = new PlatformSubscriptionService(platformSubscriptionRepository);
+        var zoneService = new DeliveryZoneService(zoneRepository, platformSubscriptionService);
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var tierId = Guid.NewGuid();
+        var statusId = Guid.NewGuid();
+
+        ctx.PlatformSubscriptionTiers.Add(new PlatformSubscriptionTier
+        {
+            Id = tierId,
+            Code = "limited",
+            Name = "Limited",
+            MaxZones = 1,
+            MaxSubscribers = 10,
+            MaxEmployees = 1,
+            MaxRecipes = 10,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.PlatformSubscriptionStatuses.Add(new PlatformSubscriptionStatus
+        {
+            Id = statusId,
+            Code = "active",
+            Label = "Active"
+        });
+        ctx.PlatformSubscriptions.Add(new PlatformSubscription
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            PlatformSubscriptionTierId = tierId,
+            PlatformSubscriptionStatusId = statusId,
+            CreatedByAppUserId = actorId,
+            ValidFrom = DateTime.UtcNow.AddDays(-1),
+            ValidTo = DateTime.UtcNow.AddDays(30),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        zoneRepository.Add(new DeliveryZone
+        {
+            Id = Guid.NewGuid(),
+            CompanyId = companyId,
+            Name = "Central",
+            Description = "Central zone",
+            IsActive = true,
+            CreatedByAppUserId = actorId,
+            CreatedAt = DateTime.UtcNow
+        });
+        await ctx.SaveChangesAsync();
+
+        var canCreate = await zoneService.CanCreateZoneAsync(companyId);
+
+        Assert.False(canCreate);
+    }
+
+    [Fact]
+    public async Task DeliveryZoneService_UpdateAsync_ThrowsForWrongTenantScope()
+    {
+        await using var ctx = CreateContext();
+
+        var zoneRepository = new DeliveryZoneRepository(ctx);
+        var platformSubscriptionRepository = new PlatformSubscriptionRepository(ctx);
+        var platformSubscriptionService = new PlatformSubscriptionService(platformSubscriptionRepository);
+        var zoneService = new DeliveryZoneService(zoneRepository, platformSubscriptionService);
+
+        var ownerCompany = Guid.NewGuid();
+        var otherCompany = Guid.NewGuid();
+        var zoneId = Guid.NewGuid();
+
+        zoneRepository.Add(new DeliveryZone
+        {
+            Id = zoneId,
+            CompanyId = ownerCompany,
+            Name = "Owner zone",
+            IsActive = true,
+            CreatedByAppUserId = Guid.NewGuid(),
+            CreatedAt = DateTime.UtcNow
+        });
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
+            await zoneService.UpdateAsync(new DeliveryZone
+            {
+                Id = zoneId,
+                CompanyId = otherCompany,
+                Name = "Tampered",
+                IsActive = true,
+                CreatedByAppUserId = Guid.NewGuid(),
+                CreatedAt = DateTime.UtcNow
+            }, otherCompany));
+    }
+
+    [Fact]
+    public async Task DeliveryService_AddAsync_ThrowsWhenWindowIsOutsideSelectedZone()
+    {
+        await using var ctx = CreateContext();
+
+        var companyId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var deliveryStatusId = Guid.NewGuid();
+        var customerId = Guid.NewGuid();
+        var weeklyMenuId = Guid.NewGuid();
+        var validZoneId = Guid.NewGuid();
+        var otherZoneId = Guid.NewGuid();
+        var windowId = Guid.NewGuid();
+        var boxId = Guid.NewGuid();
+        var mealSubscriptionId = Guid.NewGuid();
+        var mealSelectionId = Guid.NewGuid();
+        var recipeId = Guid.NewGuid();
+
+        ctx.DeliveryStatuses.Add(new DeliveryStatus
+        {
+            Id = deliveryStatusId,
+            Code = "scheduled",
+            Label = "Scheduled"
+        });
+        ctx.Customers.Add(new Customer
+        {
+            Id = customerId,
+            CompanyId = companyId,
+            Email = "customer@example.com",
+            FirstName = "Test",
+            LastName = "Customer",
+            IsActive = true,
+            AddressLine = "Main 1",
+            City = "Tallinn",
+            PostalCode = "10111",
+            Country = "EE",
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.WeeklyMenus.Add(new WeeklyMenu
+        {
+            Id = weeklyMenuId,
+            CompanyId = companyId,
+            WeekStartDate = DateTime.UtcNow.Date,
+            SelectionDeadlineAt = DateTime.UtcNow.Date.AddDays(-1),
+            TotalRecipes = 1,
+            IsPublished = true,
+            PublishedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId
+        });
+        ctx.DeliveryZones.AddRange(
+            new DeliveryZone
+            {
+                Id = validZoneId,
+                CompanyId = companyId,
+                Name = "Zone A",
+                IsActive = true,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            },
+            new DeliveryZone
+            {
+                Id = otherZoneId,
+                CompanyId = companyId,
+                Name = "Zone B",
+                IsActive = true,
+                CreatedByAppUserId = actorId,
+                CreatedAt = DateTime.UtcNow
+            });
+        ctx.DeliveryWindows.Add(new DeliveryWindow
+        {
+            Id = windowId,
+            DeliveryZoneId = otherZoneId,
+            DayOfWeek = 1,
+            StartTime = new TimeSpan(8, 0, 0),
+            EndTime = new TimeSpan(10, 0, 0),
+            Capacity = 10,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+            CreatedByAppUserId = actorId
+        });
+        ctx.Boxes.Add(new Box
+        {
+            Id = boxId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            MealsCount = 3,
+            PeopleCount = 2,
+            DisplayName = "Family",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.MealSubscriptions.Add(new MealSubscription
+        {
+            Id = mealSubscriptionId,
+            CompanyId = companyId,
+            CustomerId = customerId,
+            BoxId = boxId,
+            IsActive = true,
+            StartDate = DateTime.UtcNow.AddDays(-10),
+            AutoSelectEnabled = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.Recipes.Add(new Recipe
+        {
+            Id = recipeId,
+            CompanyId = companyId,
+            CreatedByAppUserId = actorId,
+            Name = "Recipe",
+            DefaultServings = 2,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        ctx.MealSelections.Add(new MealSelection
+        {
+            Id = mealSelectionId,
+            MealSubscriptionId = mealSubscriptionId,
+            WeeklyMenuId = weeklyMenuId,
+            RecipeId = recipeId,
+            SelectedAutomatically = false,
+            SelectedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
+        await ctx.SaveChangesAsync();
+
+        var deliveryRepository = new DeliveryRepository(ctx);
+        var customerRepository = new CustomerRepository(ctx);
+        var weeklyMenuRepository = new WeeklyMenuRepository(ctx);
+        var deliveryZoneRepository = new DeliveryZoneRepository(ctx);
+        var boxRepository = new BoxRepository(ctx);
+        var mealSelectionRepository = new MealSelectionRepository(ctx);
+        var mealSubscriptionRepository = new MealSubscriptionRepository(ctx);
+        var service = new DeliveryService(
+            deliveryRepository,
+            customerRepository,
+            weeklyMenuRepository,
+            deliveryZoneRepository,
+            boxRepository,
+            mealSelectionRepository,
+            mealSubscriptionRepository,
+            ctx);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
+            await service.AddAsync(new Delivery
+            {
+                Id = Guid.NewGuid(),
+                CompanyId = companyId,
+                DeliveryStatusId = deliveryStatusId,
+                CustomerId = customerId,
+                WeeklyMenuId = weeklyMenuId,
+                DeliveryZoneId = validZoneId,
+                DeliveryWindowId = windowId,
+                BoxId = boxId,
+                MealSelectionId = mealSelectionId,
+                MealSubscriptionId = mealSubscriptionId,
+                ScheduledTime = DateTime.UtcNow,
+                AddressLine = "Main 1",
+                City = "Tallinn",
+                PostalCode = "10111",
+                Country = "EE",
+                CreatedAt = DateTime.UtcNow,
+                CreatedByAppUserId = actorId
+            }, companyId));
+    }
+
+    [Fact]
     public async Task WeeklyMenuService_AssignRecipeToWeekAsync_RejectsNoRepeatViolation()
     {
         await using var ctx = CreateContext();

@@ -1,0 +1,344 @@
+@model WebApp.ViewModels.Delivery.DeliveryLogisticsIndexViewModel
+@{
+    ViewData["Title"] = "Delivery Logistics";
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h1 class="h4 mb-2">Delivery Logistics</h1>
+        <p class="text-muted mb-0">Manage zones, schedules, runs, delivery outcomes, and escalation rules.</p>
+    </div>
+</section>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form asp-controller="DeliveryLogistics" asp-action="Index" asp-route-slug="@Model.CompanySlug" method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label" for="deliveryDate">Delivery date</label>
+                <input class="form-control" type="date" id="deliveryDate" name="deliveryDate" value="@Model.DeliveryDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-8 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Load date</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Delivery zones</h2>
+                <form asp-controller="DeliveryLogistics" asp-action="SaveZone" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3 mb-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DeliveryDate" />
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ZoneForm.Name">Zone name</label>
+                        <input class="form-control" asp-for="ZoneForm.Name" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="ZoneForm.Description">Description</label>
+                        <input class="form-control" asp-for="ZoneForm.Description" />
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mt-4 pt-1">
+                            <input class="form-check-input" asp-for="ZoneForm.IsActive" />
+                            <label class="form-check-label" asp-for="ZoneForm.IsActive">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end justify-content-end gap-2">
+                        <button type="submit" class="btn btn-outline-primary">Create zone</button>
+                    </div>
+                </form>
+
+                @if (Model.Zones.Count == 0)
+                {
+                    <p class="text-muted mb-0">No active zones found.</p>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var zone in Model.Zones)
+                        {
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <div class="fw-semibold">@zone.Name</div>
+                                        <div class="small text-muted">@(string.IsNullOrWhiteSpace(zone.Description) ? "No description" : zone.Description)</div>
+                                    </div>
+                                    <span class="badge text-bg-light">@(zone.IsActive ? "Active" : "Inactive")</span>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2">
+                                    <form asp-controller="DeliveryLogistics" asp-action="SaveZone" asp-route-slug="@Model.CompanySlug" method="post" class="row g-2 align-items-end w-100">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" asp-for="DeliveryDate" />
+                                        <input type="hidden" name="ZoneForm.DeliveryZoneId" value="@zone.Id" />
+
+                                        <div class="col-md-4">
+                                            <label class="form-label small mb-1">Name</label>
+                                            <input class="form-control form-control-sm" name="ZoneForm.Name" value="@zone.Name" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small mb-1">Description</label>
+                                            <input class="form-control form-control-sm" name="ZoneForm.Description" value="@zone.Description" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-check pt-4">
+                                                <input class="form-check-input" type="checkbox" name="ZoneForm.IsActive" value="true" checked="@zone.IsActive" />
+                                                <label class="form-check-label small">Active</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Save</button>
+                                        </div>
+                                    </form>
+
+                                    <form asp-controller="DeliveryLogistics" asp-action="DeactivateZone" asp-route-slug="@Model.CompanySlug" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="deliveryZoneId" value="@zone.Id" />
+                                        <input type="hidden" name="deliveryDate" value="@Model.DeliveryDate.ToString("yyyy-MM-dd")" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Soft-delete</button>
+                                    </form>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Zone schedules &amp; capacity</h2>
+                <form asp-controller="DeliveryLogistics" asp-action="SaveWindow" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DeliveryDate" />
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="WindowForm.DeliveryZoneId">Zone</label>
+                        <select class="form-select" asp-for="WindowForm.DeliveryZoneId" asp-items="Model.ZoneOptions"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="WindowForm.DayOfWeek">Day of week (1-7)</label>
+                        <input class="form-control" asp-for="WindowForm.DayOfWeek" type="number" min="0" max="6" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="WindowForm.StartTime">Start</label>
+                        <input class="form-control" asp-for="WindowForm.StartTime" type="time" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="WindowForm.EndTime">End</label>
+                        <input class="form-control" asp-for="WindowForm.EndTime" type="time" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" asp-for="WindowForm.Capacity">Capacity</label>
+                        <input class="form-control" asp-for="WindowForm.Capacity" type="number" min="1" max="5000" />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Save schedule window</button>
+                    </div>
+                </form>
+
+                <hr />
+
+                @if (Model.ZoneSchedules.Count == 0)
+                {
+                    <p class="text-muted mb-0">No schedule windows configured.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Zone</th>
+                                <th>Day</th>
+                                <th>Window</th>
+                                <th>Capacity</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var item in Model.ZoneSchedules)
+                            {
+                                <tr>
+                                    <td>@(Model.Zones.FirstOrDefault(z => z.Id == item.DeliveryZoneId)?.Name ?? "-")</td>
+                                    <td>@item.DayOfWeek</td>
+                                    <td>@item.StartTime.ToString(@"hh\:mm") - @item.EndTime.ToString(@"hh\:mm")</td>
+                                    <td>@(item.Capacity?.ToString() ?? "-")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+<section class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Deliveries (runs) / Orders by date</h2>
+
+        <form asp-controller="DeliveryLogistics" asp-action="CreateDelivery" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3 mb-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="DeliveryDate" />
+
+            <div class="col-md-3">
+                <label class="form-label" asp-for="DeliveryCreateForm.CustomerId">Customer</label>
+                <select class="form-select" asp-for="DeliveryCreateForm.CustomerId" asp-items="Model.CustomerOptions">
+                    <option value="">Select customer</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" asp-for="DeliveryCreateForm.DeliveryZoneId">Zone</label>
+                <select class="form-select" asp-for="DeliveryCreateForm.DeliveryZoneId" asp-items="Model.ZoneOptions">
+                    <option value="">Select zone</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" asp-for="DeliveryCreateForm.DeliveryWindowId">Window</label>
+                <select class="form-select" asp-for="DeliveryCreateForm.DeliveryWindowId" asp-items="Model.WindowOptions">
+                    <option value="">Select window</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" asp-for="DeliveryCreateForm.ScheduledDate">Date</label>
+                <input class="form-control" asp-for="DeliveryCreateForm.ScheduledDate" type="date" />
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Create delivery run</button>
+            </div>
+        </form>
+
+        @if (Model.RunsAndOrders.Count == 0)
+        {
+            <p class="text-muted mb-0">No deliveries found for the selected date.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Run</th>
+                        <th>Customer</th>
+                        <th>Address</th>
+                        <th>Zone</th>
+                        <th>Window</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.RunsAndOrders)
+                    {
+                        <tr>
+                            <td>@item.RunReference</td>
+                            <td>@item.CustomerName</td>
+                            <td>@item.AddressSummary</td>
+                            <td>@item.ZoneName</td>
+                            <td>@item.TimeWindow</td>
+                            <td>@item.StatusLabel</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Delivery tracking</h2>
+                <form asp-controller="DeliveryLogistics" asp-action="SaveTracking" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DeliveryDate" />
+
+                    <div class="col-12">
+                        <label class="form-label" asp-for="TrackingForm.DeliveryId">Delivery</label>
+                        <select class="form-select" asp-for="TrackingForm.DeliveryId">
+                            <option value="">Select delivery</option>
+                            @foreach (var run in Model.RunsAndOrders)
+                            {
+                                <option value="@run.DeliveryId">@run.RunReference - @run.CustomerName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="TrackingForm.DeliveryStatusId">Status</label>
+                        <select class="form-select" asp-for="TrackingForm.DeliveryStatusId" asp-items="Model.DeliveryStatusOptions"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="TrackingForm.DeliveryAttemptResultId">Attempt result</label>
+                        <select class="form-select" asp-for="TrackingForm.DeliveryAttemptResultId" asp-items="Model.AttemptResultOptions"></select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" asp-for="TrackingForm.Notes">Notes</label>
+                        <textarea class="form-control" asp-for="TrackingForm.Notes" rows="2"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="TrackingForm.ProofReference">Proof reference</label>
+                        <input class="form-control" asp-for="TrackingForm.ProofReference" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="TrackingForm.RescheduleTo">Reschedule to</label>
+                        <input class="form-control" asp-for="TrackingForm.RescheduleTo" type="datetime-local" />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Save tracking</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-6">
+        <section class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Escalation rules</h2>
+                <form asp-controller="DeliveryLogistics" asp-action="SaveEscalationRules" asp-route-slug="@Model.CompanySlug" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="DeliveryDate" />
+
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="EscalationForm.ComplaintEscalationThreshold">Complaint threshold</label>
+                        <input class="form-control" asp-for="EscalationForm.ComplaintEscalationThreshold" type="number" min="1" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" asp-for="EscalationForm.ComplaintEscalationDaysWindow">Days window</label>
+                        <input class="form-control" asp-for="EscalationForm.ComplaintEscalationDaysWindow" type="number" min="1" />
+                    </div>
+                    <div class="col-12 form-check">
+                        <input class="form-check-input" asp-for="EscalationForm.AutoPrioritizeFreshestStock" />
+                        <label class="form-check-label" asp-for="EscalationForm.AutoPrioritizeFreshestStock">Prioritize freshest stock</label>
+                    </div>
+                    <div class="col-12 form-check">
+                        <input class="form-check-input" asp-for="EscalationForm.AutoAssignEarliestSlot" />
+                        <label class="form-check-label" asp-for="EscalationForm.AutoAssignEarliestSlot">Prioritize earliest slot</label>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Save escalation rules</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+

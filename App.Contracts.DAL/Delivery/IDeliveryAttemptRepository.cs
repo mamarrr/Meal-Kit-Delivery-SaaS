@@ -28,4 +28,12 @@ public interface IDeliveryAttemptRepository : IRepository<App.Domain.Delivery.De
     /// <param name="companyId">The company ID for tenant scope.</param>
     /// <returns>The delivery attempt if found and belongs to the company.</returns>
     Task<App.Domain.Delivery.DeliveryAttempt?> GetByIdAsync(Guid id, Guid companyId);
+
+    /// <summary>
+    /// Gets all delivery attempts for a delivery within company scope.
+    /// </summary>
+    /// <param name="deliveryId">The delivery ID.</param>
+    /// <param name="companyId">The company ID.</param>
+    /// <returns>A collection of delivery attempts in company scope.</returns>
+    Task<ICollection<App.Domain.Delivery.DeliveryAttempt>> GetAllByDeliveryIdAsync(Guid deliveryId, Guid companyId);
 }

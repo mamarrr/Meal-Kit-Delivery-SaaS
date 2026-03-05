@@ -36,4 +36,13 @@ public class DeliveryRepository : BaseRepository<App.Domain.Delivery.Delivery, A
             .Where(d => d.CustomerId == customerId && d.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<App.Domain.Delivery.Delivery>> GetAllByCompanyAndScheduledDateAsync(Guid companyId, DateTime scheduledDateUtc)
+    {
+        var date = scheduledDateUtc.Date;
+        return await RepositoryDbSet
+            .Where(d => d.CompanyId == companyId && d.ScheduledTime.Date == date)
+            .ToListAsync();
+    }
 }

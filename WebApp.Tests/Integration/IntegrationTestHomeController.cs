@@ -59,4 +59,30 @@ public class IntegrationTestHomeController : IClassFixture<CustomWebApplicationF
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Get_DeliveryLogistics_Anonymous_IsRedirectedToLogin()
+    {
+        // Act
+        var response = await _client.GetAsync("/north-bites/delivery-logistics");
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.Contains("/Identity/Account/Login", response.Headers.Location!.OriginalString);
+        Assert.Contains("delivery-logistics", response.Headers.Location.OriginalString);
+    }
+
+    [Fact]
+    public async Task Get_DeliveryLogistics_WithDateFilter_Anonymous_RetainsReturnUrl()
+    {
+        // Act
+        var response = await _client.GetAsync("/north-bites/delivery-logistics?deliveryDate=2026-03-09");
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
+        Assert.NotNull(response.Headers.Location);
+        Assert.Contains("/Identity/Account/Login", response.Headers.Location!.OriginalString);
+        Assert.Contains("deliveryDate%3D2026-03-09", response.Headers.Location.OriginalString);
+    }
+
 }

@@ -42,4 +42,14 @@ public class DeliveryAttemptRepository : BaseRepository<App.Domain.Delivery.Deli
             .Include(a => a.DeliveryAttemptResult)
             .FirstOrDefaultAsync(a => a.Id == id && a.Delivery != null && a.Delivery.CompanyId == companyId);
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<App.Domain.Delivery.DeliveryAttempt>> GetAllByDeliveryIdAsync(Guid deliveryId, Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(a => a.DeliveryId == deliveryId && a.Delivery != null && a.Delivery.CompanyId == companyId)
+            .Include(a => a.DeliveryAttemptResult)
+            .OrderBy(a => a.AttemptNo)
+            .ToListAsync();
+    }
 }

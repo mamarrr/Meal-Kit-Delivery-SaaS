@@ -14,4 +14,11 @@ public interface IDeliveryZoneRepository : IRepository<DeliveryZone>
     /// <param name="companyId">The company ID.</param>
     /// <returns>A collection of delivery zones belonging to the company.</returns>
     Task<ICollection<DeliveryZone>> GetAllByCompanyIdAsync(Guid companyId);
+
+    /// <summary>
+    /// Gets all active delivery zones for a specific company.
+    /// </summary>
+    /// <param name="companyId">The company ID.</param>
+    /// <returns>A collection of active delivery zones belonging to the company.</returns>
+    Task<ICollection<DeliveryZone>> GetActiveByCompanyIdAsync(Guid companyId);
 }

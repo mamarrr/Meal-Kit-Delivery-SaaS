@@ -21,4 +21,12 @@ public class DeliveryZoneRepository : BaseRepository<DeliveryZone, AppDbContext>
             .Where(dz => dz.CompanyId == companyId)
             .ToListAsync();
     }
+
+    /// <inheritdoc />
+    public async Task<ICollection<DeliveryZone>> GetActiveByCompanyIdAsync(Guid companyId)
+    {
+        return await RepositoryDbSet
+            .Where(dz => dz.CompanyId == companyId && dz.IsActive && dz.DeletedAt == null)
+            .ToListAsync();
+    }
 }
