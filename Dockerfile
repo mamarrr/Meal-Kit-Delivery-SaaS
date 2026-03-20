@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
 
 COPY --from=publish /app/publish .
 
-ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
