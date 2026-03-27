@@ -1,0 +1,11 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  only:
+    - master
+  tags:
+    - shared
+  script:
+    - docker compose -p mealdeliverysaas up --build --remove-orphans --detach
