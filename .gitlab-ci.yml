@@ -1,10 +1,11 @@
+
 stages:
   - deploy
 
 deploy:
   stage: deploy
   only:
-    - master
+    - main
   tags:
     - shared
   script:
