@@ -13,5 +13,5 @@ services:
 networks:
   shared-db-net:
     external: true
-    name: postgres
+    name: aspnetdocker_default
   
