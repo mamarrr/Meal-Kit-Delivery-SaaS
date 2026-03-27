@@ -33,12 +33,13 @@ COPY Base.Contracts.Domain/. ./Base.Contracts.Domain/
 COPY Base.DAL.EF/. ./Base.DAL.EF/
 COPY Base.Resources/. ./Base.Resources/
 COPY WebApp/. ./WebApp/
+WORKDIR /app/WebApp
 RUN dotnet publish -c Release -o out
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:latest AS runtime
 WORKDIR /app
 EXPOSE 8080
-COPY --from=build /app/out ./
+COPY --from=build /app/WebApp/out ./
 ENV ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=mealdeliverysaas;Username=postgres;Password=postgres
 ENTRYPOINT ["dotnet", "WebApp.dll"]
