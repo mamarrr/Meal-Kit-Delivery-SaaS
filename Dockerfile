@@ -2,7 +2,6 @@ FROM mcr.microsoft.com/dotnet/sdk:latest AS build
 WORKDIR /app
 
 # copy csproj and restore as distinct layers
-COPY *.sln .
 # copy ALL the projects
 COPY App.BLL/*.csproj ./App.BLL/.
 COPY App.Contracts.BLL/*.csproj ./App.Contracts.BLL/.
@@ -17,7 +16,7 @@ COPY Base.Contracts.Domain/*.csproj ./Base.Contracts.Domain/.
 COPY Base.DAL.EF/*.csproj ./Base.DAL.EF/.
 COPY Base.Resources/*.csproj ./Base.Resources/.
 COPY WebApp/*.csproj ./WebApp/.
-RUN dotnet restore
+RUN dotnet restore WebApp/WebApp.csproj
 
 # copy everything else and build app
 # copy all the projects
@@ -40,7 +39,7 @@ RUN dotnet publish -c Release -o out
 
 FROM mcr.microsoft.com/dotnet/aspnet:latest AS runtime
 WORKDIR /app
-EXPOSE 8081
+EXPOSE 8080
 COPY --from=build /app/out ./
-ENV ConnectionStrings:DefaultConnection="Host=postgres;Port=5432;Database=mealdeliverysaas;Username=postgres;Password=postgres"
+ENV ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=mealdeliverysaas;Username=postgres;Password=postgres
 ENTRYPOINT ["dotnet", "WebApp.dll"]
