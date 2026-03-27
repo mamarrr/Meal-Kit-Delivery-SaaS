@@ -33,7 +33,6 @@ COPY Base.Contracts.Domain/. ./Base.Contracts.Domain/
 COPY Base.DAL.EF/. ./Base.DAL.EF/
 COPY Base.Resources/. ./Base.Resources/
 COPY WebApp/. ./WebApp/
-WORKDIR /app/WebApp
 RUN dotnet publish -c Release -o out
 
 
